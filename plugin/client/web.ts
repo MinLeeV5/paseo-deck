@@ -434,6 +434,41 @@ export function focusControl(testId: string): void {
   element?.scrollIntoView({ block: "nearest", inline: "nearest" });
   element?.focus({ preventScroll: true });
 }
+
+interface FocusRegion {
+  contains(element: WebElement): boolean;
+  addEventListener(
+    type: "focusin",
+    listener: () => void,
+    capture: boolean,
+  ): void;
+  removeEventListener(
+    type: "focusin",
+    listener: () => void,
+    capture: boolean,
+  ): void;
+}
+
+// Native auto-focus and keyboard actions use the board's logical focus. Sync
+// it when the composer gains DOM focus without a pointer event. Other controls
+// must keep their focus: activating their pane would auto-focus the composer.
+export function onComposerFocus(view: unknown, focus: () => void): () => void {
+  if (Platform.OS !== "web" || !view) return () => {};
+  const region = view as FocusRegion;
+  if (typeof region.addEventListener !== "function") return () => {};
+  const sync = () => {
+    const input = document.activeElement;
+    if (
+      input?.matches("textarea") &&
+      region.contains(input) &&
+      input.closest('[data-testid="message-input-root"]')
+    )
+      focus();
+  };
+  region.addEventListener("focusin", sync, true);
+  sync();
+  return () => region.removeEventListener("focusin", sync, true);
+}
 export function describeControl(testId: string, title: string): void {
   if (Platform.OS !== "web") return;
   for (const element of Array.from(

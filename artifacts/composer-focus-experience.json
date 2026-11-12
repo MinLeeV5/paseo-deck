@@ -1,0 +1,23 @@
+{
+  "paseoVersion": "0.15.4",
+  "platform": "packaged Web UI, headless Chrome",
+  "simulation": "Native stream and attachment focus requests; no messages submitted",
+  "results": [
+    "Real Tab navigation updates native ownership to right composer",
+    "Background native autofocus request preserves right input and caret",
+    "Programmatic focus updates ownership in reverse",
+    "Background request cannot steal focus in reverse",
+    "Focus and background request in one task keep the new owner",
+    "Same-task background update does not briefly steal focus",
+    "Native toolbar button focus is preserved",
+    "Intentional native autofocus still focuses the owned composer",
+    "Real keydown typing survives continuous background output and focus requests",
+    "Chinese IME composition survives background output and focus requests",
+    "Compact hidden split cannot reclaim the active composer",
+    "Returning to wide layout preserves the focused composer",
+    "Native panes remain healthy"
+  ],
+  "reproducedCause": "Keyboard or programmatic composer focus did not update Deck focusedGroup; a native attachment focus request in the old group could steal focus while the source editor stayed connected.",
+  "fix": "Capture focusin on the actual visible pane element; synchronize only the active native message textarea, preserving toolbar button focus.",
+  "scope": "Ordinary streaming alone did not reproduce focus loss. The user occurrence was not captured by the temporary probe; this validates the reproduced ownership/autofocus path."
+}

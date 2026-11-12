@@ -26,6 +26,7 @@ import {
   keyboardFocusVisible,
   onTabKeys,
   onTabScroll,
+  onComposerFocus,
 } from "./web";
 
 export type Rect = { left: number; top: number; width: number; height: number };
@@ -515,9 +516,14 @@ export const PaneFrame = memo(function PaneFrame({
   onRetarget(id: string, target: Target): void;
   onState(id: string, state: Pane["state"]): void;
 }) {
+  const frame = useRef<View>(null);
   const visited = useRef(false);
   if (visible) visited.current = true;
   const focus = useCallback(() => onFocus(pane.id), [onFocus, pane.id]);
+  useLayoutEffect(
+    () => (visible ? onComposerFocus(frame.current, focus) : undefined),
+    [visible, focus],
+  );
   const close = useCallback(() => onClose(pane.id), [onClose, pane.id]);
   const open = useCallback(
     (target: Target, workspaceId?: string) =>
@@ -539,6 +545,7 @@ export const PaneFrame = memo(function PaneFrame({
   const importAgent = useCallback(() => onImport(pane.id), [onImport, pane.id]);
   return (
     <View
+      ref={frame}
       onPointerDown={focus}
       testID={`split-pane-${pane.id}`}
       style={{
