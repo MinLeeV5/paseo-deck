@@ -1,0 +1,139 @@
+artifacts/performance-desktop-4-panes.json
+  5f3261e44eb2b425 1-41
+plugin/client/native-types.ts
+  5f3261e44eb2b425 1-126
+tools/native-cdp.mjs
+  5f3261e44eb2b425 1-173
+design/INTERACTION-DESIGN.md
+  5f3261e44eb2b425 1-42
+artifacts/compatibility.json
+  5f3261e44eb2b425 1-33
+plugin/client/directory.ts
+  5f3261e44eb2b425 1-133
+plugin/client/native-pane.tsx
+  5f3261e44eb2b425 1-270
+plugin/client/compact-ui.tsx
+  5f3261e44eb2b425 1-100
+plugin/shared/bridge.ts
+  5f3261e44eb2b425 1-53
+plugin/client/board.tsx
+  5f3261e44eb2b425 1-1087
+artifacts/performance-after-8-panes.json
+  5f3261e44eb2b425 1-44
+fixtures/frontend/README.md
+  5f3261e44eb2b425 1-5
+plugin/server/bridge.ts
+  5f3261e44eb2b425 1-22
+plugin/index.server.ts
+  5f3261e44eb2b425 1-8
+RESEARCH.md
+  5f3261e44eb2b425 1-71
+artifacts/tabs-experience.json
+  5f3261e44eb2b425 1-37
+plugin/client/workspace-icon.tsx
+  5f3261e44eb2b425 1-145
+tools/browser-performance.py
+  5f3261e44eb2b425 1-114
+design/tab-interaction.html
+  5f3261e44eb2b425 1-23
+tools/demo.mjs
+  5f3261e44eb2b425 1-178
+tools/model.test.mjs
+  5f3261e44eb2b425 1-262
+artifacts/performance-tabs-desktop-4-panes.json
+  5f3261e44eb2b425 1-43
+artifacts/performance-before-4-panes.json
+  5f3261e44eb2b425 1-40
+plugin/client/split-divider.tsx
+  5f3261e44eb2b425 1-93
+plugin/client/web.ts
+  5f3261e44eb2b425 1-662
+plugin/client/resource-picker.tsx
+  5f3261e44eb2b425 1-886
+plugin/tsconfig.json
+  5f3261e44eb2b425 1-24
+.gitignore
+  5f3261e44eb2b425 1-5
+artifacts/tabs-desktop-terminal.json
+  5f3261e44eb2b425 1-31
+plugin/paseo-plugin.json
+  5f3261e44eb2b425 1-9
+artifacts/performance-tabs-4-panes.json
+  5f3261e44eb2b425 1-45
+plugin/shared/shortcuts.ts
+  5f3261e44eb2b425 1-42
+TABS-RESULTS.md
+  5f3261e44eb2b425 1-47
+artifacts/acceptance.json
+  5f3261e44eb2b425 1-25
+package.json
+  5f3261e44eb2b425 1-22
+artifacts/performance-tabs-before-icons-4-panes.json
+  5f3261e44eb2b425 1-44
+plugin/OVERVIEW.md
+  5f3261e44eb2b425 1-13
+plugin/client/pane-frame.tsx
+  5f3261e44eb2b425 1-368
+artifacts/experience.json
+  5f3261e44eb2b425 1-26
+artifacts/divider-experience.json
+  5f3261e44eb2b425 1-12
+artifacts/performance-tabs-8-panes.json
+  5f3261e44eb2b425 1-44
+plugin/index.client.tsx
+  5f3261e44eb2b425 1-43
+artifacts/native-contracts.json
+  5f3261e44eb2b425 1-92
+PERFORMANCE.md
+  5f3261e44eb2b425 1-40
+README.md
+  5f3261e44eb2b425 1-48
+fixtures/backend/close-guard-demo.md
+  5f3261e44eb2b425 1-3
+DEMO-RESULTS.md
+  5f3261e44eb2b425 1-66
+artifacts/desktop-terminal.json
+  5f3261e44eb2b425 1-30
+artifacts/performance-after-4-panes.json
+  5f3261e44eb2b425 1-44
+fixtures/backend/README.md
+  5f3261e44eb2b425 1-7
+fixtures/frontend/attachment-demo.txt
+  5f3261e44eb2b425 1-2
+plugin/client/tab-drag-layer.tsx
+  5f3261e44eb2b425 1-89
+plugin/package.json
+  5f3261e44eb2b425 1-31
+plugin/shared/model.ts
+  5f3261e44eb2b425 1-251
+artifacts/performance-tabs-before-icons-8-panes.json
+  5f3261e44eb2b425 1-43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.8.2",
+  "base_commit_sha": "12673ac51265654ad2be52dea843efaf989b8ebf",
+  "prompts": {
+    "5f3261e44eb2b425": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1cdeb-394e-7551-b2c7-d4f211f84447",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 6237,
+      "total_deletions": 0,
+      "accepted_lines": 6237,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/8cad2f9e9b7aaed1f2914f81f2ec4a65bf8fb3bfb2aef1630bb31ed1cbe3b143",
+      "token_usage": {
+        "input_tokens": 123486,
+        "output_tokens": 15533,
+        "cache_read_tokens": 3146752,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    }
+  }
+}
