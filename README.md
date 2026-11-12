@@ -12,6 +12,7 @@
 <p align="center">
   <a href="#get-started">Get started</a> ·
   <a href="#add-agents-and-resources">Add resources</a> ·
+  <a href="#drag-tabs">Drag Tabs</a> ·
   <a href="#arrange-your-splits">Layouts</a> ·
   <a href="#use-workspace-actions">Workspace actions</a> ·
   <a href="#develop-and-verify">Development</a> ·
@@ -23,7 +24,8 @@
 - **Keep native conversations**: Use Paseo's conversation UI, composer, and file panels inside each split.
 - **Follow native Agent status**: Tabs show running, unread, input / approval requests, and failures, with Paseo's existing read behavior.
 - **Share Agent drafts**: Unsent text stays in sync between Deck and the Agent's original workspace on the same client.
-- **Arrange your work**: Give each split its own Tabs, drag to reorder or split, and choose common layouts.
+- **Drag Tabs into place**: Reorder Tabs, move them between splits, or drop at an edge to create a new split.
+- **Arrange your work**: Give each split its own Tabs, resize panes, and choose common layouts.
 - **Follow the current workspace**: Run its scripts, open its files in an editor, and use its plugin buttons.
 - **Remember your setup**: Restore layouts and choose which plugin buttons stay in the Tab bar.
 
@@ -69,11 +71,26 @@ Choose the current split or a new split as the destination. Adding an Agent or t
 
 ![Unified add panel with workspace selection and existing Agents](assets/add-tab.png)
 
+## Drag Tabs
+
+Drag a Tab by its title, watch the insertion marker or area preview, then release it at the destination:
+
+| Drop target | Result |
+| --- | --- |
+| Its current Tab bar | Reorder the Tab at the insertion marker |
+| Another split's Tab bar | Move the Tab to the indicated position in that split |
+| The center of another split's content area | Move the Tab into that split's existing group |
+| The left, right, top, or bottom edge of a content area | Create a new split in that direction and move the Tab into it |
+
+Dragging preserves the conversation, terminal, or file view, including unsent drafts and unsaved edits. Dropping at an edge divides the target area, so you can extend an existing layout one split at a time.
+
+For example, start with two columns and at least two Tabs on the left. Drag one of the left Tabs to the bottom edge of the right pane: the left pane remains, and the right pane becomes two stacked panes.
+
+Press `Esc` or release outside the board to cancel. Moving a split's last Tab out removes the empty split; to increase the total split count, drag from a split that contains at least two Tabs.
+
 ## Arrange your splits
 
-Drag a Tab within its bar to reorder it, or into another bar to move it. Drag to a content area's edge to split in that direction; drag to its center to merge into that group. A preview shows the destination. Press `Esc` or release outside the board to cancel.
-
-Moving a group's last Tab also removes its empty area. To increase the number of splits by dragging, split off an extra Tab. Resize using the divider grips, or maximize a split temporarily.
+Resize splits using the divider grips, or maximize a split temporarily.
 
 Use **`··· → 排版`** for presets:
 
