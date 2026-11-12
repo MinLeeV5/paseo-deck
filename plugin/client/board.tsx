@@ -1777,6 +1777,7 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
       <ResourcePicker
         key={picker!.key}
         bridge={bridge.data!}
+        serverId={host.id}
         theme={theme}
         directory={directory.data}
         initialMode={picker!.mode}

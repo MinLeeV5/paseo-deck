@@ -326,6 +326,16 @@ const TabButton = memo(function TabButton({
     [focused, setFocused] = useState(false);
   const colors = theme.colors;
   const backdrop = selected ? "surface2" : hovered ? "surface1" : "surface0";
+  const workspace = directory?.workspaces.find(
+    (item) => item.id === pane.workspaceId,
+  );
+  const workspaceName =
+    workspace?.title?.trim() ||
+    workspace?.name?.trim() ||
+    pane.workspaceName.split("/").pop()?.trim() ||
+    pane.workspaceName;
+  const workspaceInitial =
+    Array.from(workspaceName.trim())[0]?.toLocaleUpperCase() || "?";
   const statusLabel = statusBucket ? statusLabels[statusBucket] : "";
   const label = `${title} · ${pane.workspaceName}${statusLabel ? ` · ${statusLabel}` : ""}`;
   useLayoutEffect(() => {
@@ -402,6 +412,12 @@ const TabButton = memo(function TabButton({
             <View
               testID={`split-tab-status-${pane.id}`}
               accessibilityLabel={statusLabel || undefined}
+              style={{
+                width: 16,
+                height: 16,
+                flexShrink: 0,
+                position: "relative",
+              }}
             >
               <bridge.StatusIcon
                 statusBucket={statusBucket}
@@ -414,6 +430,36 @@ const TabButton = memo(function TabButton({
                   label={pane.workspaceName}
                 />
               </bridge.StatusIcon>
+              <View
+                testID={`split-tab-workspace-initial-${pane.id}`}
+                pointerEvents="none"
+                aria-hidden
+                style={{
+                  position: "absolute",
+                  top: -2,
+                  left: -2,
+                  minWidth: 9,
+                  height: 9,
+                  paddingHorizontal: 1,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: 5,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: colors[backdrop],
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 6.5,
+                    lineHeight: 8,
+                    fontWeight: "700",
+                    color: colors.foreground,
+                  }}
+                >
+                  {workspaceInitial}
+                </Text>
+              </View>
             </View>
           ) : (
             <View

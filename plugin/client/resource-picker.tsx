@@ -1,5 +1,13 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { FlatList, Icon, TextInput } from "@getpaseo/plugin/client/ui";
+import { QueryClientProvider } from "@tanstack/react-query";
 import {
   Pressable,
   ScrollView,
@@ -10,7 +18,7 @@ import {
 } from "react-native";
 import type { PluginScreenProps } from "@getpaseo/plugin/client";
 import type { Target } from "../shared/model";
-import type { NativeBridge } from "./native-types";
+import type { NativeBridge, NativeStatusBucket } from "./native-types";
 import { WorkspaceIcon } from "./workspace-icon";
 import { isRunning, workspaceLabel, type Directory } from "./directory";
 import { keyboardFocusVisible, onPickerKeys } from "./web";
@@ -42,6 +50,7 @@ type Row =
       title: string;
       count: number;
       running?: boolean;
+      unread?: boolean;
     }
   | {
       key: string;
@@ -51,11 +60,14 @@ type Row =
       workspaceId: string;
       agentId?: string;
       badge?: string;
+      badgeIcon?: string;
       running?: boolean;
+      spinner?: boolean;
       run(): void;
     };
 export function ResourcePicker({
   bridge,
+  serverId,
   theme,
   directory,
   initialMode,
@@ -74,6 +86,7 @@ export function ResourcePicker({
   onHeightChange,
 }: {
   bridge: NativeBridge;
+  serverId: string;
   theme: PluginScreenProps["theme"];
   directory?: Directory;
   initialMode: PickerMode;
@@ -96,8 +109,11 @@ export function ResourcePicker({
   const [scope, setScope] = useState("all");
   const [query, setQuery] = useState("");
   const [path, setPath] = useState("README.md");
-  const [selected, setSelected] = useState(0);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [searchFocused, setSearchFocused] = useState(false);
+  const [agentStatuses, setAgentStatuses] = useState<
+    Record<string, NativeStatusBucket | null>
+  >({});
   const list = useRef<NativeFlatList<Row>>(null),
     search = useRef<NativeTextInput>(null);
   const colors = theme.colors;
@@ -105,6 +121,18 @@ export function ResourcePicker({
   const source = workspaces.find((workspace) => workspace.id === scope);
   const matches = (value: string) =>
     value.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase());
+  const reportAgentStatus = useCallback(
+    (agentId: string, status: NativeStatusBucket | null) => {
+      setAgentStatuses((previous) => {
+        if ((previous[agentId] ?? null) === status) return previous;
+        const next = { ...previous };
+        if (status) next[agentId] = status;
+        else delete next[agentId];
+        return next;
+      });
+    },
+    [],
+  );
   const rows = useMemo<Row[]>(() => {
     const items: Row[] = [];
     if (mode === "new" || mode === "scope" || mode === "new-terminal") {
@@ -119,7 +147,7 @@ export function ResourcePicker({
             setScope("all");
             setMode(returnMode);
             setQuery("");
-            setSelected(0);
+            setSelectedKey(null);
           },
         });
       const sorted = [...workspaces].sort(
@@ -151,7 +179,7 @@ export function ResourcePicker({
               setScope(workspace.id);
               setMode(returnMode);
               setQuery("");
-              setSelected(0);
+              setSelectedKey(null);
             }
           },
         });
@@ -166,11 +194,19 @@ export function ResourcePicker({
           ),
       );
       const running = agents.filter(isRunning),
-        recent = agents.filter((agent) => !isRunning(agent));
+        unread = agents.filter(
+          (agent) =>
+            !isRunning(agent) && agentStatuses[agent.id] === "attention",
+        ),
+        recent = agents.filter(
+          (agent) =>
+            !isRunning(agent) && agentStatuses[agent.id] !== "attention",
+        );
       const append = (
         agents: typeof running,
         title: string,
         active: boolean,
+        unreadGroup = false,
       ) => {
         if (!agents.length) return;
         items.push({
@@ -179,11 +215,26 @@ export function ResourcePicker({
           title,
           count: agents.length,
           running: active,
+          unread: unreadGroup,
         });
         for (const agent of agents) {
           const workspace = workspaces.find(
             (workspace) => workspace.id === agent.workspaceId,
           );
+          const badge =
+            agent.status === "running"
+              ? "运行中"
+              : agent.status === "initializing"
+                ? "启动中"
+                : agentStatuses[agent.id] === "attention"
+                  ? "未读"
+                  : openedAgentIds.has(agent.id)
+                    ? "已打开"
+                    : agent.status === "closed"
+                      ? "已关闭"
+                      : agent.status === "error"
+                        ? "出错"
+                        : undefined;
           items.push({
             key: agent.id,
             kind: "option",
@@ -191,25 +242,22 @@ export function ResourcePicker({
             subtitle: workspace ? workspaceLabel(workspace) : agent.cwd,
             workspaceId: agent.workspaceId!,
             agentId: agent.id,
-            badge:
-              agent.status === "running"
-                ? "运行中"
-                : agent.status === "initializing"
-                  ? "启动中"
-                  : openedAgentIds.has(agent.id)
-                    ? "已打开"
-                    : agent.status === "closed"
-                      ? "已关闭"
-                      : agent.status === "error"
-                        ? "出错"
-                        : undefined,
+            badge,
+            badgeIcon:
+              badge === "已打开"
+                ? "Check"
+                : badge === "已关闭"
+                  ? "CircleStop"
+                  : undefined,
             running: isRunning(agent),
+            spinner: agent.status === "running",
             run: () =>
               onOpen({ kind: "agent", agentId: agent.id }, agent.workspaceId!),
           });
         }
       };
       append(running, "正在运行", true);
+      append(unread, "未读", false, true);
       append(recent, "最近会话", false);
     } else if (mode === "terminal") {
       for (const terminal of directory?.terminals ?? []) {
@@ -239,6 +287,7 @@ export function ResourcePicker({
     scope,
     query,
     directory,
+    agentStatuses,
     openedAgentIds,
     defaultWorkspaceId,
     returnMode,
@@ -252,8 +301,11 @@ export function ResourcePicker({
       ),
     [rows],
   );
-  const activeOption =
-    options[Math.min(selected, Math.max(0, options.length - 1))];
+  const selected = Math.max(
+    0,
+    options.findIndex((option) => option.key === selectedKey),
+  );
+  const activeOption = options[selected];
   const layouts = useMemo(() => {
     let offset = 4;
     return rows.map((row, index) => {
@@ -279,10 +331,11 @@ export function ResourcePicker({
           return mode !== "file";
         }
         if ((key === "ArrowDown" || key === "ArrowUp") && options.length) {
-          setSelected(
-            (current) =>
-              (current + (key === "ArrowDown" ? 1 : -1) + options.length) %
-              options.length,
+          setSelectedKey(
+            options[
+              (selected + (key === "ArrowDown" ? 1 : -1) + options.length) %
+                options.length
+            ].key,
           );
           return true;
         }
@@ -338,7 +391,7 @@ export function ResourcePicker({
   const changeMode = (next: PickerMode) => {
     setMode(next);
     setQuery("");
-    setSelected(0);
+    setSelectedKey(null);
     if (next === "file" && scope === "all" && defaultWorkspaceId)
       setScope(defaultWorkspaceId);
   };
@@ -375,6 +428,30 @@ export function ResourcePicker({
     );
   return (
     <View testID="split-resource-picker" style={{ flex: 1, minHeight: 0 }}>
+      {mode === "agent" && directory && (
+        <QueryClientProvider client={bridge.queryClient}>
+          {directory.agents
+            .filter(
+              (agent) =>
+                !agent.archivedAt &&
+                agent.workspaceId &&
+                (scope === "all" || agent.workspaceId === scope) &&
+                matches(
+                  `${agent.title ?? ""} ${agent.cwd} ${workspaces.find((workspace) => workspace.id === agent.workspaceId) ? workspaceLabel(workspaces.find((workspace) => workspace.id === agent.workspaceId)!) : ""}`,
+                ),
+            )
+            .map((agent) => (
+              <ObservePickerAgent
+                key={agent.id}
+                agentId={agent.id}
+                serverId={serverId}
+                workspaceId={agent.workspaceId!}
+                bridge={bridge}
+                report={reportAgentStatus}
+              />
+            ))}
+        </QueryClientProvider>
+      )}
       <View style={{ padding: 10, paddingBottom: 6 }}>
         <View
           testID="split-search-field"
@@ -432,7 +509,7 @@ export function ResourcePicker({
             onChangeText={(value) => {
               if (mode === "file") setPath(value);
               else setQuery(value);
-              setSelected(0);
+              setSelectedKey(null);
             }}
             style={{
               flex: 1,
@@ -458,7 +535,7 @@ export function ResourcePicker({
               onPress={() => {
                 if (mode === "file") setPath("");
                 else setQuery("");
-                setSelected(0);
+                setSelectedKey(null);
                 search.current?.focus();
               }}
             />
@@ -509,7 +586,7 @@ export function ResourcePicker({
                 setReturnMode(mode as PickerMode);
                 setMode("scope");
                 setQuery("");
-                setSelected(0);
+                setSelectedKey(null);
               }}
             />
             <View
@@ -589,7 +666,7 @@ export function ResourcePicker({
             onPress={() => {
               setMode("new-terminal");
               setQuery("");
-              setSelected(0);
+              setSelectedKey(null);
             }}
             disabled={busy}
           />
@@ -668,7 +745,13 @@ export function ResourcePicker({
                   />
                 )}
                 <Text
-                  testID={item.running ? "split-running-heading" : undefined}
+                  testID={
+                    item.unread
+                      ? "split-unread-heading"
+                      : item.running
+                        ? "split-running-heading"
+                        : undefined
+                  }
                   accessibilityRole="header"
                   style={{
                     fontSize: 11,
@@ -755,6 +838,62 @@ export function ResourcePicker({
     </View>
   );
 }
+
+function ObservePickerAgent({
+  agentId,
+  serverId,
+  workspaceId,
+  bridge,
+  report,
+}: {
+  agentId: string;
+  serverId: string;
+  workspaceId: string;
+  bridge: NativeBridge;
+  report(agentId: string, status: NativeStatusBucket | null): void;
+}) {
+  const tab = useMemo(
+    () => ({
+      tabId: `deck-picker:${agentId}`,
+      key: agentId,
+      kind: "agent",
+      target: { kind: "agent" as const, agentId },
+    }),
+    [agentId],
+  );
+  return (
+    <bridge.WorkspaceTabPresentationResolver
+      tab={tab}
+      serverId={serverId}
+      workspaceId={workspaceId}
+    >
+      {(presentation) => (
+        <ReportPickerAgentStatus
+          agentId={agentId}
+          status={presentation.statusBucket}
+          report={report}
+        />
+      )}
+    </bridge.WorkspaceTabPresentationResolver>
+  );
+}
+
+function ReportPickerAgentStatus({
+  agentId,
+  status,
+  report,
+}: {
+  agentId: string;
+  status: NativeStatusBucket | null;
+  report(agentId: string, status: NativeStatusBucket | null): void;
+}) {
+  useLayoutEffect(() => {
+    report(agentId, status);
+  }, [agentId, status, report]);
+  useEffect(() => () => report(agentId, null), [agentId, report]);
+  return null;
+}
+
 function ResultRow({
   bridge,
   row,
@@ -845,7 +984,21 @@ function ResultRow({
               gap: 4,
             }}
           >
-            {row.running && (
+            {row.spinner ? (
+              <View
+                testID={`split-agent-running-indicator-${row.agentId}`}
+                pointerEvents="none"
+                aria-hidden
+                style={{
+                  width: 14,
+                  height: 14,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <bridge.StatusRing />
+              </View>
+            ) : row.running ? (
               <View
                 style={{
                   width: 5,
@@ -854,18 +1007,33 @@ function ResultRow({
                   backgroundColor: colors.statusSuccess,
                 }}
               />
-            )}
-            <Text
-              style={{
-                fontSize: 10,
-                fontWeight: row.running ? "600" : "400",
-                color: row.running
-                  ? colors.statusSuccess
-                  : colors.foregroundMuted,
-              }}
-            >
-              {row.badge}
-            </Text>
+            ) : null}
+            {!row.spinner && row.badgeIcon ? (
+              <View
+                testID={`split-agent-opened-indicator-${row.agentId}`}
+                pointerEvents="none"
+                aria-hidden
+                style={{ alignItems: "center", justifyContent: "center" }}
+              >
+                <Icon
+                  name={row.badgeIcon}
+                  size={13}
+                  color={colors.foregroundMuted}
+                />
+              </View>
+            ) : !row.spinner ? (
+              <Text
+                style={{
+                  fontSize: 10,
+                  fontWeight: row.running ? "600" : "400",
+                  color: row.running
+                    ? colors.statusSuccess
+                    : colors.foregroundMuted,
+                }}
+              >
+                {row.badge}
+              </Text>
+            ) : null}
           </View>
         )}
       </Pressable>
