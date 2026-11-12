@@ -1,0 +1,71 @@
+tools/model.test.mjs
+  d4930ec20032fb9a 15-16,78,80-140
+plugin/shared/layout.ts
+  7cd4c2f26d6a8e33 1,215
+plugin/OVERVIEW.md
+  7cd4c2f26d6a8e33 47
+design/INTERACTION-DESIGN.md
+  7cd4c2f26d6a8e33 40
+README.md
+  7cd4c2f26d6a8e33 155
+artifacts/split-limit-experience.json
+  d4930ec20032fb9a 1-78
+plugin/OVERVIEW.zh-CN.md
+  7cd4c2f26d6a8e33 47
+plugin/client/board.tsx
+  d4930ec20032fb9a 897-904
+  7cd4c2f26d6a8e33 6,30-31,112,123,181,183,457,460,524,530,614,618,761,766,890,993,999,1036-1037,1056,1062,1263,1443,1791,1799,1802
+README.zh-CN.md
+  7cd4c2f26d6a8e33 155
+plugin/shared/model.ts
+  7cd4c2f26d6a8e33 8-10,64,68,79-80,86,209-210,302-303
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.8.2",
+  "base_commit_sha": "fdd93c9c6556494d86dba6d343538f4256d40ef6",
+  "prompts": {
+    "7cd4c2f26d6a8e33": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1cf35-cdea-7fe0-ac21-7c09b9463a1d",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 107,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/a1c1763eeb13bc55c66ca0b8ac5c74219b38c86e62fbdd55ed71d17347c48fe6",
+      "token_usage": {
+        "input_tokens": 145118,
+        "output_tokens": 30030,
+        "cache_read_tokens": 5938944,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    },
+    "d4930ec20032fb9a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1cf3b-ea79-7432-a786-6a9d582ce3a6",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 78,
+      "total_deletions": 0,
+      "accepted_lines": 150,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/c46bbffa5f65a3e074d60f80325aabcfecf03a29dbee1f7956f82b2f23750bc6",
+      "token_usage": {
+        "input_tokens": 169963,
+        "output_tokens": 25656,
+        "cache_read_tokens": 5914496,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    }
+  }
+}
