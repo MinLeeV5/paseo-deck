@@ -21,6 +21,7 @@ import {
   revealControl,
   keyboardFocusVisible,
   onTabKeys,
+  onTabScroll,
 } from "./web";
 
 export type Rect = { left: number; top: number; width: number; height: number };
@@ -65,6 +66,15 @@ export const TabStrip = memo(function TabStrip({
     () => (active ? onTabKeys(group.id, group.tabIds, onSelect) : undefined),
     [active, group.id, group.tabIds, onSelect],
   );
+  useEffect(
+    () =>
+      onTabScroll(
+        group.id,
+        theme.colors.foregroundMuted,
+        theme.colors.surface1,
+      ),
+    [group.id, theme.colors.foregroundMuted, theme.colors.surface1],
+  );
   useEffect(() => {
     if (active && group.activeTabId)
       revealControl(`split-tab-${group.activeTabId}`);
@@ -95,7 +105,7 @@ export const TabStrip = memo(function TabStrip({
           testID={`split-tabs-${group.id}`}
           accessibilityRole="tablist"
           horizontal
-          showsHorizontalScrollIndicator={false}
+          showsHorizontalScrollIndicator
           style={{ flexGrow: 0, flexShrink: 1, minWidth: 0 }}
           contentContainerStyle={{ alignItems: "center", gap: 2 }}
         >

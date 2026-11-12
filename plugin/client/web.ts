@@ -59,6 +59,8 @@ interface ShortcutInput extends ShortcutEvent {
   stopPropagation(): void;
 }
 declare const document: {
+  head: { appendChild(element: CursorSheet): void };
+  createElement(tag: "style"): CursorSheet;
   scripts: ArrayLike<{ src: string }>;
   activeElement?: WebElement;
   querySelector(selector: string): WebElement | null;
@@ -74,6 +76,10 @@ declare const document: {
     capture: boolean,
   ): void;
 };
+interface CursorSheet {
+  textContent: string;
+  remove(): void;
+}
 declare function fetch(
   url: string,
 ): Promise<{ ok: boolean; text(): Promise<string> }>;
@@ -250,6 +256,82 @@ export function describeControl(testId: string, title: string): void {
     document.querySelectorAll(`[data-testid="${testId}"]`),
   ))
     element.setAttribute("title", title);
+}
+
+interface TabWheelEvent {
+  deltaX: number;
+  deltaY: number;
+  deltaMode: number;
+  ctrlKey: boolean;
+  metaKey: boolean;
+  defaultPrevented: boolean;
+  preventDefault(): void;
+}
+interface TabScrollElement extends WebElement {
+  scrollLeft: number;
+  scrollWidth: number;
+  clientWidth: number;
+  addEventListener(
+    type: "wheel",
+    listener: (event: TabWheelEvent) => void,
+    options: { passive: boolean },
+  ): void;
+  removeEventListener(
+    type: "wheel",
+    listener: (event: TabWheelEvent) => void,
+  ): void;
+}
+
+export function onTabScroll(
+  groupId: string,
+  thumbColor: string,
+  trackColor: string,
+): () => void {
+  if (Platform.OS !== "web") return () => {};
+  const selector = `[data-testid="split-tabs-${groupId}"]`;
+  const strip = document.querySelector(selector) as TabScrollElement | null;
+  if (!strip) return () => {};
+  // An explicit track keeps overflowing Tabs discoverable on desktop systems
+  // that otherwise hide their overlay scrollbars until a gesture starts.
+  const sheet = document.createElement("style");
+  const subtleThumbColor = `color-mix(in srgb, ${thumbColor} 35%, ${trackColor})`;
+  sheet.textContent = `
+    ${selector} { scrollbar-width: auto; scrollbar-color: auto; }
+    ${selector}::-webkit-scrollbar { height: 3px; }
+    ${selector}::-webkit-scrollbar-track { background: ${trackColor}; }
+    ${selector}::-webkit-scrollbar-thumb {
+      background: ${subtleThumbColor};
+      border-radius: 999px;
+    }
+    @supports not selector(::-webkit-scrollbar) {
+      ${selector} { scrollbar-width: thin; scrollbar-color: ${subtleThumbColor} ${trackColor}; }
+    }
+  `;
+  document.head.appendChild(sheet);
+  const wheel = (event: TabWheelEvent) => {
+    if (
+      event.defaultPrevented ||
+      event.ctrlKey ||
+      event.metaKey ||
+      strip.scrollWidth <= strip.clientWidth ||
+      Math.abs(event.deltaX) >= Math.abs(event.deltaY)
+    )
+      return;
+    const unit =
+      event.deltaMode === 1
+        ? 16
+        : event.deltaMode === 2
+          ? strip.clientWidth
+          : 1;
+    const before = strip.scrollLeft;
+    strip.scrollLeft += event.deltaY * unit;
+    if (strip.scrollLeft !== before) event.preventDefault();
+  };
+  strip.addEventListener("wheel", wheel, { passive: false });
+  return () => {
+    strip.removeEventListener("wheel", wheel);
+    sheet.remove();
+  };
 }
 
 export type TabDropTarget = {
