@@ -222,9 +222,9 @@ export const TabStrip = memo(function TabStrip({
         onMenu={onMenu}
         onMaximize={onMaximize}
       />
-      {!group.tabIds.length && onCloseGroup && (
+      {onCloseGroup && (
         <IconButton
-          label="关闭空分屏"
+          label="关闭分屏"
           icon="X"
           theme={theme}
           size={compact ? 30 : 26}

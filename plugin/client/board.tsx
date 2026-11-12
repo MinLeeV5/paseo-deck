@@ -835,13 +835,13 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
     },
     [closeTab, groupOf],
   );
-  const closeRelatedTabs = useCallback(
-    async (tabId: string, scope: RelatedTabs) => {
-      const group = groupOf(tabId);
-      const ids = relatedTabIds(boardRef.current, tabId, scope);
+  const closeTabs = useCallback(
+    async (groupId: string, ids: string[], removeGroup = false) => {
+      const group = boardRef.current.groups.find((item) => item.id === groupId);
       if (
         !group ||
         !ids.length ||
+        (removeGroup && boardRef.current.groups.length <= 1) ||
         closingAll.current ||
         ids.some((id) => pendingCloses.current.has(id))
       )
@@ -873,8 +873,13 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
           });
           if (!discard) return;
         }
+        if (removeGroup && boardRef.current.groups.length <= 1) return;
         setBoard((current) => ids.reduce(removeTab, current));
         committed = true;
+        if (removeGroup) {
+          closeEmptyGroup(group.id);
+          return;
+        }
         setFocusedGroup(group.id);
         const activeId = boardRef.current.groups.find(
           (item) => item.id === group.id,
@@ -892,7 +897,27 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
         closingAll.current = false;
       }
     },
-    [bridge.data, confirmRunningTabs, groupOf, instanceId, setBoard],
+    [bridge.data, confirmRunningTabs, closeEmptyGroup, instanceId, setBoard],
+  );
+  const closeRelatedTabs = useCallback(
+    async (tabId: string, scope: RelatedTabs) => {
+      const group = groupOf(tabId);
+      if (group)
+        await closeTabs(
+          group.id,
+          relatedTabIds(boardRef.current, tabId, scope),
+        );
+    },
+    [closeTabs, groupOf],
+  );
+  const closeGroup = useCallback(
+    (groupId: string) => {
+      const group = boardRef.current.groups.find((item) => item.id === groupId);
+      if (!group || boardRef.current.groups.length <= 1) return;
+      if (!group.tabIds.length) closeEmptyGroup(groupId);
+      else void closeTabs(groupId, group.tabIds, true);
+    },
+    [closeEmptyGroup, closeTabs],
   );
   const closeAllTabs = useCallback(async () => {
     if (closingAll.current || pendingCloses.current.size) return;
@@ -1606,9 +1631,7 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
                 onRunningChange={onRunningChange}
                 onClose={closeTabAndFocus}
                 onArchive={archiveAgent}
-                onCloseGroup={
-                  board.groups.length > 1 ? closeEmptyGroup : undefined
-                }
+                onCloseGroup={board.groups.length > 1 ? closeGroup : undefined}
                 onCloseRelated={closeRelatedTabs}
                 onResourceChanged={directory.refetch}
                 onAdd={showPicker}
