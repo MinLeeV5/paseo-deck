@@ -21,6 +21,7 @@
 
 - **跨工作区使用**：将同一主机上不同工作区的已有 Agent、终端和文件放在一起。
 - **原生对话体验**：在分屏中使用 Paseo 的原生会话、输入框与文件面板。
+- **共享 Agent 草稿**：同一客户端内，Deck 与 Agent 原工作区的未发送文字双向同步。
 - **灵活整理布局**：每个分屏拥有独立 Tab，可拖动排序、拆分，或选择常用排版。
 - **跟随当前来源**：运行当前 Tab 所属工作区的脚本，打开编辑器，使用插件按钮。
 - **记住使用习惯**：恢复布局，自选常驻 Tab 栏的插件按钮。
@@ -137,4 +138,4 @@ npm run install:plugin
 
 预览命令会打印带临时认证的 loopback 链接。macOS 默认读取 `/Applications/Paseo.app/Contents/Resources/app-dist`；可用 `PASEO_DECK_APP_DIST` 指定构建目录、`PASEO_DECK_DEMO_PORT` 更改端口，或用 `PASEO_DECK_HOME` 选择隔离 daemon。完整选项见[预览脚本](tools/demo.mjs)。
 
-验收记录：[Tab](TABS-RESULTS.md)、[拖动创建分屏](SPLIT-DRAG-RESULTS.md)、[工作区操作与菜单](ACTIONS-RESULTS.md)、[Tab 右键菜单](TAB-CONTEXT-RESULTS.md)。实测数据与边界见[性能报告](PERFORMANCE.md)，设计背景见[交互方案](design/INTERACTION-DESIGN.md)与[初期可行性调研](RESEARCH.md)。
+验收记录：[Tab](TABS-RESULTS.md)、[拖动创建分屏](SPLIT-DRAG-RESULTS.md)、[工作区操作与菜单](ACTIONS-RESULTS.md)、[Tab 右键菜单](TAB-CONTEXT-RESULTS.md)、[Agent 草稿同步](DRAFT-SYNC-RESULTS.md)。实测数据与边界见[性能报告](PERFORMANCE.md)，设计背景见[交互方案](design/INTERACTION-DESIGN.md)与[初期可行性调研](RESEARCH.md)。

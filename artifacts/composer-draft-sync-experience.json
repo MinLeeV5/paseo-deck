@@ -1,0 +1,17 @@
+{
+  "version": "0.15.4",
+  "platform": "isolated Electron",
+  "sentLifecycle": "simulated via native draft store; no message submitted",
+  "results": [
+    "Workspace-first mounting imports the existing draft into Deck",
+    "Deck edits reach a workspace whose composer was already mounted",
+    "Workspace edits reach Deck in the opposite direction",
+    "A retained workspace resumes the latest draft without an echo write",
+    "Rapid insertions preserve text and caret in the middle of the draft",
+    "Clearing text in Deck clears the retained workspace",
+    "Clearing text in workspace clears Deck",
+    "A sent lifecycle clears both editors without reviving the draft",
+    "Repeated navigation and immediate switching preserve the latest edits",
+    "Plugin hot reload preserves the draft and reinstalls synchronization"
+  ]
+}

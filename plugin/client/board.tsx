@@ -1575,7 +1575,10 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
             accessibilityLabel={
               picker.mode === "menu" ? "分屏操作" : "添加资源"
             }
+            pointerEvents={picker.bounds ? "auto" : "none"}
             style={{
+              // Keep sizing and Escape handling active without painting at the fallback position.
+              opacity: picker.bounds ? 1 : 0,
               position: "absolute",
               left: picker.rect.left,
               top: picker.rect.top,

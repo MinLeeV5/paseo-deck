@@ -6,6 +6,11 @@ import {
   type TabGroup,
 } from "../shared/model";
 import type { NativeBridge } from "./native-types";
+import {
+  syncNativeComposer,
+  type NativeComposerProps,
+} from "./composer-draft-sync";
+import type { ComponentType } from "react";
 import type { PluginPanelRequest } from "./workspace-types";
 import {
   restoreToolbarPreferences,
@@ -99,6 +104,25 @@ declare function fetch(
 ): Promise<{ ok: boolean; text(): Promise<string> }>;
 type BridgeInfo = { bundleName: string; moduleIds: Record<string, number> };
 let bridgePromise: Promise<NativeBridge> | undefined;
+let composerPatch:
+  | {
+      module: Record<string, unknown>;
+      original: ComponentType<NativeComposerProps>;
+      wrapped: ComponentType<NativeComposerProps>;
+      dispose(): void;
+    }
+  | undefined;
+
+export function disposeNativeComposerSync(): void {
+  const patch = composerPatch;
+  if (patch) {
+    if (patch.module.Composer === patch.wrapped)
+      patch.module.Composer = patch.original;
+    patch.dispose();
+  }
+  composerPatch = undefined;
+  bridgePromise = undefined;
+}
 
 export async function loadNativeBridge(
   fallback: () => Promise<BridgeInfo>,
@@ -162,6 +186,16 @@ export async function loadNativeBridge(
     if (typeof pane.buildWorkspacePaneContentModel !== "function")
       throw new Error("原生面板构建入口已变化。");
     const getPanel = exports.getPanelRegistration as (kind: string) => unknown;
+    // Both Deck and retained workspace panes render this native export. Keep
+    // their editors in sync through the existing draft source, without writing
+    // back to the store or adding hooks to an already mounted host component.
+    if (!composerPatch && info.moduleIds.Composer !== undefined) {
+      const module = window.__r(info.moduleIds.Composer);
+      const original = module.Composer as ComponentType<NativeComposerProps>;
+      const { Component: wrapped, dispose } = syncNativeComposer(original);
+      module.Composer = wrapped;
+      composerPatch = { module, original, wrapped, dispose };
+    }
     return {
       ...info,
       ...exports,

@@ -21,6 +21,7 @@
 
 - **Work across workspaces**: Bring existing Agents, terminals, and files into the same view on one host.
 - **Keep native conversations**: Use Paseo's conversation UI, composer, and file panels inside each split.
+- **Share Agent drafts**: Unsent text stays in sync between Deck and the Agent's original workspace on the same client.
 - **Arrange your work**: Give each split its own Tabs, drag to reorder or split, and choose common layouts.
 - **Follow the current workspace**: Run its scripts, open its files in an editor, and use its plugin buttons.
 - **Remember your setup**: Restore layouts and choose which plugin buttons stay in the Tab bar.
@@ -137,4 +138,4 @@ After source changes, run the checks and `npm run reload:plugin`. Reload the plu
 
 The demo prints an authenticated loopback URL. On macOS it reads `/Applications/Paseo.app/Contents/Resources/app-dist`; override with `PASEO_DECK_APP_DIST` and change the port with `PASEO_DECK_DEMO_PORT`. `PASEO_DECK_HOME` selects an isolated daemon. See [the harness](tools/demo.mjs) for all options.
 
-Verification: [Tabs](TABS-RESULTS.md), [dragging to split](SPLIT-DRAG-RESULTS.md), [workspace actions and menus](ACTIONS-RESULTS.md), and [Tab context menus](TAB-CONTEXT-RESULTS.md). Measurements and test boundaries are in the [performance report](PERFORMANCE.md); see the [interaction design](design/INTERACTION-DESIGN.md) and [initial feasibility research](RESEARCH.md) for background.
+Verification: [Tabs](TABS-RESULTS.md), [dragging to split](SPLIT-DRAG-RESULTS.md), [workspace actions and menus](ACTIONS-RESULTS.md), [Tab context menus](TAB-CONTEXT-RESULTS.md), and [Agent draft sync](DRAFT-SYNC-RESULTS.md). Measurements and test boundaries are in the [performance report](PERFORMANCE.md); see the [interaction design](design/INTERACTION-DESIGN.md) and [initial feasibility research](RESEARCH.md) for background.

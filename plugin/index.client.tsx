@@ -4,6 +4,7 @@ import type {
 } from "@getpaseo/plugin/client";
 import { SidebarRow } from "@getpaseo/plugin/client/ui";
 import { SplitBoard } from "./client/board";
+import { disposeNativeComposerSync } from "./client/web";
 
 function SidebarItem({ currentScreen, openScreen }: PluginSidebarItemProps) {
   return (
@@ -39,5 +40,5 @@ export default function contribute(client: PluginClientContext) {
       openScreen({ screenId: "main" });
     },
   });
-  return () => {};
+  return disposeNativeComposerSync;
 }

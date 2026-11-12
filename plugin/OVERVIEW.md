@@ -5,6 +5,7 @@
 **Agents, terminals, and files across workspaces, in one Paseo window.**
 
 - **Native conversations**: Add existing Agents or create new ones, then use Paseo's conversation UI and composer in each split.
+- **Shared Agent drafts**: Unsent text stays in sync between Deck and the Agent's original workspace on the same client.
 - **Flexible layouts**: Give each split its own Tabs. Drag to reorder, move, split, or resize; choose two, three, or four columns, or a 2 × 2 grid.
 - **One add panel**: Search Agents and choose a workspace, with running Agents grouped separately and workspace icons on their Tabs.
 - **Workspace actions**: Run the active Tab's scripts, open its files externally, and use registered plugin buttons and panels.

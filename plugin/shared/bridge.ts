@@ -65,8 +65,9 @@ export const nativeExports = [
   "createPluginNavigation",
   "pluginIconComponent",
 ] as const;
-// Sheet panes were added after 0.13. Older builds do not use this context.
+// These optional host capabilities are not needed by every supported build.
 export const optionalNativeExports = [
+  "Composer",
   "SheetPaneHostProvider",
   "projectIconPlaceholderLabelFromDisplayName",
   "getIsElectron",

@@ -1,8 +1,19 @@
 {
   "id": "paseo-deck",
   "name": "Paseo Deck",
-  "description": "在同一个工作台中并排使用不同 workspace 的原生 Agent、终端和文件面板。实验版本。",
-  "media": [],
+  "description": "Use native agents, terminals, and files from multiple workspaces side by side in one Paseo window.",
+  "translations": {
+    "zh-CN": {
+      "name": "Paseo Deck",
+      "description": "在同一个工作台中并排使用不同工作区的原生 Agent、终端和文件面板。实验版本。"
+    }
+  },
+  "media": [
+    "https://raw.githubusercontent.com/MinLeeV5/paseo-deck/00a0715ce5679609c126f22c50893668f38eaec2/assets/workspace.png",
+    "https://raw.githubusercontent.com/MinLeeV5/paseo-deck/00a0715ce5679609c126f22c50893668f38eaec2/assets/add-tab.png",
+    "https://raw.githubusercontent.com/MinLeeV5/paseo-deck/00a0715ce5679609c126f22c50893668f38eaec2/assets/workspace-actions.png",
+    "https://raw.githubusercontent.com/MinLeeV5/paseo-deck/00a0715ce5679609c126f22c50893668f38eaec2/assets/button-settings.png"
+  ],
   "requirements": {
     "paseo": ">=0.13.0"
   }
