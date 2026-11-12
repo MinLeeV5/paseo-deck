@@ -4,6 +4,8 @@ import { findMetroModule } from "./model";
 
 export const nativeExports = [
   "WorkspacePaneContent",
+  "WorkspaceTabPresentationResolver",
+  "StatusIcon",
   "getPanelRegistration",
   "ensurePanelsRegistered",
   "WorkspaceComposerEditingSessionsProvider",

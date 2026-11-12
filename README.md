@@ -21,6 +21,7 @@
 
 - **Work across workspaces**: Bring existing Agents, terminals, and files into the same view on one host.
 - **Keep native conversations**: Use Paseo's conversation UI, composer, and file panels inside each split.
+- **Follow native Agent status**: Tabs show running, unread, input / approval requests, and failures, with Paseo's existing read behavior.
 - **Share Agent drafts**: Unsent text stays in sync between Deck and the Agent's original workspace on the same client.
 - **Arrange your work**: Give each split its own Tabs, drag to reorder or split, and choose common layouts.
 - **Follow the current workspace**: Run its scripts, open its files in an editor, and use its plugin buttons.
@@ -61,6 +62,8 @@ Paseo shows the latest revision from the repository's default branch and asks fo
 ## Add Agents and resources
 
 Click a split's **`＋`** to open the unified add panel. Search existing Agents, filter by workspace, or create an Agent, terminal, or file view. Running and initializing Agents have a separate section; Agent Tabs use their source workspace's icon.
+
+Agent Tabs overlay Paseo's native status on the workspace icon: a running spinner, a green unread dot, a yellow input / approval alert, or a red failure dot. Background Tabs update before their conversation is opened, and tooltips include the status. Read behavior comes from the native conversation; focusing a pending question or approval does not dismiss its alert.
 
 Choose the current split or a new split as the destination. Adding an Agent or terminal that is already on the board focuses its existing Tab.
 
@@ -154,4 +157,4 @@ After source changes, run the checks and `npm run reload:plugin`. Reload the plu
 
 The demo prints an authenticated loopback URL. On macOS it reads `/Applications/Paseo.app/Contents/Resources/app-dist`; override with `PASEO_DECK_APP_DIST` and change the port with `PASEO_DECK_DEMO_PORT`. `PASEO_DECK_HOME` selects an isolated daemon. See [the harness](tools/demo.mjs) for all options.
 
-Verification: [Tabs](TABS-RESULTS.md), [dragging to split](SPLIT-DRAG-RESULTS.md), [workspace actions and menus](ACTIONS-RESULTS.md), [Tab context menus](TAB-CONTEXT-RESULTS.md), and [Agent draft sync](DRAFT-SYNC-RESULTS.md). Measurements and test boundaries are in the [performance report](PERFORMANCE.md); see the [interaction design](design/INTERACTION-DESIGN.md) and [initial feasibility research](RESEARCH.md) for background.
+Verification: [Tabs](TABS-RESULTS.md), [native Tab status](TAB-STATUS-RESULTS.md), [dragging to split](SPLIT-DRAG-RESULTS.md), [workspace actions and menus](ACTIONS-RESULTS.md), [Tab context menus](TAB-CONTEXT-RESULTS.md), and [Agent draft sync](DRAFT-SYNC-RESULTS.md). Measurements and test boundaries are in the [performance report](PERFORMANCE.md); see the [interaction design](design/INTERACTION-DESIGN.md) and [initial feasibility research](RESEARCH.md) for background.

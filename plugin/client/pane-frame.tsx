@@ -1,11 +1,11 @@
 import type { PluginScreenProps } from "@getpaseo/plugin/client";
 import { Icon } from "@getpaseo/plugin/client/ui";
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Platform, Pressable, ScrollView, Text, View } from "react-native";
 import type { Pane, RelatedTabs, TabGroup, Target } from "../shared/model";
-import type { NativeBridge } from "./native-types";
+import type { NativeBridge, NativeStatusBucket } from "./native-types";
 import type { Directory } from "./directory";
-import { isRunning } from "./directory";
 import { IconButton, targetIcons } from "./compact-ui";
 import { WorkspaceIcon } from "./workspace-icon";
 import { NativePane } from "./native-pane";
@@ -157,7 +157,6 @@ export const TabStrip = memo(function TabStrip({
                   (terminal?.title || terminal?.name) ??
                   pane.title
                 }
-                running={Boolean(agent && isRunning(agent))}
                 selected={group.activeTabId === pane.id}
                 bridge={bridge}
                 theme={theme}
@@ -201,30 +200,13 @@ export const TabStrip = memo(function TabStrip({
     </View>
   );
 });
-const Tab = memo(function Tab({
-  pane,
-  nativeTabId,
-  index,
-  tabCount,
-  directory,
-  title,
-  running,
-  selected,
-  bridge,
-  theme,
-  compact,
-  onSelect,
-  onClose,
-  onCloseRelated,
-  onResourceChanged,
-}: {
+type TabProps = {
   pane: Pane;
   nativeTabId: string;
   index: number;
   tabCount: number;
   directory?: Directory;
   title: string;
-  running: boolean;
   selected: boolean;
   bridge: NativeBridge;
   theme: PluginScreenProps["theme"];
@@ -233,11 +215,78 @@ const Tab = memo(function Tab({
   onClose(id: string): void;
   onCloseRelated(id: string, scope: RelatedTabs): void;
   onResourceChanged(): Promise<unknown>;
-}) {
+};
+
+const statusLabels: Record<NativeStatusBucket, string> = {
+  needs_input: "等待输入或审批",
+  failed: "运行失败",
+  running: "运行中",
+  attention: "未读",
+  done: "",
+};
+
+const Tab = memo(function Tab(props: TabProps) {
+  const { pane, nativeTabId, bridge } = props;
+  const tab = useMemo(
+    () => ({
+      tabId: nativeTabId,
+      key: nativeTabId,
+      kind: pane.target.kind,
+      target: pane.target,
+      state: pane.state,
+    }),
+    [nativeTabId, pane.target, pane.state],
+  );
+  if (pane.target.kind !== "agent" && pane.target.kind !== "draft")
+    return <TabButton {...props} />;
+
+  // Use the same descriptor as native tabs: it observes attention, permissions
+  // and active turns even before this tab's conversation has been mounted.
+  return (
+    <QueryClientProvider client={bridge.queryClient}>
+      <bridge.WorkspaceTabPresentationResolver
+        tab={tab}
+        serverId={pane.serverId}
+        workspaceId={pane.workspaceId}
+      >
+        {(presentation) => (
+          <TabButton
+            {...props}
+            title={
+              presentation.titleState === "ready" && presentation.label
+                ? presentation.label
+                : props.title
+            }
+            statusBucket={presentation.statusBucket}
+          />
+        )}
+      </bridge.WorkspaceTabPresentationResolver>
+    </QueryClientProvider>
+  );
+});
+
+const TabButton = memo(function TabButton({
+  pane,
+  nativeTabId,
+  index,
+  tabCount,
+  directory,
+  title,
+  statusBucket = null,
+  selected,
+  bridge,
+  theme,
+  compact,
+  onSelect,
+  onClose,
+  onCloseRelated,
+  onResourceChanged,
+}: TabProps & { statusBucket?: NativeStatusBucket | null }) {
   const [hovered, setHovered] = useState(false),
     [focused, setFocused] = useState(false);
   const colors = theme.colors;
-  const label = `${title} · ${pane.workspaceName}${running ? " · 运行中" : ""}`;
+  const statusLabel = statusBucket ? statusLabels[statusBucket] : "";
+  const label = `${title} · ${pane.workspaceName}${statusLabel ? ` · ${statusLabel}` : ""}`;
   useEffect(
     () => describeControl(`split-tab-${pane.id}`, label),
     [pane.id, label],
@@ -304,11 +353,24 @@ const Tab = memo(function Tab({
           }}
         >
           {pane.target.kind === "agent" || pane.target.kind === "draft" ? (
-            <WorkspaceIcon
-              bridge={bridge}
-              workspaceId={pane.workspaceId}
-              label={pane.workspaceName}
-            />
+            <View
+              testID={`split-tab-status-${pane.id}`}
+              accessibilityLabel={statusLabel || undefined}
+            >
+              <bridge.StatusIcon
+                statusBucket={statusBucket}
+                size={14}
+                backdrop={
+                  selected ? "surface2" : hovered ? "surface1" : "surface0"
+                }
+              >
+                <WorkspaceIcon
+                  bridge={bridge}
+                  workspaceId={pane.workspaceId}
+                  label={pane.workspaceName}
+                />
+              </bridge.StatusIcon>
+            </View>
           ) : (
             <Icon
               name={targetIcons[pane.target.kind]}
@@ -327,11 +389,6 @@ const Tab = memo(function Tab({
           >
             {title}
           </Text>
-          {running && (
-            <View accessibilityLabel="运行中" style={{ paddingLeft: 2 }}>
-              <Icon name="Activity" size={12} color={colors.statusSuccess} />
-            </View>
-          )}
         </TabMenuTrigger>
         <Pressable
           accessibilityRole="button"

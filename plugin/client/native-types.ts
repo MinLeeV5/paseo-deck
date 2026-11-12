@@ -4,6 +4,20 @@ import type { Pane, Target } from "../shared/model";
 import type { WorkspaceBridge } from "./workspace-types";
 import type { TabMenuBridge } from "./tab-menu-types";
 import type { Directory } from "./directory";
+
+export type NativeStatusBucket =
+  | "needs_input"
+  | "failed"
+  | "running"
+  | "attention"
+  | "done";
+
+export interface NativeTabPresentation {
+  label: string;
+  titleState: "ready" | "loading";
+  statusBucket: NativeStatusBucket | null;
+}
+
 export interface NativePaneInput {
   tab: {
     tabId: string;
@@ -37,6 +51,18 @@ export interface ProjectIconTarget {
   iconRevision?: string;
 }
 export interface NativeBridge extends WorkspaceBridge, TabMenuBridge {
+  WorkspaceTabPresentationResolver: ComponentType<{
+    tab: NativePaneInput["tab"];
+    serverId: string;
+    workspaceId: string;
+    children(presentation: NativeTabPresentation): ReactNode;
+  }>;
+  StatusIcon: ComponentType<{
+    statusBucket: NativeStatusBucket | null;
+    size: number;
+    backdrop: "surface0" | "surface1" | "surface2";
+    children?: ReactNode;
+  }>;
   projectIconPlaceholderLabelFromDisplayName?(name: string): string;
   useProjectIcons(input: {
     projects: ProjectIconTarget[];

@@ -1,0 +1,20 @@
+[
+  {
+    "version": "0.13.0",
+    "requiredExports": 63,
+    "WorkspaceTabPresentationResolver": 5114,
+    "StatusIcon": 4281
+  },
+  {
+    "version": "0.14.0",
+    "requiredExports": 63,
+    "WorkspaceTabPresentationResolver": 5040,
+    "StatusIcon": 4291
+  },
+  {
+    "version": "0.15.4",
+    "requiredExports": 63,
+    "WorkspaceTabPresentationResolver": 5119,
+    "StatusIcon": 4302
+  }
+]

@@ -1,0 +1,22 @@
+{
+  "version": "0.15.4",
+  "platform": "isolated Electron",
+  "source": "Synthetic snapshots injected into the native session store; native clearing RPC intercepted for the isolated fixture. No agent prompt or permission response was sent.",
+  "results": [
+    "Idle agent has no status overlay",
+    "A background tab reacts to running metadata without mounting its conversation",
+    "Completion changes running to native unread without a directory refresh",
+    "Pending questions and approvals take priority over running",
+    "A pending permission count also produces the native input alert",
+    "Error attention takes priority over running and unread",
+    "Running takes priority over an old unread flag",
+    "An active native turn shows running even while metadata still says idle",
+    "Error lifecycle shows native failure; clean idle removes all indicators",
+    "Background state updates preserve the active composer instance",
+    "Native status indicators follow the light theme",
+    "Compact tabs retain status alerts and accessible labels",
+    "Entering an unread agent invokes native read clearing once",
+    "A new completion while already focused keeps unread until native input focus",
+    "Focusing a question never clears its pending input alert"
+  ]
+}

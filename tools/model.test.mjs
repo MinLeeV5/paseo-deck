@@ -76,6 +76,8 @@ test("the installed Paseo build exposes the native panel contract", async () => 
   const source = await readFile(`${base}${path}`, "utf8");
   for (const name of [
     "WorkspacePaneContent",
+    "WorkspaceTabPresentationResolver",
+    "StatusIcon",
     "getPanelRegistration",
     "ensurePanelsRegistered",
     "ComposerEditingSessionsProvider",
