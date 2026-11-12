@@ -1,8 +1,8 @@
 import type { PluginScreenProps } from "@getpaseo/plugin/client";
 import { Icon } from "@getpaseo/plugin/client/ui";
-import { keyboardFocusVisible } from "./web";
-import { memo, useState, type Ref } from "react";
-import { Pressable, Text, View } from "react-native";
+import { describeControl, keyboardFocusVisible } from "./web";
+import { memo, useEffect, useId, useState, type Ref } from "react";
+import { Pressable, View } from "react-native";
 
 export const targetIcons = {
   agent: "Bot",
@@ -39,13 +39,21 @@ export const IconButton = memo(function IconButton({
   tooltip?: boolean;
   testID?: string;
 }) {
+  const id = useId();
+  const controlId = testID ?? `split-icon-${id}`;
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const colors = theme.colors;
+
+  // Native hover hints escape the pane's clipping and stacking contexts.
+  useEffect(() => {
+    describeControl(controlId, tooltip && !disabled ? label : "");
+  }, [controlId, disabled, label, tooltip]);
+
   return (
-    <View ref={anchorRef} style={{ zIndex: hovered || focused ? 10 : 0 }}>
+    <View ref={anchorRef}>
       <Pressable
-        testID={testID}
+        testID={controlId}
         accessibilityRole="button"
         accessibilityLabel={label}
         accessibilityState={{ disabled }}
@@ -73,30 +81,6 @@ export const IconButton = memo(function IconButton({
           color={accent ? colors.accent : colors.foregroundMuted}
         />
       </Pressable>
-      {tooltip && hovered && !disabled && (
-        <View
-          pointerEvents="none"
-          style={{
-            position: "absolute",
-            top: size + 3,
-            right: 0,
-            width: Math.min(320, label.length * 11 + 16),
-            paddingHorizontal: 7,
-            paddingVertical: 4,
-            borderRadius: 4,
-            backgroundColor: colors.surface2,
-            borderColor: colors.border,
-            borderWidth: 1,
-          }}
-        >
-          <Text
-            numberOfLines={1}
-            style={{ fontSize: 11, color: colors.foreground }}
-          >
-            {label}
-          </Text>
-        </View>
-      )}
     </View>
   );
 });
