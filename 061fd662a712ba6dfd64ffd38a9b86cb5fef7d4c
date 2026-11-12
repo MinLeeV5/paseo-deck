@@ -1,0 +1,33 @@
+plugin/client/pane-frame.tsx
+  c264b08adb5f7dd8 319,399,408-437
+plugin/client/workspace-icon.tsx
+  c264b08adb5f7dd8 143
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.8.2",
+  "base_commit_sha": "061fd662a712ba6dfd64ffd38a9b86cb5fef7d4c",
+  "prompts": {
+    "c264b08adb5f7dd8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1cf2f-8707-7183-87f6-1b607ff19ff0",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 39,
+      "total_deletions": 9,
+      "accepted_lines": 34,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/8541703854409682ec7d31e7300dc5ce8d3bbecab80ba3938159f0d43a05f552",
+      "token_usage": {
+        "input_tokens": 98519,
+        "output_tokens": 6620,
+        "cache_read_tokens": 735872,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    }
+  }
+}
