@@ -316,6 +316,7 @@ const TabButton = memo(function TabButton({
   const [hovered, setHovered] = useState(false),
     [focused, setFocused] = useState(false);
   const colors = theme.colors;
+  const backdrop = selected ? "surface2" : hovered ? "surface1" : "surface0";
   const statusLabel = statusBucket ? statusLabels[statusBucket] : "";
   const label = `${title} · ${pane.workspaceName}${statusLabel ? ` · ${statusLabel}` : ""}`;
   useLayoutEffect(() => {
@@ -395,9 +396,7 @@ const TabButton = memo(function TabButton({
               <bridge.StatusIcon
                 statusBucket={statusBucket}
                 size={14}
-                backdrop={
-                  selected ? "surface2" : hovered ? "surface1" : "surface0"
-                }
+                backdrop={backdrop}
               >
                 <WorkspaceIcon
                   bridge={bridge}
@@ -405,6 +404,37 @@ const TabButton = memo(function TabButton({
                   label={pane.workspaceName}
                 />
               </bridge.StatusIcon>
+            </View>
+          ) : pane.target.kind === "plugin" ? (
+            <View
+              testID={`split-tab-plugin-icon-${pane.id}`}
+              pointerEvents="none"
+              aria-hidden
+              style={{ width: 16, height: 16, flexShrink: 0 }}
+            >
+              <Icon
+                name={targetIcons.plugin}
+                size={13}
+                color={colors.foregroundMuted}
+              />
+              <View
+                testID={`split-tab-workspace-badge-${pane.id}`}
+                style={{
+                  position: "absolute",
+                  right: -1,
+                  bottom: -1,
+                  padding: 1,
+                  borderRadius: 3,
+                  backgroundColor: colors[backdrop],
+                }}
+              >
+                <WorkspaceIcon
+                  bridge={bridge}
+                  workspaceId={pane.workspaceId}
+                  label={pane.workspaceName}
+                  size={10}
+                />
+              </View>
             </View>
           ) : (
             <Icon

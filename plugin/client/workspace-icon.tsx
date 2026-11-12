@@ -140,6 +140,6 @@ export const WorkspaceIcon = memo(function WorkspaceIcon({
         .toUpperCase() || "?",
     projectViewKey: visual?.key ?? workspaceId,
     size,
-    textStyle: { fontSize: Math.max(9, size * 0.65), fontWeight: "600" },
+    textStyle: { fontSize: Math.max(7, size * 0.65), fontWeight: "600" },
   });
 });
