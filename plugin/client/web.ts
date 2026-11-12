@@ -223,6 +223,31 @@ export function loadBoard(serverId: string): Board {
     return emptyBoard;
   }
 }
+
+// The sidebar outlives the Deck screen. Publish layout edits at commit time,
+// before the debounced disk save, so it only observes Tabs still in this Deck.
+const boardSnapshots = new Map<string, Board>();
+const boardListeners = new Set<() => void>();
+export function readBoardSnapshot(serverId: string): Board {
+  let board = boardSnapshots.get(serverId);
+  if (!board) {
+    board = loadBoard(serverId);
+    boardSnapshots.set(serverId, board);
+  }
+  return board;
+}
+export function publishBoardSnapshot(serverId: string, board: Board): void {
+  if (boardSnapshots.get(serverId) === board) return;
+  boardSnapshots.set(serverId, board);
+  for (const listener of boardListeners) listener();
+}
+export function subscribeBoardSnapshot(listener: () => void): () => void {
+  boardListeners.add(listener);
+  return () => {
+    boardListeners.delete(listener);
+  };
+}
+
 export function saveBoard(serverId: string, board: Board): void {
   if (Platform.OS !== "web") return;
   window.localStorage.setItem(

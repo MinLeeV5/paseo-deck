@@ -67,6 +67,8 @@ Paseo 会显示仓库默认分支的最新版本，确认后才会更新。
 
 Agent Tab 在工作区图标上叠加 Paseo 原生状态：运行时转圈、新回复显示绿色未读点、等待回答或审批显示黄色提示、失败显示红点。状态实时更新，即使尚未打开该 Tab；悬停提示也包含状态说明。已读处理沿用原生会话行为，等待回答或审批不会因切换或聚焦而消失。
 
+侧栏的 Paseo Deck 入口汇总已加入工作台的 Tab：等待输入 / 审批、失败、正在运行和未读各显示图标与数量，为 0 的状态自动隐藏。离开 Deck 或恢复布局后也会继续更新；悬停可查看完整状态说明。
+
 选择加入当前分屏或新分屏。重复添加已在工作台中的 Agent 或终端时，会切换到已有 Tab。
 
 ![统一添加面板、来源工作区与已有 Agent](assets/add-tab.png)
@@ -184,4 +186,4 @@ npm run install:plugin
 
 预览命令会打印带临时认证的 loopback 链接。macOS 默认读取 `/Applications/Paseo.app/Contents/Resources/app-dist`；可用 `PASEO_DECK_APP_DIST` 指定构建目录、`PASEO_DECK_DEMO_PORT` 更改端口，或用 `PASEO_DECK_HOME` 选择隔离 daemon。完整选项见[预览脚本](tools/demo.mjs)。
 
-验收记录：[Tab](TABS-RESULTS.md)、[Tab 原生状态](TAB-STATUS-RESULTS.md)、[拖动创建分屏](SPLIT-DRAG-RESULTS.md)、[工作区操作与菜单](ACTIONS-RESULTS.md)、[Tab 右键菜单](TAB-CONTEXT-RESULTS.md)、[Agent 草稿同步](DRAFT-SYNC-RESULTS.md)。实测数据与边界见[性能报告](PERFORMANCE.md)，设计背景见[交互方案](design/INTERACTION-DESIGN.md)与[初期可行性调研](RESEARCH.md)。
+验收记录：[Tab](TABS-RESULTS.md)、[Tab 原生状态](TAB-STATUS-RESULTS.md)、[侧栏状态计数](SIDEBAR-STATUS-RESULTS.md)、[拖动创建分屏](SPLIT-DRAG-RESULTS.md)、[工作区操作与菜单](ACTIONS-RESULTS.md)、[Tab 右键菜单](TAB-CONTEXT-RESULTS.md)、[Agent 草稿同步](DRAFT-SYNC-RESULTS.md)。实测数据与边界见[性能报告](PERFORMANCE.md)，设计背景见[交互方案](design/INTERACTION-DESIGN.md)与[初期可行性调研](RESEARCH.md)。

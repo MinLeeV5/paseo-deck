@@ -67,6 +67,8 @@ Click a split's **`＋`** to open the unified add panel. Search existing Agents,
 
 Agent Tabs overlay Paseo's native status on the workspace icon: a running spinner, a green unread dot, a yellow input / approval alert, or a red failure dot. Background Tabs update before their conversation is opened, and tooltips include the status. Read behavior comes from the native conversation; focusing a pending question or approval does not dismiss its alert.
 
+The Paseo Deck sidebar entry summarizes Tabs added to the board, with an icon and count for input / approval requests, failures, running, and unread. Zero counts disappear. Counts stay current away from Deck and after restoring a layout; hover for the full status summary.
+
 Choose the current split or a new split as the destination. Adding an Agent or terminal that is already on the board focuses its existing Tab.
 
 ![Unified add panel with workspace selection and existing Agents](assets/add-tab.png)
@@ -184,4 +186,4 @@ The clean-build test copies the plugin without `node_modules` and compiles both 
 
 The demo prints an authenticated loopback URL. On macOS it reads `/Applications/Paseo.app/Contents/Resources/app-dist`; override with `PASEO_DECK_APP_DIST` and change the port with `PASEO_DECK_DEMO_PORT`. `PASEO_DECK_HOME` selects an isolated daemon. See [the harness](tools/demo.mjs) for all options.
 
-Verification: [Tabs](TABS-RESULTS.md), [native Tab status](TAB-STATUS-RESULTS.md), [dragging to split](SPLIT-DRAG-RESULTS.md), [workspace actions and menus](ACTIONS-RESULTS.md), [Tab context menus](TAB-CONTEXT-RESULTS.md), and [Agent draft sync](DRAFT-SYNC-RESULTS.md). Measurements and test boundaries are in the [performance report](PERFORMANCE.md); see the [interaction design](design/INTERACTION-DESIGN.md) and [initial feasibility research](RESEARCH.md) for background.
+Verification: [Tabs](TABS-RESULTS.md), [native Tab status](TAB-STATUS-RESULTS.md), [sidebar status counts](SIDEBAR-STATUS-RESULTS.md), [dragging to split](SPLIT-DRAG-RESULTS.md), [workspace actions and menus](ACTIONS-RESULTS.md), [Tab context menus](TAB-CONTEXT-RESULTS.md), and [Agent draft sync](DRAFT-SYNC-RESULTS.md). Measurements and test boundaries are in the [performance report](PERFORMANCE.md); see the [interaction design](design/INTERACTION-DESIGN.md) and [initial feasibility research](RESEARCH.md) for background.

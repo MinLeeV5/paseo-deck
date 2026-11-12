@@ -161,6 +161,7 @@ test("the installed Paseo build exposes the native panel contract", async () => 
     "WorkspacePaneContent",
     "WorkspaceTabPresentationResolver",
     "StatusIcon",
+    "StatusRing",
     "getPanelRegistration",
     "ensurePanelsRegistered",
     "ComposerEditingSessionsProvider",

@@ -67,6 +67,7 @@ export interface NativeBridge
     backdrop: "surface0" | "surface1" | "surface2";
     children?: ReactNode;
   }>;
+  StatusRing: ComponentType<{ backdrop?: "surfaceSidebar" }>;
   projectIconPlaceholderLabelFromDisplayName?(name: string): string;
   useProjectIcons(input: {
     projects: ProjectIconTarget[];
@@ -128,6 +129,7 @@ export interface NativeBridge
     destructive: boolean;
   }): Promise<boolean>;
   getHostRuntimeStore(): {
+    acquireDirectoryDemand(serverId: string): () => void;
     getClient(serverId: string): {
       listTerminals(): Promise<{ terminals: Directory["terminals"] }>;
     } | null;

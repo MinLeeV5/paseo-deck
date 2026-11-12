@@ -1,24 +1,8 @@
-import type {
-  PluginClientContext,
-  PluginSidebarItemProps,
-} from "@getpaseo/plugin/client";
-import { SidebarRow } from "@getpaseo/plugin/client/ui";
+import type { PluginClientContext } from "@getpaseo/plugin/client";
 import { SplitBoard } from "./client/board";
+import { DeckSidebarItem } from "./client/sidebar-item";
 import { disposeNativeComposerSync } from "./client/web";
 
-function SidebarItem({ currentScreen, openScreen }: PluginSidebarItemProps) {
-  return (
-    <SidebarRow
-      icon="PanelsTopLeft"
-      label="Paseo Deck"
-      active={currentScreen?.screenId === "main"}
-      onPress={() => {
-        if (currentScreen?.screenId !== "main")
-          openScreen({ screenId: "main" });
-      }}
-    />
-  );
-}
 export default function contribute(client: PluginClientContext) {
   client.addScreen({
     id: "main",
@@ -29,7 +13,7 @@ export default function contribute(client: PluginClientContext) {
   client.addSidebarHeaderItem({
     id: "main",
     title: "Paseo Deck",
-    Component: SidebarItem,
+    Component: DeckSidebarItem,
   });
   client.addCommandCenterItem({
     id: "open-deck",

@@ -1,0 +1,27 @@
+{
+  "version": "0.15.4",
+  "platform": "isolated Web client",
+  "source": "Synthetic snapshots in the isolated native session store. No prompts or approvals sent.",
+  "results": [
+    "Restored Deck counts update on History before Deck has been mounted",
+    "Counts expose a complete accessible status summary and hover hint",
+    "Only Deck agent Tabs count; unrelated running agents, idle, files, and drafts are excluded",
+    "Background completion moves running to unread without opening Deck",
+    "Pending input takes priority over running and old unread",
+    "Failure takes priority over running and unread",
+    "Running takes priority over an old unread flag",
+    "An active turn counts as running while lifecycle metadata still says idle",
+    "Permission counts produce the same input state as the Tab strip",
+    "Sidebar state updates add no conversation timeline subscriptions",
+    "Observing unread counts never marks an agent as read",
+    "Opening Deck preserves counts across splits",
+    "Updating counts preserves the active composer instance",
+    "Closing a file does not change agent status counts",
+    "Closing an unread Tab removes its count and hides the zero state",
+    "Counts remain readable in dark and light themes",
+    "Reduced motion retains the native running indicator and counts",
+    "The visible 375px sidebar retains all counts after leaving Deck, without overflow",
+    "Landscape navigation keeps the same counts",
+    "All idle states remove the count area completely"
+  ]
+}

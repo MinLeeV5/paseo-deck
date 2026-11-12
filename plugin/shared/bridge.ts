@@ -6,6 +6,7 @@ export const nativeExports = [
   "WorkspacePaneContent",
   "WorkspaceTabPresentationResolver",
   "StatusIcon",
+  "StatusRing",
   "getPanelRegistration",
   "ensurePanelsRegistered",
   "WorkspaceComposerEditingSessionsProvider",

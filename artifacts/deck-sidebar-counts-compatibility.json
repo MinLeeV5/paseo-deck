@@ -1,0 +1,23 @@
+[
+  {
+    "version": "0.13.0",
+    "required": 64,
+    "missing": [],
+    "StatusRing": 4283,
+    "directoryDemand": true
+  },
+  {
+    "version": "0.14.0",
+    "required": 64,
+    "missing": [],
+    "StatusRing": 4293,
+    "directoryDemand": true
+  },
+  {
+    "version": "0.15.4",
+    "required": 64,
+    "missing": [],
+    "StatusRing": 4304,
+    "directoryDemand": true
+  }
+]

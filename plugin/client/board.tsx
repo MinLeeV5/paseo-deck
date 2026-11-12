@@ -39,6 +39,7 @@ import type { ForkTabRequest } from "./fork-navigation";
 import {
   focusControl,
   loadBoard,
+  publishBoardSnapshot,
   loadNativeBridge,
   onPageExit,
   saveBoard,
@@ -114,6 +115,7 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
   const [board, setBoardState] = useState<Board>(() => loadBoard(host.id));
   const boardRef = useRef(board),
     savedBoard = useRef(board);
+  useLayoutEffect(() => publishBoardSnapshot(host.id, board), [host.id, board]);
   const actionOwner = useRef<string | null>(null);
   const routeActiveRef = useRef(true);
   const [focusedGroup, setFocusedGroup] = useState(board.groups[0].id);
