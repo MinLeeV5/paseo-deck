@@ -1,0 +1,40 @@
+{
+  "phase": "before",
+  "viewport": [
+    1600,
+    913
+  ],
+  "panes": 4,
+  "chrome": "Chrome/157.0.8103.39",
+  "idle": {
+    "writes": 0,
+    "nativeBuilds": 4,
+    "bridgeInstrumented": true,
+    "messages": {
+      "ping": 2,
+      "session": 21
+    },
+    "longTasks": [],
+    "seconds": 16.017,
+    "mainThreadMsPerSecond": 35.88,
+    "layoutCount": 0,
+    "frameP95Ms": 16.8,
+    "frameMaxMs": 16.8,
+    "heapUsedMB": 127.5
+  },
+  "drag": {
+    "writes": 48,
+    "nativeBuilds": 192,
+    "bridgeInstrumented": true,
+    "messages": {
+      "session": 1
+    },
+    "longTasks": [],
+    "seconds": 1.885,
+    "mainThreadMsPerSecond": 247.41,
+    "layoutCount": 174,
+    "frameP95Ms": 16.8,
+    "frameMaxMs": 16.8,
+    "heapUsedMB": 130.8
+  }
+}

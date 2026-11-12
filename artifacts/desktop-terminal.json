@@ -1,0 +1,30 @@
+{
+  "terminalId": "08a7fd50-e760-45bc-b038-04d5897a809c",
+  "lines": [
+    "➜  frontend printf 'DESKTOP_TERMINAL_OK\\n'; pwd",
+    "DESKTOP_TERMINAL_OK",
+    "/Users/min/Works/paseo-split/fixtures/frontend",
+    "➜  frontend",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    ""
+  ],
+  "totalLines": 24
+}

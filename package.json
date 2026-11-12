@@ -1,0 +1,22 @@
+{
+  "name": "paseo-workspace-split-demo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup": "npm install --ignore-scripts --no-audit --no-fund && npm --prefix plugin install --ignore-scripts --no-audit --no-fund",
+    "typecheck": "npm --prefix plugin run typecheck",
+    "install:plugin": "paseo plugin install ./plugin",
+    "reload:plugin": "paseo plugin reload workspace-split-demo",
+    "demo": "node tools/demo.mjs",
+    "test": "node --test tools/model.test.mjs",
+    "format": "prettier --write plugin/index.* plugin/client plugin/server plugin/shared tools/*.mjs"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "devDependencies": {
+    "prettier": "3.6.2",
+    "ws": "8.18.3"
+  }
+}

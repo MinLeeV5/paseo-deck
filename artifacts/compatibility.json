@@ -1,0 +1,33 @@
+{
+  "0.13.0": {
+    "nativeAgentCreateAndChat": true,
+    "twoWorkspaceContexts": true,
+    "nativeTerminalInput": true,
+    "nativeFileReadWrite": true,
+    "optionalSheetAdapter": true,
+    "latestBuildRetested": true,
+    "existingImport": true,
+    "finalRuntimeReloadAndImport": true
+  },
+  "0.14.0": {
+    "nativeAgentCreateAndChat": true,
+    "twoWorkspaceContexts": true,
+    "replyIsolation": true,
+    "nativeTerminalInput": true,
+    "nativeFileReadWrite": true,
+    "hostQueryContext": true,
+    "latestBuildRetested": true,
+    "existingImport": true,
+    "finalRuntimeReloadAndImport": true
+  },
+  "0.15.4": {
+    "nativeAgentCreateAndChat": true,
+    "twoWorkspaceContexts": true,
+    "replyIsolation": true,
+    "existingImport": true,
+    "nativeTerminalInput": true,
+    "nativeFileReadWrite": true,
+    "webAndElectron": true,
+    "extendedExperience": "experience.json"
+  }
+}

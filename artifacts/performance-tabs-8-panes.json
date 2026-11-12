@@ -1,0 +1,44 @@
+{
+  "phase": "tabs",
+  "viewport": [
+    1600,
+    913
+  ],
+  "panes": 8,
+  "chrome": "Chrome/157.0.8103.39",
+  "idle": {
+    "writes": 0,
+    "nativeBuilds": 0,
+    "iconHookCalls": 0,
+    "bridgeInstrumented": true,
+    "messages": {
+      "plugin.rpc.invoke.request": 10,
+      "ping": 1,
+      "client_heartbeat": 1
+    },
+    "longTasks": [],
+    "seconds": 16.008,
+    "mainThreadMsPerSecond": 61.76,
+    "layoutCount": 3,
+    "frameP95Ms": 16.8,
+    "frameMaxMs": 16.8,
+    "heapUsedMB": 258.8
+  },
+  "dragDeltaPx": 96,
+  "drag": {
+    "writes": 1,
+    "nativeBuilds": 0,
+    "iconHookCalls": 0,
+    "bridgeInstrumented": true,
+    "messages": {
+      "client_heartbeat": 1
+    },
+    "longTasks": [],
+    "seconds": 1.704,
+    "mainThreadMsPerSecond": 460.18,
+    "layoutCount": 299,
+    "frameP95Ms": 16.8,
+    "frameMaxMs": 16.8,
+    "heapUsedMB": 147.6
+  }
+}

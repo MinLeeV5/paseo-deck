@@ -1,0 +1,2 @@
+PASEO_SPLIT_ATTACHMENT_OK
+This text file is a test fixture for native attachments.

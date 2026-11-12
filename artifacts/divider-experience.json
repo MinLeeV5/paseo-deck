@@ -1,0 +1,12 @@
+{
+  "verticalResizeCursor": true,
+  "horizontalResizeCursor": true,
+  "hoverAndDragFeedback": true,
+  "twelvePixelHitTarget": true,
+  "dragReleaseResetsFeedback": true,
+  "verticalDragActualDelta": 96,
+  "horizontalDragActualDelta": 72,
+  "directionRestored": true,
+  "compact375HidesDivider": true,
+  "lightAndDarkHoverFeedback": true
+}

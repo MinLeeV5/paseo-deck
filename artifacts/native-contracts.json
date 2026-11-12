@@ -1,0 +1,92 @@
+{
+  "0.13.0": {
+    "requiredModules": {
+      "WorkspacePaneContent": 4905,
+      "getPanelRegistration": 4906,
+      "ensurePanelsRegistered": 4907,
+      "WorkspaceComposerEditingSessionsProvider": 4223,
+      "ComposerEditingSessionsProvider": 4223,
+      "WorkspaceFocusProvider": 5438,
+      "DiffDocumentWorkspaceCacheProvider": 5154,
+      "AssistantFileLinkResolverProvider": 3994,
+      "useHostRuntimeClient": 3525,
+      "useWorkspaceDirectory": 4339,
+      "getHostRuntimeStore": 3525,
+      "useSessionStore": 3386,
+      "useIsFocused": 476,
+      "RetainedPanelActivity": 3924,
+      "getPanelInstanceAttributes": 3383,
+      "confirmDialog": 3536,
+      "useShortcutKeys": 4503,
+      "useKeyboardActionDispatcher": 4324,
+      "hasActiveWebOverlay": 3244,
+      "useProjectIcons": 4322,
+      "ProjectIconView": 4296,
+      "queryClient": 960
+    },
+    "optionalModules": {
+      "SheetPaneHostProvider": null,
+      "projectIconPlaceholderLabelFromDisplayName": 3639
+    }
+  },
+  "0.14.0": {
+    "requiredModules": {
+      "WorkspacePaneContent": 4922,
+      "getPanelRegistration": 4923,
+      "ensurePanelsRegistered": 5104,
+      "WorkspaceComposerEditingSessionsProvider": 4233,
+      "ComposerEditingSessionsProvider": 4233,
+      "WorkspaceFocusProvider": 5466,
+      "DiffDocumentWorkspaceCacheProvider": 5313,
+      "AssistantFileLinkResolverProvider": 4004,
+      "useHostRuntimeClient": 3528,
+      "useWorkspaceDirectory": 4349,
+      "getHostRuntimeStore": 3528,
+      "useSessionStore": 3388,
+      "useIsFocused": 477,
+      "RetainedPanelActivity": 3930,
+      "getPanelInstanceAttributes": 3385,
+      "confirmDialog": 3539,
+      "useShortcutKeys": 4517,
+      "useKeyboardActionDispatcher": 4334,
+      "hasActiveWebOverlay": 3245,
+      "useProjectIcons": 4332,
+      "ProjectIconView": 4306,
+      "queryClient": 961
+    },
+    "optionalModules": {
+      "SheetPaneHostProvider": 5312,
+      "projectIconPlaceholderLabelFromDisplayName": 3645
+    }
+  },
+  "0.15.4": {
+    "requiredModules": {
+      "WorkspacePaneContent": 5001,
+      "getPanelRegistration": 5002,
+      "ensurePanelsRegistered": 5179,
+      "WorkspaceComposerEditingSessionsProvider": 4244,
+      "ComposerEditingSessionsProvider": 4244,
+      "WorkspaceFocusProvider": 5540,
+      "DiffDocumentWorkspaceCacheProvider": 5388,
+      "AssistantFileLinkResolverProvider": 4012,
+      "useHostRuntimeClient": 3544,
+      "useWorkspaceDirectory": 4359,
+      "getHostRuntimeStore": 3544,
+      "useSessionStore": 3402,
+      "useIsFocused": 477,
+      "RetainedPanelActivity": 1022,
+      "getPanelInstanceAttributes": 3399,
+      "confirmDialog": 3557,
+      "useShortcutKeys": 4604,
+      "useKeyboardActionDispatcher": 4344,
+      "hasActiveWebOverlay": 3258,
+      "useProjectIcons": 4342,
+      "ProjectIconView": 4317,
+      "queryClient": 961
+    },
+    "optionalModules": {
+      "SheetPaneHostProvider": 5387,
+      "projectIconPlaceholderLabelFromDisplayName": 3663
+    }
+  }
+}

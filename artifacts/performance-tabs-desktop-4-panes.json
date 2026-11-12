@@ -1,0 +1,43 @@
+{
+  "environment": "Paseo 0.15.4 Electron / native Tab UI",
+  "viewport": [
+    1200,
+    800
+  ],
+  "panes": 4,
+  "chrome": "Chrome/152.0.7977.76",
+  "idle": {
+    "writes": 0,
+    "nativeBuilds": 0,
+    "iconHookCalls": 0,
+    "bridgeInstrumented": true,
+    "messages": {
+      "ping": 1,
+      "client_heartbeat": 1
+    },
+    "longTasks": [],
+    "seconds": 16.003,
+    "mainThreadMsPerSecond": 17.59,
+    "layoutCount": 0,
+    "frameP95Ms": 17.6,
+    "frameMaxMs": 17.8,
+    "heapUsedMB": 165.1
+  },
+  "dragDeltaPx": 96,
+  "drag": {
+    "writes": 1,
+    "nativeBuilds": 0,
+    "iconHookCalls": 0,
+    "bridgeInstrumented": true,
+    "messages": {
+      "client_heartbeat": 1
+    },
+    "longTasks": [],
+    "seconds": 1.448,
+    "mainThreadMsPerSecond": 375.46,
+    "layoutCount": 175,
+    "frameP95Ms": 17.2,
+    "frameMaxMs": 17.5,
+    "heapUsedMB": 175
+  }
+}
