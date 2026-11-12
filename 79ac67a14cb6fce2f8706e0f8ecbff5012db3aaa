@@ -1,0 +1,35 @@
+plugin/OVERVIEW.md
+  07eaa191d6018f1f 7,9,11,13-15,17-43,49-51
+plugin/paseo-plugin.json
+  07eaa191d6018f1f 13-14
+plugin/OVERVIEW.zh-CN.md
+  07eaa191d6018f1f 7,9,11,13-15,17-43,49-51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.8.2",
+  "base_commit_sha": "79ac67a14cb6fce2f8706e0f8ecbff5012db3aaa",
+  "prompts": {
+    "07eaa191d6018f1f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ce69-8f03-7e80-b7ee-df49a9894e72",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 78,
+      "total_deletions": 26,
+      "accepted_lines": 74,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/605b12f13fd69167e0d95e7b1d6f0bb2510308412a0dc5593a4f76e21995a206",
+      "token_usage": {
+        "input_tokens": 185194,
+        "output_tokens": 40119,
+        "cache_read_tokens": 7615104,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    }
+  }
+}
