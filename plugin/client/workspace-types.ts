@@ -1,7 +1,7 @@
 import type { ComponentType, ReactNode } from "react";
 import type { PluginScreenProps } from "@getpaseo/plugin/client";
 import type { Pane, Target } from "../shared/model";
-import type { PaseoWorkspace } from "@getpaseo/client";
+import type { PaseoWorkspace } from "./paseo-types";
 
 type UI = ComponentType<{ children?: ReactNode; [key: string]: unknown }>;
 type ServiceLink = { kind: string; label: string; url: string };

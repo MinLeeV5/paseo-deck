@@ -12,7 +12,7 @@ import { Pressable, Text, View } from "react-native";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Icon, useToast } from "@getpaseo/plugin/client/ui";
 import type { PluginScreenProps } from "@getpaseo/plugin/client";
-import type { PaseoWorkspace } from "@getpaseo/client";
+import type { PaseoWorkspace } from "./paseo-types";
 import type { Pane, Target } from "../shared/model";
 import type { NativeBridge } from "./native-types";
 import type {

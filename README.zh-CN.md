@@ -176,9 +176,11 @@ npm run install:plugin
 | ----------------------- | -------------------------------------------- |
 | `npm run setup`         | 安装仓库与插件的开发依赖                     |
 | `npm run typecheck`     | 检查 TypeScript                              |
-| `npm test`              | 运行资源模型、布局、快捷键与菜单定位测试     |
+| `npm test`              | 运行资源模型、布局、快捷键、菜单定位与干净构建测试 |
 | `npm run reload:plugin` | 在所选本地 daemon 热重载 `paseo-deck`        |
 | `npm run demo`          | 通过临时本地服务打开已安装 Paseo 的 Web 界面 |
+
+干净构建测试将插件复制到不含 `node_modules` 的目录，再用已安装的 Paseo 编译器构建两个入口。默认使用 `/Applications/Paseo.app/Contents/Resources`，可用 `PASEO_DECK_APP_RESOURCES` 指定资源目录、`PASEO_DECK_NODE` 指定 Electron 可执行文件。SDK 数据类型应从 `@getpaseo/plugin/client` 推导，让 Git 安装无需开发依赖。
 
 预览命令会打印带临时认证的 loopback 链接。macOS 默认读取 `/Applications/Paseo.app/Contents/Resources/app-dist`；可用 `PASEO_DECK_APP_DIST` 指定构建目录、`PASEO_DECK_DEMO_PORT` 更改端口，或用 `PASEO_DECK_HOME` 选择隔离 daemon。完整选项见[预览脚本](tools/demo.mjs)。
 

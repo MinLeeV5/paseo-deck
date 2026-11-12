@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Linking, Text, View } from "react-native";
 import { Icon, useToast } from "@getpaseo/plugin/client/ui";
 import type { PluginScreenProps } from "@getpaseo/plugin/client";
-import type { PaseoWorkspace } from "@getpaseo/client";
+import type { PaseoWorkspace } from "./paseo-types";
 import type { NativeBridge } from "./native-types";
 import { IconButton } from "./compact-ui";
 

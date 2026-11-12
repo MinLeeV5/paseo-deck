@@ -176,9 +176,11 @@ After source changes, run the checks and `npm run reload:plugin`. Reload the plu
 | ----------------------- | ----------------------------------------------------------------- |
 | `npm run setup`         | Install development dependencies for the repository and plugin    |
 | `npm run typecheck`     | Check TypeScript                                                  |
-| `npm test`              | Run model, layout, shortcut, and menu-placement tests             |
+| `npm test`              | Run model, layout, shortcut, menu-placement, and clean-build tests |
 | `npm run reload:plugin` | Reload `paseo-deck` on the selected local daemon                  |
 | `npm run demo`          | Open the installed Paseo Web UI through a temporary local harness |
+
+The clean-build test copies the plugin without `node_modules` and compiles both entries with the installed Paseo compiler. It defaults to `/Applications/Paseo.app/Contents/Resources`; override with `PASEO_DECK_APP_RESOURCES` and use `PASEO_DECK_NODE` to select the Electron executable. Keep SDK data types derived from `@getpaseo/plugin/client`, so Git installs need no development dependencies.
 
 The demo prints an authenticated loopback URL. On macOS it reads `/Applications/Paseo.app/Contents/Resources/app-dist`; override with `PASEO_DECK_APP_DIST` and change the port with `PASEO_DECK_DEMO_PORT`. `PASEO_DECK_HOME` selects an isolated daemon. See [the harness](tools/demo.mjs) for all options.
 

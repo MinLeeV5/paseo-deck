@@ -7,7 +7,7 @@ import type {
   PaseoProject,
   PaseoWorkspace,
   PaseoTerminal,
-} from "@getpaseo/client";
+} from "./paseo-types";
 
 export type Directory = {
   workspaces: PaseoWorkspace[];
