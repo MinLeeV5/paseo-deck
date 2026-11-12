@@ -82,9 +82,17 @@ Drag a Tab by its title, watch the insertion marker or area preview, then releas
 | The center of another split's content area | Move the Tab into that split's existing group |
 | The left, right, top, or bottom edge of a content area | Create a new split in that direction and move the Tab into it |
 
+![Dragging Frontend README to the bottom edge highlights the new split](assets/tab-drag-preview.png)
+
+_While dragging, the highlighted lower half previews where the new split will appear._
+
 Dragging preserves the conversation, terminal, or file view, including unsent drafts and unsaved edits. Dropping at an edge divides the target area, so you can extend an existing layout one split at a time.
 
 For example, start with two columns and at least two Tabs on the left. Drag one of the left Tabs to the bottom edge of the right pane: the left pane remains, and the right pane becomes two stacked panes.
+
+![Three panes after dropping the Tab, with the draft on the left and two README views stacked on the right](assets/tab-drag-three-panes.png)
+
+_After dropping, the draft stays on the left; Backend README and Frontend README sit above and below on the right._
 
 Press `Esc` or release outside the board to cancel. Moving a split's last Tab out removes the empty split; to increase the total split count, drag from a split that contains at least two Tabs.
 
