@@ -7,7 +7,12 @@ import {
 
 export const targetSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("agent"), agentId: z.string().min(1) }),
-  z.object({ kind: z.literal("draft"), draftId: z.string().min(1) }),
+  z.object({
+    kind: z.literal("draft"),
+    draftId: z.string().min(1),
+    // Native forks carry their provider/model settings on the draft target.
+    setup: z.record(z.string(), z.json()).optional(),
+  }),
   z.object({ kind: z.literal("terminal"), terminalId: z.string().min(1) }),
   z.object({ kind: z.literal("browser"), browserId: z.string().min(1) }),
   z

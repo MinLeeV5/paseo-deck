@@ -13,6 +13,10 @@ import {
 import type { ComponentType } from "react";
 import type { PluginPanelRequest } from "./workspace-types";
 import {
+  installForkTabNavigation,
+  type ForkTabRequest,
+} from "./fork-navigation";
+import {
   restoreToolbarPreferences,
   chooseFlyoutSide,
   type FlyoutPositionInput,
@@ -1091,6 +1095,33 @@ export function installPluginPanelRouter(
       if (navigationPatch === patch) navigationPatch = undefined;
     }
   };
+}
+export function installForkTabRouter(
+  bridge: NativeBridge,
+  open: (request: ForkTabRequest) => boolean,
+): () => void {
+  if (
+    Platform.OS !== "web" ||
+    !window.__r ||
+    !bridge.navigateToWorkspace ||
+    !bridge.buildDraftWorkspaceAttachmentScopeKey ||
+    !bridge.useWorkspaceAttachmentsStore
+  )
+    return () => {};
+  const module = window.__r(bridge.moduleIds.navigateToWorkspace) as {
+    navigateToWorkspace: NonNullable<NativeBridge["navigateToWorkspace"]>;
+  };
+  return installForkTabNavigation(
+    module,
+    (draftId) => {
+      const scope = bridge.buildDraftWorkspaceAttachmentScopeKey!(draftId);
+      return bridge
+        .useWorkspaceAttachmentsStore!.getState()
+        .attachmentsByScope[scope]?.find((item) => item.kind === "chat_history")
+        ?.source;
+    },
+    open,
+  );
 }
 export function focusConversation(tabId: string): Promise<void> {
   if (Platform.OS !== "web") return Promise.resolve();

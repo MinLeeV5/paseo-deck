@@ -1,0 +1,33 @@
+{
+  "date": "2026-11-12",
+  "version": "0.15.4",
+  "platform": "isolated packaged Web UI (Chrome)",
+  "contextFixture": "Injected two-message timeline and mocked buildAgentForkContext response; native fork menu, hook, attachments store, draft pane and navigation exercised unchanged; no Agent messages sent.",
+  "results": [
+    {
+      "check": "Native fork menu keeps Deck open in the source split, retaining source/settings/history",
+      "passed": true,
+      "group": "fork-left",
+      "settingsPreserved": true,
+      "historyPreserved": true
+    },
+    {
+      "check": "Plugin hot reload restores and reinstalls fork routing",
+      "passed": true,
+      "group": "fork-left",
+      "settingsPreserved": true,
+      "historyPreserved": true
+    },
+    {
+      "check": "Compact layout keeps the new fork in the source Deck split",
+      "passed": true,
+      "group": "fork-left",
+      "settingsPreserved": true,
+      "historyPreserved": true
+    },
+    {
+      "check": "Forking outside Deck retains native workspace navigation",
+      "passed": true
+    }
+  ]
+}

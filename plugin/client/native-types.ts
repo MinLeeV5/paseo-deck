@@ -4,6 +4,7 @@ import type { Pane, Target } from "../shared/model";
 import type { WorkspaceBridge } from "./workspace-types";
 import type { TabMenuBridge } from "./tab-menu-types";
 import type { Directory } from "./directory";
+import type { ForkNavigationBridge } from "./fork-navigation";
 
 export type NativeStatusBucket =
   | "needs_input"
@@ -50,7 +51,10 @@ export interface ProjectIconTarget {
   customIconRevision?: string | null;
   iconRevision?: string;
 }
-export interface NativeBridge extends WorkspaceBridge, TabMenuBridge {
+export interface NativeBridge
+  extends WorkspaceBridge,
+    TabMenuBridge,
+    ForkNavigationBridge {
   WorkspaceTabPresentationResolver: ComponentType<{
     tab: NativePaneInput["tab"];
     serverId: string;

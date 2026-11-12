@@ -74,6 +74,9 @@ export const optionalNativeExports = [
   "projectIconPlaceholderLabelFromDisplayName",
   "getIsElectron",
   "createWorkspaceBrowser",
+  "navigateToWorkspace",
+  "buildDraftWorkspaceAttachmentScopeKey",
+  "useWorkspaceAttachmentsStore",
 ] as const;
 export function resolveNativeModules(source: string): Record<string, number> {
   return Object.fromEntries([

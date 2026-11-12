@@ -11,6 +11,7 @@ import {
   moveTab,
   activateTab,
   relatedTabIds,
+  targetSchema,
 } from "../plugin/shared/model.ts";
 import {
   matchesShortcutStroke,
@@ -23,6 +24,27 @@ const pane = (workspaceId, id = "agent-1") => ({
   workspaceName: workspaceId,
   title: "Agent",
   target: { kind: "agent", agentId: id },
+});
+test("native fork settings survive opening and restoring a Deck draft", () => {
+  const target = {
+    kind: "draft",
+    draftId: "fork-draft",
+    setup: {
+      provider: "codex",
+      cwd: "/source/workspace",
+      model: "source-model",
+      modeId: "plan",
+      thinkingOptionId: "high",
+      featureValues: { sandbox: "workspace-write", webSearch: false },
+    },
+  };
+  const opened = addPane(emptyBoard, {
+    ...pane("workspace-a", "draft"),
+    target: targetSchema.parse(target),
+  });
+  assert.deepEqual(opened.panes[0].target, target);
+  const restored = restoreBoard(JSON.parse(JSON.stringify(opened)), "host-1");
+  assert.deepEqual(restored.panes[0].target, target);
 });
 test("resource references retain their workspace and deduplicate repeated imports", () => {
   const once = addPane(emptyBoard, pane("workspace-a"));

@@ -33,6 +33,7 @@ import {
   type Target,
 } from "../shared/model";
 import { bridgeInfoRpc } from "../shared/bridge";
+import type { ForkTabRequest } from "./fork-navigation";
 import {
   focusControl,
   loadBoard,
@@ -42,6 +43,7 @@ import {
   scheduleFrame,
   focusConversation,
   installPluginPanelRouter,
+  installForkTabRouter,
   installSplitMenuPlacement,
   type TabDropTarget,
 } from "./web";
@@ -654,6 +656,27 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
       else openFromPane(tabId, target);
     },
     [openFromPane, openTarget, groupOf],
+  );
+  const openForkTab = useCallback(
+    (request: ForkTabRequest): boolean => {
+      if (!routeActiveRef.current || request.serverId !== host.id) return false;
+      const source = boardRef.current.panes.find(
+        (pane) =>
+          pane.serverId === request.serverId &&
+          pane.workspaceId === request.workspaceId &&
+          pane.target.kind === "agent" &&
+          pane.target.agentId === request.sourceAgentId,
+      );
+      if (!source) return false;
+      openInPlace(source.id, request.target, request.workspaceId);
+      return true;
+    },
+    [host.id, openInPlace],
+  );
+  useEffect(
+    () =>
+      bridge.data ? installForkTabRouter(bridge.data, openForkTab) : undefined,
+    [bridge.data, openForkTab],
   );
   const openToSide = useCallback(
     (tabId: string, target: Target) => openFromPane(tabId, target, true),
