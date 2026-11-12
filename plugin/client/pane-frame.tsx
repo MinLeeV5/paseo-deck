@@ -414,15 +414,15 @@ const TabButton = memo(function TabButton({
                 />
               </bridge.StatusIcon>
             </View>
-          ) : pane.target.kind === "plugin" ? (
+          ) : (
             <View
-              testID={`split-tab-plugin-icon-${pane.id}`}
+              testID={`split-tab-${pane.target.kind}-icon-${pane.id}`}
               pointerEvents="none"
               aria-hidden
               style={{ width: 16, height: 16, flexShrink: 0 }}
             >
               <Icon
-                name={targetIcons.plugin}
+                name={targetIcons[pane.target.kind]}
                 size={13}
                 color={colors.foregroundMuted}
               />
@@ -445,12 +445,6 @@ const TabButton = memo(function TabButton({
                 />
               </View>
             </View>
-          ) : (
-            <Icon
-              name={targetIcons[pane.target.kind]}
-              size={13}
-              color={colors.foregroundMuted}
-            />
           )}
           <Text
             numberOfLines={1}
