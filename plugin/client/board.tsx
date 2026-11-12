@@ -1000,7 +1000,7 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
               width: picker.rect.width,
               height: picker.mode === "menu" ? undefined : picker.rect.height,
               maxHeight: picker.rect.height,
-              borderRadius: 8,
+              borderRadius: 12,
               borderWidth: 1,
               borderColor: colors.border,
               backgroundColor: colors.surface1,

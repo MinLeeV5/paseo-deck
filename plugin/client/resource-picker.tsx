@@ -13,7 +13,7 @@ import type { Target } from "../shared/model";
 import type { NativeBridge } from "./native-types";
 import { WorkspaceIcon } from "./workspace-icon";
 import { isRunning, workspaceLabel, type Directory } from "./directory";
-import { onPickerKeys } from "./web";
+import { keyboardFocusVisible, onPickerKeys } from "./web";
 import { IconButton } from "./compact-ui";
 
 export type PickerMode = "agent" | "new" | "terminal" | "file" | "menu";
@@ -23,8 +23,17 @@ export type PaneMenuAction = {
   run(): void;
   disabled?: boolean;
 };
+const RESULT_HEIGHT = 56;
+const HEADING_HEIGHT = 30;
+
 type Row =
-  | { key: string; kind: "heading"; title: string; running?: boolean }
+  | {
+      key: string;
+      kind: "heading";
+      title: string;
+      count: number;
+      running?: boolean;
+    }
   | {
       key: string;
       kind: "option";
@@ -78,6 +87,7 @@ export function ResourcePicker({
   const [query, setQuery] = useState("");
   const [path, setPath] = useState("README.md");
   const [selected, setSelected] = useState(0);
+  const [searchFocused, setSearchFocused] = useState(false);
   const list = useRef<NativeFlatList<Row>>(null),
     search = useRef<NativeTextInput>(null);
   const colors = theme.colors;
@@ -155,7 +165,8 @@ export function ResourcePicker({
         items.push({
           key: `heading-${title}`,
           kind: "heading",
-          title: `${title} · ${agents.length}`,
+          title,
+          count: agents.length,
           running: active,
         });
         for (const agent of agents) {
@@ -230,9 +241,9 @@ export function ResourcePicker({
   const activeOption =
     options[Math.min(selected, Math.max(0, options.length - 1))];
   const layouts = useMemo(() => {
-    let offset = 0;
+    let offset = 4;
     return rows.map((row, index) => {
-      const length = row.kind === "heading" ? 28 : 52;
+      const length = row.kind === "heading" ? HEADING_HEIGHT : RESULT_HEIGHT;
       const value = { length, offset, index };
       offset += length;
       return value;
@@ -287,17 +298,17 @@ export function ResourcePicker({
       mode === "menu"
         ? Math.min(350, menuActions.length * 36 + 10)
         : mode === "file"
-          ? 270
+          ? 290
           : Math.max(
-              240,
+              280,
               Math.min(
-                500,
-                42 +
-                  38 +
-                  37 +
-                  10 +
-                  count * 52 +
-                  (mode === "agent" ? 97 : mode === "terminal" ? 41 : 0),
+                520,
+                60 +
+                  40 +
+                  48 +
+                  8 +
+                  count * RESULT_HEIGHT +
+                  (mode === "agent" ? 104 : mode === "terminal" ? 44 : 0),
               ),
             );
     onHeightChange(height);
@@ -316,6 +327,16 @@ export function ResourcePicker({
     if (next === "file" && scope === "all" && defaultWorkspaceId)
       setScope(defaultWorkspaceId);
   };
+  const choosingWorkspace =
+    mode === "new" || mode === "scope" || mode === "new-terminal";
+  const searchLabel = choosingWorkspace
+    ? "搜索 workspace"
+    : mode === "file"
+      ? "输入相对文件路径"
+      : mode === "terminal"
+        ? "搜索终端或 workspace"
+        : "搜索 Agent 或 workspace";
+  const inputValue = mode === "file" ? path : query;
   const menuButton = (action: PaneMenuAction, index: number) => (
     <PickerRow
       key={action.label}
@@ -339,89 +360,117 @@ export function ResourcePicker({
     );
   return (
     <View testID="split-resource-picker" style={{ flex: 1, minHeight: 0 }}>
-      <View
-        style={{
-          height: 42,
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 7,
-          paddingHorizontal: 11,
-          borderBottomWidth: 1,
-          borderColor: colors.border,
-        }}
-      >
-        {mode === "new" || mode === "new-terminal" || mode === "scope" ? (
-          <IconButton
-            theme={theme}
-            label="返回资源列表"
-            icon="ArrowLeft"
-            size={24}
-            tooltip={false}
-            onPress={() => changeMode(mode === "scope" ? returnMode : "agent")}
-          />
-        ) : (
-          <Icon
-            name={mode === "file" ? "FileCode2" : "Search"}
-            size={14}
-            color={colors.foregroundMuted}
-          />
-        )}
-        <TextInput
-          ref={search}
-          testID="split-resource-search"
-          accessibilityLabel={
-            mode === "file" ? "文件路径" : "搜索 Agent 或 workspace"
-          }
-          placeholder={
-            mode === "new" || mode === "scope" || mode === "new-terminal"
-              ? "搜索 workspace"
-              : mode === "file"
-                ? "输入相对文件路径"
-                : "搜索 Agent 或 workspace"
-          }
-          placeholderTextColor={colors.foregroundMuted}
-          value={mode === "file" ? path : query}
-          onSubmitEditing={() => {
-            if (mode === "file" && scope !== "all" && path.trim())
-              onOpen({ kind: "file", path: path.trim() }, scope);
-          }}
-          onChangeText={(value) => {
-            if (mode === "file") setPath(value);
-            else setQuery(value);
-            setSelected(0);
-          }}
+      <View style={{ padding: 10, paddingBottom: 6 }}>
+        <View
+          testID="split-search-field"
           style={{
-            flex: 1,
-            minWidth: 0,
-            color: colors.foreground,
-            fontSize: 13,
-            paddingVertical: 8,
+            height: 40,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+            paddingHorizontal: 10,
+            borderWidth: 1,
+            borderRadius: 8,
+            borderColor: searchFocused ? colors.foregroundMuted : colors.border,
+            backgroundColor: colors.surface0,
           }}
-        />
-        <IconButton
-          theme={theme}
-          icon="X"
-          label="关闭添加面板"
-          size={24}
-          onPress={onClose}
-          tooltip={false}
-        />
+        >
+          {choosingWorkspace ? (
+            <IconButton
+              theme={theme}
+              label="返回资源列表"
+              icon="ArrowLeft"
+              size={24}
+              tooltip={false}
+              onPress={() =>
+                changeMode(mode === "scope" ? returnMode : "agent")
+              }
+            />
+          ) : (
+            <Icon
+              name={mode === "file" ? "FileCode2" : "Search"}
+              size={15}
+              color={colors.foregroundMuted}
+            />
+          )}
+          <TextInput
+            ref={search}
+            testID="split-resource-search"
+            accessibilityLabel={mode === "file" ? "文件路径" : searchLabel}
+            accessibilityHint={
+              mode === "file"
+                ? "Enter 打开文件，Esc 关闭"
+                : "使用上下方向键选择，Enter 打开，Esc 关闭"
+            }
+            placeholder={searchLabel}
+            placeholderTextColor={colors.foregroundMuted}
+            value={inputValue}
+            autoCapitalize="none"
+            autoCorrect={false}
+            spellCheck={false}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
+            onSubmitEditing={() => {
+              if (mode === "file" && scope !== "all" && path.trim())
+                onOpen({ kind: "file", path: path.trim() }, scope);
+            }}
+            onChangeText={(value) => {
+              if (mode === "file") setPath(value);
+              else setQuery(value);
+              setSelected(0);
+            }}
+            style={{
+              flex: 1,
+              minWidth: 0,
+              color: colors.foreground,
+              fontSize: 14,
+              height: "100%",
+              padding: 0,
+              borderWidth: 0,
+              backgroundColor: "transparent",
+              // The surrounding field owns focus, including the icon and keycap.
+              outlineWidth: 0,
+            }}
+          />
+          {inputValue.length > 0 && (
+            <IconButton
+              theme={theme}
+              icon="X"
+              label="清空输入"
+              testID="split-search-clear"
+              size={24}
+              tooltip={false}
+              onPress={() => {
+                if (mode === "file") setPath("");
+                else setQuery("");
+                setSelected(0);
+                search.current?.focus();
+              }}
+            />
+          )}
+          <PickerChip
+            theme={theme}
+            label="关闭添加面板"
+            text="esc"
+            keycap
+            onPress={onClose}
+          />
+        </View>
       </View>
       <View
         style={{
-          paddingHorizontal: 7,
-          paddingVertical: 5,
+          height: 44,
+          paddingHorizontal: 10,
+          paddingBottom: 6,
           flexDirection: "row",
           alignItems: "center",
-          gap: 3,
+          gap: 8,
         }}
       >
-        {mode === "new" || mode === "scope" || mode === "new-terminal" ? (
+        {choosingWorkspace ? (
           <Text
             style={{
-              height: 28,
-              paddingHorizontal: 6,
-              paddingTop: 6,
+              paddingHorizontal: 2,
               fontSize: 11,
               color: colors.foregroundMuted,
             }}
@@ -434,92 +483,48 @@ export function ResourcePicker({
           </Text>
         ) : (
           <>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`来源：${source ? workspaceLabel(source) : "所有 workspace"}`}
+            <PickerChip
+              theme={theme}
+              label={`来源：${source ? workspaceLabel(source) : "所有 workspace"}`}
+              text={source ? (source.title ?? source.name) : "所有 workspace"}
+              icon="Layers"
+              trailingIcon="ChevronDown"
+              grow
               onPress={() => {
                 setReturnMode(mode as PickerMode);
                 setMode("scope");
                 setQuery("");
                 setSelected(0);
               }}
+            />
+            <View
+              accessibilityRole="tablist"
+              accessibilityLabel="资源类型"
               style={{
                 flexDirection: "row",
-                alignItems: "center",
-                gap: 6,
-                flex: 1,
-                paddingHorizontal: 6,
-                height: 28,
-                minWidth: 0,
-                borderRadius: 4,
-                backgroundColor: colors.surface1,
+                padding: 3,
+                gap: 2,
+                borderRadius: 7,
+                backgroundColor: colors.surface0,
               }}
             >
-              {source ? (
-                <WorkspaceIcon
-                  bridge={bridge}
-                  workspaceId={source.id}
-                  label={source.projectDisplayName}
+              {(["agent", "terminal", "file"] as const).map((value) => (
+                <PickerChip
+                  key={value}
+                  theme={theme}
+                  role="tab"
+                  text={
+                    value === "agent"
+                      ? "Agent"
+                      : value === "terminal"
+                        ? "终端"
+                        : "文件"
+                  }
+                  active={mode === value}
+                  onPress={() => changeMode(value)}
                 />
-              ) : (
-                <Icon name="Layers" size={12} color={colors.foregroundMuted} />
-              )}
-              <Text
-                numberOfLines={1}
-                style={{
-                  fontSize: 11,
-                  color: colors.foregroundMuted,
-                  flexShrink: 1,
-                }}
-              >
-                {source ? (source.title ?? source.name) : "所有 workspace"}
-              </Text>
-              <Icon
-                name="ChevronDown"
-                size={11}
-                color={colors.foregroundMuted}
-              />
-            </Pressable>
-            {(["agent", "terminal", "file"] as const).map((value) => (
-              <Pressable
-                key={value}
-                accessibilityRole="tab"
-                accessibilityLabel={
-                  value === "agent"
-                    ? "Agent"
-                    : value === "terminal"
-                      ? "终端"
-                      : "文件"
-                }
-                accessibilityState={{ selected: mode === value }}
-                aria-selected={mode === value}
-                onPress={() => changeMode(value)}
-                style={{
-                  paddingHorizontal: 8,
-                  height: 28,
-                  justifyContent: "center",
-                  borderRadius: 4,
-                  backgroundColor:
-                    mode === value ? colors.surface2 : "transparent",
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 11,
-                    color:
-                      mode === value
-                        ? colors.foreground
-                        : colors.foregroundMuted,
-                  }}
-                >
-                  {value === "agent"
-                    ? "Agent"
-                    : value === "terminal"
-                      ? "终端"
-                      : "文件"}
-                </Text>
-              </Pressable>
-            ))}
+              ))}
+            </View>
           </>
         )}
       </View>
@@ -534,8 +539,8 @@ export function ResourcePicker({
       {mode === "agent" && (
         <View
           style={{
-            paddingHorizontal: 5,
-            paddingBottom: 5,
+            paddingHorizontal: 10,
+            paddingBottom: 8,
             borderBottomWidth: 1,
             borderColor: colors.border,
           }}
@@ -545,6 +550,7 @@ export function ResourcePicker({
             label="新建 Agent"
             hint="选择 workspace"
             icon="SquarePen"
+            featured
             onPress={() => changeMode("new")}
             disabled={busy}
           />
@@ -553,8 +559,8 @@ export function ResourcePicker({
       {mode === "terminal" && (
         <View
           style={{
-            paddingHorizontal: 5,
-            paddingBottom: 5,
+            paddingHorizontal: 10,
+            paddingBottom: 8,
             borderBottomWidth: 1,
             borderColor: colors.border,
           }}
@@ -563,6 +569,8 @@ export function ResourcePicker({
             theme={theme}
             label="新建终端"
             icon="Plus"
+            hint="选择 workspace"
+            featured
             onPress={() => {
               setMode("new-terminal");
               setQuery("");
@@ -603,11 +611,16 @@ export function ResourcePicker({
           data={rows}
           keyExtractor={(row) => row.key}
           style={{ flex: 1, minHeight: 0 }}
+          contentContainerStyle={{ paddingVertical: 4 }}
           initialNumToRender={12}
           maxToRenderPerBatch={12}
           windowSize={5}
           getItemLayout={(_data, index) =>
-            layouts[index] ?? { length: 52, offset: index * 52, index }
+            layouts[index] ?? {
+              length: RESULT_HEIGHT,
+              offset: index * RESULT_HEIGHT,
+              index,
+            }
           }
           keyboardShouldPersistTaps="handled"
           onScrollToIndexFailed={() => {}}
@@ -624,9 +637,9 @@ export function ResourcePicker({
             item.kind === "heading" ? (
               <View
                 style={{
-                  height: 28,
-                  paddingHorizontal: 12,
-                  justifyContent: "center",
+                  height: HEADING_HEIGHT,
+                  paddingHorizontal: 16,
+                  justifyContent: "flex-start",
                   flexDirection: "row",
                   alignItems: "center",
                   gap: 6,
@@ -635,7 +648,7 @@ export function ResourcePicker({
                 {item.running && (
                   <Icon
                     name="Activity"
-                    size={12}
+                    size={11}
                     color={colors.statusSuccess}
                   />
                 )}
@@ -644,14 +657,14 @@ export function ResourcePicker({
                   accessibilityRole="header"
                   style={{
                     fontSize: 11,
-                    color: item.running
-                      ? colors.statusSuccess
-                      : colors.foregroundMuted,
-                    flex: 1,
-                    fontWeight: item.running ? "600" : "400",
+                    color: colors.foregroundMuted,
+                    fontWeight: "500",
                   }}
                 >
                   {item.title}
+                </Text>
+                <Text style={{ fontSize: 10, color: colors.foregroundMuted }}>
+                  {item.count}
                 </Text>
               </View>
             ) : (
@@ -668,13 +681,14 @@ export function ResourcePicker({
       )}
       <View
         style={{
-          height: 37,
+          height: 48,
           borderTopWidth: 1,
           borderColor: colors.border,
           flexDirection: "row",
           alignItems: "center",
-          paddingHorizontal: 7,
-          gap: 3,
+          paddingHorizontal: 10,
+          gap: 6,
+          backgroundColor: colors.surface0,
         }}
       >
         <IconButton
@@ -686,6 +700,12 @@ export function ResourcePicker({
           disabled={busy}
           tooltip={false}
         />
+        <Text
+          numberOfLines={1}
+          style={{ fontSize: 11, color: colors.foregroundMuted, flexShrink: 1 }}
+        >
+          {mode === "file" ? "↵ 打开文件" : "↑↓ 选择 · ↵ 打开"}
+        </Text>
         <View style={{ flex: 1 }} />
         <Text
           style={{
@@ -696,35 +716,22 @@ export function ResourcePicker({
         >
           添加到
         </Text>
-        {([false, true] as const).map((value) => (
-          <Pressable
-            key={String(value)}
-            accessibilityRole="radio"
-            accessibilityLabel={value ? "新分屏" : "当前分屏"}
-            accessibilityState={{ checked: newSplit === value }}
-            aria-checked={newSplit === value}
-            onPress={() => onDestination(value)}
-            style={{
-              paddingHorizontal: 8,
-              paddingVertical: 5,
-              borderRadius: 4,
-              backgroundColor:
-                newSplit === value ? colors.surface2 : "transparent",
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 11,
-                color:
-                  newSplit === value
-                    ? colors.foreground
-                    : colors.foregroundMuted,
-              }}
-            >
-              {value ? "新分屏" : "当前分屏"}
-            </Text>
-          </Pressable>
-        ))}
+        <View
+          accessibilityRole="radiogroup"
+          accessibilityLabel="添加到"
+          style={{ flexDirection: "row", gap: 2 }}
+        >
+          {([false, true] as const).map((value) => (
+            <PickerChip
+              key={String(value)}
+              theme={theme}
+              role="radio"
+              text={value ? "新分屏" : "当前分屏"}
+              active={newSplit === value}
+              onPress={() => onDestination(value)}
+            />
+          ))}
+        </View>
       </View>
     </View>
   );
@@ -743,23 +750,29 @@ function ResultRow({
   busy: boolean;
 }) {
   const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
   const colors = theme.colors;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`打开 ${row.title} · ${row.subtitle}${row.badge ? " · " + row.badge : ""}`}
       disabled={busy}
+      accessibilityState={{ disabled: busy }}
       onPress={row.run}
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}
+      onFocus={() => setFocused(keyboardFocusVisible())}
+      onBlur={() => setFocused(false)}
       style={{
-        height: 52,
-        paddingHorizontal: 11,
-        gap: 9,
+        height: RESULT_HEIGHT,
+        paddingHorizontal: 9,
+        gap: 10,
         flexDirection: "row",
         alignItems: "center",
-        borderRadius: 5,
-        marginHorizontal: 5,
+        borderRadius: 7,
+        borderWidth: 1,
+        borderColor: focused ? colors.foregroundMuted : "transparent",
+        marginHorizontal: 6,
         backgroundColor: hovered || selected ? colors.surface2 : "transparent",
         opacity: busy ? 0.5 : 1,
       }}
@@ -769,25 +782,25 @@ function ResultRow({
           bridge={bridge}
           workspaceId={row.workspaceId}
           label={row.subtitle}
-          size={18}
+          size={22}
         />
       ) : (
         <Icon name="Layers" size={16} color={colors.foregroundMuted} />
       )}
-      <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+      <View style={{ flex: 1, minWidth: 0, gap: 5 }}>
         <Text
           numberOfLines={1}
           style={{
             fontSize: 12,
             color: colors.foreground,
-            fontWeight: row.running ? "500" : "400",
+            fontWeight: selected || row.running ? "500" : "400",
           }}
         >
           {row.title}
         </Text>
         <Text
           numberOfLines={1}
-          style={{ fontSize: 10, color: colors.foregroundMuted }}
+          style={{ fontSize: 11, color: colors.foregroundMuted }}
         >
           {row.subtitle}
         </Text>
@@ -795,17 +808,20 @@ function ResultRow({
       {row.badge && (
         <View
           style={{
-            paddingHorizontal: 6,
-            paddingVertical: 3,
-            borderRadius: 4,
-            backgroundColor: colors.surface1,
             flexDirection: "row",
             alignItems: "center",
             gap: 4,
           }}
         >
           {row.running && (
-            <Icon name="Activity" size={11} color={colors.statusSuccess} />
+            <View
+              style={{
+                width: 5,
+                height: 5,
+                borderRadius: 3,
+                backgroundColor: colors.statusSuccess,
+              }}
+            />
           )}
           <Text
             style={{
@@ -831,6 +847,7 @@ function PickerRow({
   onPress,
   disabled = false,
   compact = false,
+  featured = false,
   testID,
 }: {
   theme: PluginScreenProps["theme"];
@@ -840,27 +857,42 @@ function PickerRow({
   onPress(): void;
   disabled?: boolean;
   compact?: boolean;
+  featured?: boolean;
   testID?: string;
 }) {
   const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
   return (
     <Pressable
       testID={testID}
       accessibilityRole="button"
       accessibilityLabel={label}
       disabled={disabled}
+      accessibilityState={{ disabled }}
       onPress={onPress}
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}
+      onFocus={() => setFocused(keyboardFocusVisible())}
+      onBlur={() => setFocused(false)}
       style={{
         height: compact ? 28 : 36,
         paddingHorizontal: 8,
         flexDirection: "row",
         alignItems: "center",
         gap: 9,
-        borderRadius: 5,
+        borderRadius: 7,
+        borderWidth: 1,
+        borderColor: focused
+          ? theme.colors.foregroundMuted
+          : featured
+            ? theme.colors.border
+            : "transparent",
         opacity: disabled ? 0.4 : 1,
-        backgroundColor: hovered ? theme.colors.surface2 : "transparent",
+        backgroundColor: hovered
+          ? theme.colors.surface2
+          : featured
+            ? theme.colors.surface0
+            : "transparent",
       }}
     >
       <Icon name={icon} size={13} color={theme.colors.foregroundMuted} />
@@ -872,6 +904,7 @@ function PickerRow({
             ? theme.colors.foregroundMuted
             : theme.colors.foreground,
           flex: 1,
+          fontWeight: featured ? "500" : "400",
         }}
       >
         {label}
@@ -880,6 +913,97 @@ function PickerRow({
         <Text style={{ fontSize: 10, color: theme.colors.foregroundMuted }}>
           {hint}
         </Text>
+      )}
+      {featured && (
+        <Icon
+          name="ChevronRight"
+          size={12}
+          color={theme.colors.foregroundMuted}
+        />
+      )}
+    </Pressable>
+  );
+}
+
+function PickerChip({
+  theme,
+  text,
+  label = text,
+  role = "button",
+  active = false,
+  grow = false,
+  keycap = false,
+  icon,
+  trailingIcon,
+  onPress,
+}: {
+  theme: PluginScreenProps["theme"];
+  text: string;
+  label?: string;
+  role?: "button" | "tab" | "radio";
+  active?: boolean;
+  grow?: boolean;
+  keycap?: boolean;
+  icon?: string;
+  trailingIcon?: string;
+  onPress(): void;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const colors = theme.colors;
+  return (
+    <Pressable
+      accessibilityRole={role}
+      accessibilityLabel={label}
+      accessibilityState={
+        role === "tab"
+          ? { selected: active }
+          : role === "radio"
+            ? { checked: active }
+            : undefined
+      }
+      aria-selected={role === "tab" ? active : undefined}
+      aria-checked={role === "radio" ? active : undefined}
+      onPress={onPress}
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}
+      onFocus={() => setFocused(keyboardFocusVisible())}
+      onBlur={() => setFocused(false)}
+      style={({ pressed }) => ({
+        height: keycap ? 24 : 26,
+        paddingHorizontal: keycap ? 5 : 7,
+        flex: grow ? 1 : undefined,
+        minWidth: 0,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 5,
+        borderRadius: keycap ? 4 : 5,
+        borderWidth: 1,
+        borderColor: focused
+          ? colors.foregroundMuted
+          : keycap || grow
+            ? colors.border
+            : "transparent",
+        backgroundColor:
+          active || hovered || pressed ? colors.surface2 : "transparent",
+      })}
+    >
+      {icon && <Icon name={icon} size={12} color={colors.foregroundMuted} />}
+      <Text
+        numberOfLines={1}
+        style={{
+          flexShrink: 1,
+          flex: grow ? 1 : undefined,
+          fontSize: keycap ? 10 : 11,
+          fontWeight: active ? "500" : "400",
+          color: active ? colors.foreground : colors.foregroundMuted,
+        }}
+      >
+        {text}
+      </Text>
+      {trailingIcon && (
+        <Icon name={trailingIcon} size={11} color={colors.foregroundMuted} />
       )}
     </Pressable>
   );

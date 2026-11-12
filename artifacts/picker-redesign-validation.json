@@ -1,0 +1,68 @@
+{
+  "date": "2026-11-12",
+  "environment": "Installed Paseo Web UI, isolated preview of the ResourcePicker in the same native host",
+  "checks": {
+    "search_focus": true,
+    "subtle_outline": true,
+    "keyboard_selection": true,
+    "enter_opens_existing_agent": true,
+    "empty_search": true,
+    "clear_restores_focus": true,
+    "destination_selection": true,
+    "escape_returns_focus": true,
+    "tab_focus": true,
+    "workspace_filter": true,
+    "terminal_and_file_modes": true,
+    "reduced_motion": true,
+    "typecheck_isolated_preview": true,
+    "repository_tests": "13 passed"
+  },
+  "light": {
+    "background": "rgb(250, 250, 250)",
+    "foreground": "rgb(26, 26, 30)",
+    "border": "1px solid rgb(113, 113, 122)",
+    "outline": "0px"
+  },
+  "keyboard_focus_border": "rgb(113, 113, 122)",
+  "compact": {
+    "left": 8,
+    "right": 367,
+    "top": 100.5,
+    "bottom": 620.5,
+    "width": 359,
+    "inputWidth": 255.09375,
+    "fieldWidth": 337,
+    "viewport": [
+      375,
+      812
+    ],
+    "scrollWidth": 375
+  },
+  "landscape": {
+    "left": 444,
+    "right": 804,
+    "top": 44,
+    "bottom": 367,
+    "viewport": [
+      812,
+      375
+    ]
+  },
+  "screenshots": [
+    "picker-redesign-dark.png (final installed plugin)",
+    "picker-redesign-light.png",
+    "picker-redesign-compact.png"
+  ],
+  "final_installed_plugin": {
+    "id": "workspace-split-demo",
+    "status": "running",
+    "typecheck": "passed",
+    "reload": "passed",
+    "checks": [
+      "search focus",
+      "search and clear",
+      "selected tab and destination semantics",
+      "Escape restores trigger focus"
+    ]
+  }
+}
