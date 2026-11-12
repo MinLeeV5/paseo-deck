@@ -16,6 +16,7 @@ const icons = {
   "arrow-right-to-line": "ArrowRightToLine",
   "copy-x": "CopyX",
   "rotate-cw": "RotateCw",
+  archive: "Archive",
   x: "X",
 } as const;
 
@@ -29,6 +30,7 @@ export function TabContextMenu({
   bridge,
   theme,
   onClose,
+  onArchive,
   onCloseRelated,
   onResourceChanged,
   children,
@@ -42,6 +44,7 @@ export function TabContextMenu({
   bridge: NativeBridge;
   theme: PluginScreenProps["theme"];
   onClose(tabId: string): void;
+  onArchive(agentId: string): Promise<void>;
   onCloseRelated(tabId: string, scope: RelatedTabs): void;
   onResourceChanged(): Promise<unknown>;
   children: ReactNode;
@@ -123,6 +126,22 @@ export function TabContextMenu({
     onCloseTabsAfter: (id) => onCloseRelated(id, "after"),
     onCloseOtherTabs: (id) => onCloseRelated(id, "others"),
   });
+  if (pane.target.kind === "agent") {
+    const agentId = pane.target.agentId;
+    entries.push(
+      { kind: "separator", key: "archive-separator" },
+      {
+        kind: "item",
+        key: "archive-agent",
+        label: "归档 Agent",
+        icon: "archive",
+        destructive: true,
+        disabled: !directory?.agents.some((agent) => agent.id === agentId),
+        testID: `${testID}-archive-agent`,
+        onSelect: () => run(() => onArchive(agentId)),
+      },
+    );
+  }
   const renameTarget =
     pane.target.kind === "agent"
       ? { kind: "agent", id: pane.target.agentId, currentTitle: title }

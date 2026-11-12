@@ -50,6 +50,7 @@ export const TabStrip = memo(function TabStrip({
   onSelect,
   onRunningChange,
   onClose,
+  onArchive,
   onCloseGroup,
   onCloseRelated,
   onResourceChanged,
@@ -78,6 +79,7 @@ export const TabStrip = memo(function TabStrip({
   onSelect(id: string): void;
   onRunningChange(id: string, running: boolean): void;
   onClose(id: string): void;
+  onArchive(agentId: string): Promise<void>;
   onCloseGroup?(groupId: string): void;
   onCloseRelated(id: string, scope: RelatedTabs): void;
   onResourceChanged(): Promise<unknown>;
@@ -182,6 +184,7 @@ export const TabStrip = memo(function TabStrip({
                 onSelect={onSelect}
                 onRunningChange={onRunningChange}
                 onClose={onClose}
+                onArchive={onArchive}
                 onCloseRelated={onCloseRelated}
                 onResourceChanged={onResourceChanged}
               />
@@ -243,6 +246,7 @@ type TabProps = {
   onSelect(id: string): void;
   onRunningChange(id: string, running: boolean): void;
   onClose(id: string): void;
+  onArchive(agentId: string): Promise<void>;
   onCloseRelated(id: string, scope: RelatedTabs): void;
   onResourceChanged(): Promise<unknown>;
 };
@@ -310,6 +314,7 @@ const TabButton = memo(function TabButton({
   onSelect,
   onRunningChange,
   onClose,
+  onArchive,
   onCloseRelated,
   onResourceChanged,
 }: TabProps & { statusBucket?: NativeStatusBucket | null }) {
@@ -338,6 +343,7 @@ const TabButton = memo(function TabButton({
       bridge={bridge}
       theme={theme}
       onClose={onClose}
+      onArchive={onArchive}
       onCloseRelated={onCloseRelated}
       onResourceChanged={onResourceChanged}
     >

@@ -111,7 +111,7 @@ Use **`··· → 排版`** for presets:
 
 Presets redistribute existing Tabs and preserve their content instances, creating empty splits when needed. Vertical stacking and equal sizing are also available.
 
-Closing Tabs removes their views and keeps the Agents and terminals. Closing a running or initializing Agent Tab asks for confirmation; the Agent continues running after its Tab closes. **关闭所有 Tab** closes the whole board after confirming running Tabs and checking unsaved content; canceling any confirmation keeps the entire batch. Tab context menus provide rename, copy, reload, and close-left/right/others actions where applicable; those batch actions stay within the clicked Tab's group.
+Closing Tabs removes their views and keeps the Agents and terminals. Closing a running or initializing Agent Tab asks for confirmation; the Agent continues running after its Tab closes. **关闭所有 Tab** closes the whole board after confirming running Tabs and checking unsaved content; canceling any confirmation keeps the entire batch. Tab context menus provide rename, copy, reload, and close-left/right/others actions where applicable; those batch actions stay within the clicked Tab's group. Agent Tabs also offer **归档 Agent**: after confirmation, it archives the Agent and closes all of its Tabs on the board, stopping any running task.
 
 ## Use workspace actions
 

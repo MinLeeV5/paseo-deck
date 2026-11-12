@@ -1605,6 +1605,7 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
                 onSelect={selectTab}
                 onRunningChange={onRunningChange}
                 onClose={closeTabAndFocus}
+                onArchive={archiveAgent}
                 onCloseGroup={
                   board.groups.length > 1 ? closeEmptyGroup : undefined
                 }
