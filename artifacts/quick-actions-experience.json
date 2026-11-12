@@ -1,0 +1,20 @@
+{
+  "date": "2026-11-12",
+  "runtime": "Paseo 0.15.4, macOS Electron, isolated fixture daemon",
+  "input": "CDP keyboard events with Command, Option and Shift, including Option-produced symbols and Shift+Backslash",
+  "passed": [
+    "Command+Option+digit selects the current split by visual position",
+    "An out-of-range number leaves the current Tab unchanged",
+    "Command+Option+8 selects the eighth Tab",
+    "Command+Shift+A opens a new draft in the current workspace without a picker",
+    "Command+Shift+T creates one real terminal in the current workspace",
+    "Canceling the split picker leaves the layout unchanged",
+    "Command+Backslash adds a split and applies horizontal layout after selection",
+    "Command+Shift+Backslash adds a split and applies vertical layout after selection",
+    "The resource limit blocks Agent and terminal creation before an extra process is created",
+    "Empty splits request a source workspace for Agent and terminal creation",
+    "An open picker blocks additional quick actions"
+  ],
+  "cleanup": "All terminals created by acceptance testing were killed. Existing workspaces and files were retained.",
+  "staticChecks": "TypeScript and 15 model/shortcut tests passed."
+}

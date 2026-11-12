@@ -14,6 +14,25 @@
 - **整理分屏**：`···` 中可移动当前 Tab、新增分屏、切换排列、均分或返回原 workspace。窗口右侧保留放大 / 还原。
 - **关闭**：关闭 Tab 只移除展示，保留 Agent 与终端；未保存文件先询问。切换、移动 Tab 会保留原生编辑器与草稿。
 
+### 快捷键
+
+| 操作 | macOS 桌面默认快捷键 |
+| --- | --- |
+| 打开当前分屏的添加面板 | `Command+T` |
+| 关闭当前 Tab | `Command+W` |
+| 向右切换 Tab，末尾回到第一个 | `Ctrl+Tab` |
+| 向左切换 Tab，开头回到最后一个 | `Ctrl+Shift+Tab` |
+| 直接选中当前分屏的第 1–8 个 Tab | `Command+Option+1` … `Command+Option+8` |
+| 在当前来源 workspace 新建 Agent | `Command+Shift+A` |
+| 在当前来源 workspace 新建终端 | `Command+Shift+T` |
+| 添加分屏，按左右 / 上下方向排列 | `Command+\` / `Command+Shift+\` |
+| 向右 / 向左切换的宿主快捷键 | `Option+Shift+]` / `Option+Shift+[` |
+| 聚焦当前 Agent 输入框 | `Command+L` |
+
+快捷键作用于当前分屏，支持消息输入框和文件编辑器内触发；切换后聚焦目标 Tab，关闭后聚焦相邻 Tab，关闭最后一个时聚焦 `＋`。添加面板或宿主弹窗打开时暂停这些快捷键，关闭未保存文件仍须确认。`Ctrl+Tab` / `Ctrl+Shift+Tab` 固定可用，其余沿用 Paseo 的快捷键设置。Windows / Linux 的新建、关闭与聚焦默认使用 `Ctrl`；Web 版关闭默认使用 `Alt+Shift+W`，避免浏览器保留快捷键冲突。
+
+数字跳转按当前 Tab 顺序选择，序号超出当前数量时不执行。新建 Agent / 终端默认使用活动 Tab 的来源 workspace；空分屏先选择 workspace。分屏快捷键打开目标为“新分屏”的添加面板，选定资源后再应用现有布局的左右 / 上下排列，取消不会改变布局。
+
 桌面只保留 32px Tab 栏，无整窗选中描边或独立工具栏；活动 Tab 使用中性底色。窄屏为 36px Tab 栏，添加面板自适应可用宽度，仍贴着 Tab 显示。
 
 分隔条带灰色握柄，悬停时显示对应方向的缩放光标，拖动时高亮；抓取区域扩大至 12px，不额外占用工作空间。

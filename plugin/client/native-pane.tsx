@@ -12,21 +12,27 @@ import { Pressable, Text, View } from "react-native";
 import { QueryClientProvider } from "@tanstack/react-query";
 import type { PluginScreenProps } from "@getpaseo/plugin/client";
 import type { Pane, Target } from "../shared/model";
+import { shortcutDigit, type ShortcutEvent } from "../shared/shortcuts";
 import type { NativeBridge, NativePaneInput } from "./native-types";
 import { onNativeActionShortcut } from "./web";
 
-export const NativeKeyboard = memo(function NativeKeyboard({
-  bridge,
-  enabled,
-  onNewTab,
-}: {
+type NativeKeyboardProps = {
   bridge: NativeBridge;
   enabled: boolean;
   onNewTab(): void;
-}) {
+  onCloseTab(): void;
+  onCycleTab(direction: -1 | 1): void;
+  onJumpTab(index: number): void;
+  onNewAgent(): void;
+  onNewTerminal(): void;
+  onSplit(direction: "row" | "column"): void;
+};
+export const NativeKeyboard = memo(function NativeKeyboard(
+  props: NativeKeyboardProps,
+) {
   return (
-    <QueryClientProvider client={bridge.queryClient}>
-      <KeyboardBindings bridge={bridge} enabled={enabled} onNewTab={onNewTab} />
+    <QueryClientProvider client={props.bridge.queryClient}>
+      <KeyboardBindings {...props} />
     </QueryClientProvider>
   );
 });
@@ -34,18 +40,36 @@ function KeyboardBindings({
   bridge,
   enabled,
   onNewTab,
-}: {
-  bridge: NativeBridge;
-  enabled: boolean;
-  onNewTab(): void;
-}) {
+  onCloseTab,
+  onCycleTab,
+  onJumpTab,
+  onNewAgent,
+  onNewTerminal,
+  onSplit,
+}: NativeKeyboardProps) {
   const keys = bridge.useShortcutKeys("focus-message-input");
   const interruptKeys = bridge.useShortcutKeys("agent-interrupt");
   const newTabKeys = bridge.useShortcutKeys("workspace-tab-new");
+  const closeTabKeys = bridge.useShortcutKeys("workspace-tab-close-current");
+  const nextTabKeys = bridge.useShortcutKeys("workspace-tab-next");
+  const previousTabKeys = bridge.useShortcutKeys("workspace-tab-prev");
+  const jumpTabKeys = bridge.useShortcutKeys("workspace-tab-jump-index");
+  const newAgentKeys = bridge.useShortcutKeys("workspace-tab-target-agent");
+  const newTerminalKeys = bridge.useShortcutKeys("workspace-terminal-new");
+  const splitRightKeys = bridge.useShortcutKeys("workspace-pane-split-right");
+  const splitDownKeys = bridge.useShortcutKeys("workspace-pane-split-down");
   const dispatcher = bridge.useKeyboardActionDispatcher();
   useEffect(() => {
     if (!enabled) return;
-    const bindings: [string[][] | null, () => boolean][] = [
+    const cycle = (direction: -1 | 1) => () => {
+      onCycleTab(direction);
+      return true;
+    };
+    const run = (action: () => void) => () => {
+      action();
+      return true;
+    };
+    const bindings: [string[][] | null, (event: ShortcutEvent) => boolean][] = [
       [
         keys,
         () =>
@@ -69,6 +93,30 @@ function KeyboardBindings({
           return true;
         },
       ],
+      [
+        closeTabKeys,
+        () => {
+          onCloseTab();
+          return true;
+        },
+      ],
+      [nextTabKeys, cycle(1)],
+      [previousTabKeys, cycle(-1)],
+      [[["ctrl", "tab"]], cycle(1)],
+      [[["ctrl", "shift", "tab"]], cycle(-1)],
+      [
+        jumpTabKeys,
+        (event) => {
+          const digit = shortcutDigit(event);
+          if (digit === null) return false;
+          onJumpTab(digit - 1);
+          return true;
+        },
+      ],
+      [newAgentKeys, run(onNewAgent)],
+      [newTerminalKeys, run(onNewTerminal)],
+      [splitRightKeys, run(() => onSplit("row"))],
+      [splitDownKeys, run(() => onSplit("column"))],
     ];
     const cleanups = bindings.flatMap(([chord, dispatch]) =>
       chord?.length
@@ -76,7 +124,29 @@ function KeyboardBindings({
         : [],
     );
     return () => cleanups.forEach((cleanup) => cleanup());
-  }, [bridge, enabled, keys, interruptKeys, newTabKeys, dispatcher, onNewTab]);
+  }, [
+    bridge,
+    enabled,
+    keys,
+    interruptKeys,
+    newTabKeys,
+    closeTabKeys,
+    nextTabKeys,
+    previousTabKeys,
+    jumpTabKeys,
+    newAgentKeys,
+    newTerminalKeys,
+    splitRightKeys,
+    splitDownKeys,
+    dispatcher,
+    onNewTab,
+    onCloseTab,
+    onCycleTab,
+    onJumpTab,
+    onNewAgent,
+    onNewTerminal,
+    onSplit,
+  ]);
   return null;
 }
 

@@ -1,0 +1,26 @@
+{
+  "date": "2026-11-12",
+  "runtime": "Paseo 0.15.4, macOS Electron",
+  "scope": "Isolated copy of 12673ac plus the keyboard changes, independent of concurrent UI work",
+  "input": "CDP key events with Control, Shift and Command modifiers",
+  "passed": [
+    "Ctrl+Tab selects the next Tab and wraps right",
+    "Ctrl+Shift+Tab wraps left",
+    "Native Option+Shift+bracket shortcuts remain available",
+    "Tab switching works with the Composer focused",
+    "Tab switching stays in the focused split",
+    "Maximized split receives shortcuts",
+    "Command+W closes the selected Tab and focuses its neighbor",
+    "Closing the last Tab preserves the empty split and focuses add",
+    "Closing an empty split through Command+W is a no-op",
+    "Canceling the unsaved-file confirmation preserves the draft",
+    "Discarding the draft closes the Tab without changing the disk file",
+    "Compact layout handles a single-Tab split",
+    "Open add picker owns keyboard focus and Escape restores it",
+    "Command Center blocks split shortcuts",
+    "Leaving the plugin disables split shortcuts"
+  ],
+  "confirmationTest": "The existing confirmDialog bridge was stubbed to resolve false and true for deterministic cancel/discard checks. Native confirmation delivery was also observed; the operating-system dialog buttons were not automated.",
+  "staticChecks": "TypeScript and the 13 existing model tests passed on the isolated copy and again on the complete working directory after concurrent UI changes compiled.",
+  "integrationCheck": "Reloaded workspace-split-demo on the primary daemon. On its current Web UI, Ctrl+Tab, Ctrl+Shift+Tab, Alt+Shift+W (the Web close binding), and Command+T all passed with temporary draft Tabs."
+}

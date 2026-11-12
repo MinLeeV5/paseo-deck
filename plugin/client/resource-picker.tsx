@@ -16,7 +16,13 @@ import { isRunning, workspaceLabel, type Directory } from "./directory";
 import { keyboardFocusVisible, onPickerKeys } from "./web";
 import { IconButton } from "./compact-ui";
 
-export type PickerMode = "agent" | "new" | "terminal" | "file" | "menu";
+export type PickerMode =
+  | "agent"
+  | "new"
+  | "terminal"
+  | "new-terminal"
+  | "file"
+  | "menu";
 export type PaneMenuAction = {
   label: string;
   icon: string;
@@ -79,9 +85,7 @@ export function ResourcePicker({
   menuActions: PaneMenuAction[];
   onHeightChange(height: number): void;
 }) {
-  const [mode, setMode] = useState<PickerMode | "scope" | "new-terminal">(
-    initialMode,
-  );
+  const [mode, setMode] = useState<PickerMode | "scope">(initialMode);
   const [returnMode, setReturnMode] = useState<PickerMode>("agent");
   const [scope, setScope] = useState("all");
   const [query, setQuery] = useState("");

@@ -11,7 +11,10 @@ import {
   moveTab,
   activateTab,
 } from "../plugin/shared/model.ts";
-import { matchesShortcutStroke } from "../plugin/shared/shortcuts.ts";
+import {
+  matchesShortcutStroke,
+  shortcutDigit,
+} from "../plugin/shared/shortcuts.ts";
 const pane = (workspaceId, id = "agent-1") => ({
   id: `pane-${workspaceId}-${id}`,
   serverId: "host-1",
@@ -121,6 +124,54 @@ test("Composer focus respects native modifiers, remapping and IME input", () => 
     ),
     true,
   );
+});
+
+test("number shortcuts recognize physical digits with macOS Option symbols", () => {
+  const key = {
+    key: "¡",
+    code: "Digit1",
+    metaKey: true,
+    ctrlKey: false,
+    altKey: true,
+    shiftKey: false,
+  };
+  assert.equal(shortcutDigit(key), 1);
+  assert.equal(matchesShortcutStroke(key, ["mod", "alt", "1-9"], true), true);
+  assert.equal(
+    matchesShortcutStroke(
+      { ...key, altKey: false },
+      ["mod", "alt", "1-9"],
+      true,
+    ),
+    false,
+  );
+  assert.equal(
+    matchesShortcutStroke(
+      { ...key, isComposing: true },
+      ["mod", "alt", "1-9"],
+      true,
+    ),
+    false,
+  );
+  assert.equal(shortcutDigit({ key: "8" }), 8);
+  assert.equal(shortcutDigit({ key: "0", code: "Digit0" }), null);
+  assert.equal(shortcutDigit({ key: "ArrowRight" }), null);
+});
+
+test("split shortcuts recognize shifted Backslash without ignoring modifiers", () => {
+  const event = {
+    key: "|",
+    code: "Backslash",
+    metaKey: true,
+    ctrlKey: false,
+    altKey: false,
+    shiftKey: true,
+  };
+  assert.equal(
+    matchesShortcutStroke(event, ["mod", "shift", "\\"], true),
+    true,
+  );
+  assert.equal(matchesShortcutStroke(event, ["mod", "\\"], true), false);
 });
 
 test("v1 layouts migrate one window per group without losing resource state", () => {

@@ -65,6 +65,7 @@ type Picker = {
   groupId: string;
   mode: PickerMode;
   newSplit: boolean;
+  splitDirection?: Board["direction"];
   trigger: string;
   rect: Rect;
   bounds?: { top: number; bottom: number; height: number };
@@ -101,6 +102,7 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
     workarea = useRef<View>(null),
     anchors = useRef(new Map<string, View>());
   const pendingCloses = useRef(new Set<string>()),
+    terminalCreation = useRef(false),
     cancelFrame = useRef<(() => void) | null>(null),
     pendingRatio = useRef<number | null>(null),
     startRatio = useRef(0.5);
@@ -200,6 +202,7 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
       anchor: View | null = null,
       mode: PickerMode = "agent",
       newSplit = false,
+      splitDirection?: Board["direction"],
     ) => {
       const key = id();
       setFocusedGroup(groupId);
@@ -211,6 +214,7 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
         groupId,
         mode,
         newSplit,
+        splitDirection,
         trigger: `split-${mode === "menu" ? "menu" : "add"}-${groupId}`,
         rect: { left: 8, top: 8, width: 360, height: estimated },
       });
@@ -256,6 +260,39 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
     () => showPicker(visibleGroup ?? groupFocus),
     [showPicker, visibleGroup, groupFocus],
   );
+  const openSplit = useCallback(
+    (direction: Board["direction"]) =>
+      showPicker(visibleGroup ?? groupFocus, null, "agent", true, direction),
+    [showPicker, visibleGroup, groupFocus],
+  );
+  const jumpToTab = useCallback(
+    (index: number) => {
+      const group = boardRef.current.groups.find(
+        (item) => item.id === (visibleGroup ?? groupFocus),
+      );
+      const tabId = group?.tabIds[index];
+      if (!tabId) return;
+      selectTab(tabId);
+      scheduleFrame(() => focusControl(`split-tab-${tabId}`));
+    },
+    [groupFocus, visibleGroup, selectTab],
+  );
+  const cycleCurrentTab = useCallback(
+    (direction: -1 | 1) => {
+      const group = boardRef.current.groups.find(
+        (item) => item.id === (visibleGroup ?? groupFocus),
+      );
+      if (!group?.tabIds.length) return;
+      const index = group.tabIds.indexOf(group.activeTabId!);
+      const next =
+        group.tabIds[
+          (index + direction + group.tabIds.length) % group.tabIds.length
+        ];
+      selectTab(next);
+      scheduleFrame(() => focusControl(`split-tab-${next}`));
+    },
+    [groupFocus, visibleGroup, selectTab],
+  );
   const showMenu = useCallback(
     (groupId: string, anchor: View | null) =>
       showPicker(groupId, anchor, "menu"),
@@ -290,6 +327,7 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
       groupId: string,
       newSplit = false,
       sourceName?: string,
+      splitDirection?: Board["direction"],
     ) => {
       try {
         const parsed = targetSchema.parse(target);
@@ -311,7 +349,12 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
           (item) => resourceKey(item) === resourceKey(pane),
         );
         const newGroupId = newSplit ? `group-${id()}` : undefined;
-        setBoard((current) => addPane(current, pane, { groupId, newGroupId }));
+        setBoard((current) => {
+          const next = addPane(current, pane, { groupId, newGroupId });
+          return splitDirection && next.groups.length > current.groups.length
+            ? { ...next, direction: splitDirection }
+            : next;
+        });
         const targetGroup = groupOf(duplicate?.id ?? pane.id)!;
         setFocusedGroup(targetGroup.id);
         setMaximized((current) =>
@@ -329,10 +372,33 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
     (target: Target, workspaceId: string) => {
       const current = pickerRef.current;
       if (current)
-        openTarget(target, workspaceId, current.groupId, current.newSplit);
+        openTarget(
+          target,
+          workspaceId,
+          current.groupId,
+          current.newSplit,
+          undefined,
+          current.splitDirection,
+        );
     },
     [openTarget],
   );
+  const createAgent = useCallback(() => {
+    const groupId = visibleGroup ?? groupFocus;
+    const group = boardRef.current.groups.find((item) => item.id === groupId);
+    const pane = boardRef.current.panes.find(
+      (item) => item.id === group?.activeTabId,
+    );
+    if (pane)
+      openTarget(
+        { kind: "draft", draftId: `draft-${id()}` },
+        pane.workspaceId,
+        groupId,
+        false,
+        pane.workspaceName,
+      );
+    else showPicker(groupId, null, "new");
+  }, [visibleGroup, groupFocus, openTarget, showPicker]);
   const openFromPane = useCallback(
     (tabId: string, target: Target, side = false) => {
       const pane = boardRef.current.panes.find((pane) => pane.id === tabId),
@@ -399,6 +465,24 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
     },
     [bridge.data, instanceId, setBoard],
   );
+  const closeCurrentTab = useCallback(() => {
+    const group = boardRef.current.groups.find(
+      (item) => item.id === (visibleGroup ?? groupFocus),
+    );
+    const tabId = group?.activeTabId;
+    if (!tabId) return;
+    void closeTab(tabId).then(() => {
+      if (boardRef.current.panes.some((pane) => pane.id === tabId)) return;
+      const activeTabId = boardRef.current.groups.find(
+        (item) => item.id === group.id,
+      )?.activeTabId;
+      scheduleFrame(() =>
+        focusControl(
+          activeTabId ? `split-tab-${activeTabId}` : `split-add-${group.id}`,
+        ),
+      );
+    });
+  }, [closeTab, groupFocus, visibleGroup]);
   const retarget = useCallback(
     (tabId: string, target: Target) => {
       const parsed = targetSchema.safeParse(target);
@@ -429,11 +513,12 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
       ),
     [setBoard],
   );
-  const createTerminal = useCallback(
-    async (workspaceId: string) => {
-      if (busy) return;
-      const selected = pickerRef.current;
-      if (!selected) return;
+  const createTerminalAt = useCallback(
+    async (
+      workspaceId: string,
+      selected: Pick<Picker, "groupId" | "newSplit" | "splitDirection">,
+    ) => {
+      if (terminalCreation.current) return;
       if (
         boardRef.current.panes.length >= 8 ||
         (selected.newSplit && boardRef.current.groups.length >= 8)
@@ -441,6 +526,7 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
         setNotice("最多打开 8 个资源 Tab / 分屏，请先关闭一个。");
         return;
       }
+      terminalCreation.current = true;
       setBusy(true);
       try {
         const terminal = await paseo.workspaces
@@ -451,16 +537,36 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
           workspaceId,
           selected.groupId,
           selected.newSplit,
+          undefined,
+          selected.splitDirection,
         );
         void directory.refetch();
       } catch (error) {
         setNotice(errorMessage(error));
       } finally {
+        terminalCreation.current = false;
         setBusy(false);
       }
     },
-    [paseo, openTarget, directory.refetch, busy],
+    [paseo, openTarget, directory.refetch],
   );
+  const createTerminal = useCallback(
+    (workspaceId: string) => {
+      const selected = pickerRef.current;
+      if (selected) void createTerminalAt(workspaceId, selected);
+    },
+    [createTerminalAt],
+  );
+  const newTerminal = useCallback(() => {
+    const groupId = visibleGroup ?? groupFocus;
+    const group = boardRef.current.groups.find((item) => item.id === groupId);
+    const pane = boardRef.current.panes.find(
+      (item) => item.id === group?.activeTabId,
+    );
+    if (pane)
+      void createTerminalAt(pane.workspaceId, { groupId, newSplit: false });
+    else showPicker(groupId, null, "new-terminal");
+  }, [visibleGroup, groupFocus, createTerminalAt, showPicker]);
   const maximize = useCallback((groupId: string) => {
     setFocusedGroup(groupId);
     setMaximized((current) => (current === groupId ? null : groupId));
@@ -791,6 +897,12 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
         bridge={bridge.data}
         enabled={routeActive && picker === null}
         onNewTab={openNewTab}
+        onCloseTab={closeCurrentTab}
+        onCycleTab={cycleCurrentTab}
+        onJumpTab={jumpToTab}
+        onNewAgent={createAgent}
+        onNewTerminal={newTerminal}
+        onSplit={openSplit}
       />
       {layout.compact && board.groups.length > 1 && (
         <View

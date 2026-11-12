@@ -1,11 +1,19 @@
 export interface ShortcutEvent {
   key: string;
+  code?: string;
   metaKey: boolean;
   ctrlKey: boolean;
   altKey: boolean;
   shiftKey: boolean;
   isComposing?: boolean;
   repeat?: boolean;
+}
+
+export function shortcutDigit(
+  event: Pick<ShortcutEvent, "key" | "code">,
+): number | null {
+  const digit = event.code?.match(/^Digit([1-9])$/)?.[1] ?? event.key;
+  return /^[1-9]$/.test(digit) ? Number(digit) : null;
 }
 
 export function matchesShortcutStroke(
@@ -38,5 +46,15 @@ export function matchesShortcutStroke(
     esc: "escape",
     return: "enter",
   };
-  return key !== undefined && event.key.toLowerCase() === (alias[key] ?? key);
+  if (key === "1-9" || key === "digit") return shortcutDigit(event) !== null;
+  if (key === undefined) return false;
+  const physicalKey: Record<string, string> = {
+    "\\": "Backslash",
+    "[": "BracketLeft",
+    "]": "BracketRight",
+  };
+  return (
+    event.key.toLowerCase() === (alias[key] ?? key) ||
+    (physicalKey[key] !== undefined && event.code === physicalKey[key])
+  );
 }

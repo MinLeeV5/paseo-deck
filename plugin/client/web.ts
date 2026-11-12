@@ -54,6 +54,7 @@ interface WebElement {
   };
 }
 interface ShortcutInput extends ShortcutEvent {
+  defaultPrevented: boolean;
   target?: WebElement;
   preventDefault(): void;
   stopPropagation(): void;
@@ -192,7 +193,7 @@ export function onPageExit(callback: () => void): () => void {
 export function onNativeActionShortcut(
   chord: string[][],
   blocked: () => boolean,
-  dispatch: () => boolean,
+  dispatch: (event: ShortcutEvent) => boolean,
 ): () => void {
   if (Platform.OS !== "web") return () => {};
   if (
@@ -212,6 +213,7 @@ export function onNativeActionShortcut(
     clearTimeout(timer);
   };
   const handle = (event: ShortcutInput) => {
+    if (event.defaultPrevented) return;
     if (["Meta", "Control", "Shift", "Alt"].includes(event.key)) return;
     if (blocked()) {
       reset();
@@ -223,7 +225,7 @@ export function onNativeActionShortcut(
     }
     if (++step === chord.length) {
       reset();
-      if (dispatch()) {
+      if (dispatch(event)) {
         event.preventDefault();
         event.stopPropagation();
       }
