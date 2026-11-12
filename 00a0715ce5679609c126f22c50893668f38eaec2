@@ -1,0 +1,237 @@
+tools/model.test.mjs
+  dc44192b3f0ea250 13,70,90-94,320-350
+artifacts/performance-actions-final-8-panes.json
+  dc44192b3f0ea250 1-46
+plugin/server/bridge.ts
+  4d50c34df89ac94c 6,18
+plugin/client/tab-menu-types.ts
+  a5f00939679d5720 1-24,26,33-64,69-78
+  dc44192b3f0ea250 25,27-32,65-68
+tools/browser-performance.py
+  a5f00939679d5720 42
+plugin/client/native-pane.tsx
+  a5f00939679d5720 227
+  4d50c34df89ac94c 163,239
+artifacts/actions-close-all-experience.json
+  a5f00939679d5720 1-54
+plugin/client/resource-picker.tsx
+  dc44192b3f0ea250 213-215,220
+artifacts/tab-context-web-experience.json
+  dc44192b3f0ea250 1,9
+  a5f00939679d5720 2-3,8
+  4d50c34df89ac94c 4-7
+README.md
+  56084a45313d4327 17-19,36,39-40
+  a5f00939679d5720 1,3,5-8,10,12-16,20,22-26,28,30,32,34,38,41-42,44,46,48,50,52-75,77-79,81,83,85-126,128,130-136,138,140
+package.json
+  56084a45313d4327 6-13
+  4d50c34df89ac94c 2,18
+artifacts/actions-experience.json
+  dc44192b3f0ea250 16-18,21
+  4d50c34df89ac94c 26-28
+  a5f00939679d5720 5-15,19-20,22-25,29-31
+plugin/package.json
+  56084a45313d4327 5-13
+  4d50c34df89ac94c 2
+tools/toolbar.test.mjs
+  a5f00939679d5720 1-24
+TAB-CONTEXT-RESULTS.md
+  dc44192b3f0ea250 1-29
+ACTIONS-RESULTS.md
+  4d50c34df89ac94c 1-47
+plugin/client/workspace-types.ts
+  dc44192b3f0ea250 7-8,16,36-37,41,72-82,87-89,102-103,110-113
+  a5f00939679d5720 4,9-15,83-86,90-101,104-109,114-121
+artifacts/actions-compat-0.13.0.json
+  a5f00939679d5720 11-12
+  dc44192b3f0ea250 1-10,13
+artifacts/actions-native-unified-editor-targets.json
+  a5f00939679d5720 1-12
+artifacts/menu-layout-experience.json
+  a5f00939679d5720 107-117
+artifacts/actions-native-overflow-editor-targets.json
+  a5f00939679d5720 1-12
+plugin/client/pane-frame.tsx
+  dc44192b3f0ea250 5,13,26,44-45,52,70-71,130,139-146,151-154,157,167-168,206-209,218-219,222-225,234-235,246-257,259-262,266-273,276-288,290-295,297-303,306-354
+  a5f00939679d5720 32,58,191
+plugin/client/directory.ts
+  a5f00939679d5720 4,16,26,36-38,43-45,61,64
+plugin/client/official-menus.tsx
+  a5f00939679d5720 28-32,38-54,56-147,149-152,155-159,164-171,173-180,190-193,197-198,207-247
+  dc44192b3f0ea250 1-27,33-37,55,148,153-154,160-163,172,181-189,194-196,199-206,248
+artifacts/actions-native-contracts.json
+  a5f00939679d5720 1-261
+plugin/shared/toolbar.ts
+  dc44192b3f0ea250 46-54,60-65
+  a5f00939679d5720 1-45,55-59
+plugin/client/tab-context-menu.tsx
+  dc44192b3f0ea250 1-83,88-245
+  4d50c34df89ac94c 84-87
+design/tab-interaction.html
+  4d50c34df89ac94c 2,7
+PERFORMANCE.md
+  4d50c34df89ac94c 5-17
+design/INTERACTION-DESIGN.md
+  4d50c34df89ac94c 1
+plugin/paseo-plugin.json
+  4d50c34df89ac94c 2-3
+artifacts/actions-native-editor-targets.json
+  45d8aa8edb7cecb2 1-12
+plugin/shared/model.ts
+  a5f00939679d5720 108-109,115-121
+  dc44192b3f0ea250 110-114
+plugin/index.client.tsx
+  4d50c34df89ac94c 12,30,34-35
+plugin/shared/bridge.ts
+  dc44192b3f0ea250 30-42
+  a5f00939679d5720 16,49-57,77-82
+TABS-RESULTS.md
+  56084a45313d4327 3
+tools/demo.mjs
+  a5f00939679d5720 12,14,20
+  4d50c34df89ac94c 15,23,26-27,111,169
+plugin/client/web.ts
+  4d50c34df89ac94c 182-183,191,205,231
+  dc44192b3f0ea250 12-13,52,238-239,249-252,256-258,264,273-280,283-297,855-874
+  a5f00939679d5720 11,14-15,196-204,206-230,232-237,240-248,253-255,259-263,265-272,281-282
+README.zh-CN.md
+  56084a45313d4327 17-19,36,39-40
+  a5f00939679d5720 1-16,20-35,37-38,41-140
+plugin/client/workspace-actions.tsx
+  dc44192b3f0ea250 242-243,257,481,669-670,682-683,688-689,975,1013
+  a5f00939679d5720 15,26-38,41-48,57,84,98-101,103-124,136,138-140,186-195,201,206,208,240-241,667-668,680-681,687,690-696,712,795-811,813,817-842,848-921,984-1012,1030-1034
+artifacts/tab-context-experience.json
+  dc44192b3f0ea250 1-15
+DEMO-RESULTS.md
+  56084a45313d4327 3
+plugin/client/board.tsx
+  dc44192b3f0ea250 24,31,152-157,520-530,536,555-560,687-764,884,1346,1454,1471-1473
+  a5f00939679d5720 44,585-587,1460
+plugin/client/native-types.ts
+  a5f00939679d5720 5-6,39
+artifacts/performance-actions-final-4-panes.json
+  a5f00939679d5720 1-47
+plugin/OVERVIEW.zh-CN.md
+  a5f00939679d5720 1-2,5-25
+  56084a45313d4327 3-4,26-27
+plugin/OVERVIEW.md
+  4d50c34df89ac94c 1
+  56084a45313d4327 3,26-27
+  a5f00939679d5720 5,7-11,13,15,17-25
+artifacts/actions-script-back-capture.json
+  a5f00939679d5720 1-66
+artifacts/actions-compat-0.14.0.json
+  a5f00939679d5720 1-13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.8.2",
+  "base_commit_sha": "00a0715ce5679609c126f22c50893668f38eaec2",
+  "prompts": {
+    "45d8aa8edb7cecb2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ce04-d42f-7491-9c9f-e74dbfcd1e65",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 12,
+      "total_deletions": 0,
+      "accepted_lines": 13,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/b4e90c2c541cf8468206d1cefbb00480d733e34877151f8d1f2585c2d36adabf",
+      "token_usage": {
+        "input_tokens": 212117,
+        "output_tokens": 37261,
+        "cache_read_tokens": 7221760,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    },
+    "4d50c34df89ac94c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ce22-91ee-7b41-b2b8-94e31a46a4ad",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 113,
+      "total_deletions": 44,
+      "accepted_lines": 101,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/0c15388bcffccf676cace823e8e0be5a8bbc10e17f1e4a8c061d3282df94523a",
+      "token_usage": {
+        "input_tokens": 100652,
+        "output_tokens": 17733,
+        "cache_read_tokens": 2055168,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    },
+    "56084a45313d4327": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ce51-07d3-7030-93d7-13589d997661",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 39,
+      "total_deletions": 8,
+      "accepted_lines": 39,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/bbbf0ac46ef729171dd0237599b4d52debe33ab767de5ca3f64f795b1e2bd11d",
+      "token_usage": {
+        "input_tokens": 54812,
+        "output_tokens": 7118,
+        "cache_read_tokens": 255360,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    },
+    "a5f00939679d5720": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1cb90-0408-7aa0-987d-2497db22bad2",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 1678,
+      "total_deletions": 264,
+      "accepted_lines": 1501,
+      "overriden_lines": 1,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/d1efab7b9f907bf3d15fbba2c395f8b1fe85cb7eec06ebdecfd3fd5034061260",
+      "token_usage": {
+        "input_tokens": 2877604,
+        "output_tokens": 908308,
+        "cache_read_tokens": 159877248,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    },
+    "dc44192b3f0ea250": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ce16-2d32-7b83-86dc-db2fb484a38c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 954,
+      "total_deletions": 241,
+      "accepted_lines": 824,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/649d9d189cfa80a4beb921c979ee53f310914e483a79648f8415f6219dd40826",
+      "token_usage": {
+        "input_tokens": 370768,
+        "output_tokens": 69523,
+        "cache_read_tokens": 21035904,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    }
+  }
+}
