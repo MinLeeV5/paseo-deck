@@ -1,4 +1,4 @@
-import { moveTab, type Board, type TabGroup } from "./model.ts";
+import { MAX_SPLITS, moveTab, type Board, type TabGroup } from "./model.ts";
 import {
   replaceSplitGroup,
   retainSplitGroups,
@@ -212,7 +212,7 @@ export function canSplitTab(
     source &&
       target &&
       (source !== target || source.tabIds.length > 1) &&
-      groups.length + (source.tabIds.length > 1 ? 1 : 0) <= 8,
+      groups.length + (source.tabIds.length > 1 ? 1 : 0) <= MAX_SPLITS,
   );
 }
 

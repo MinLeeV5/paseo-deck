@@ -152,7 +152,7 @@ On Windows/Linux, creation, closing, and composer focus use Paseo's `Ctrl` bindi
 
 ## Scope and compatibility
 
-- One selected host, up to **8 resource Tabs / 8 splits**. The add panel reads up to 200 Agents and 200 workspaces.
+- One selected host, up to **8 splits**, with no limit on resource Tabs. The add panel reads up to 200 Agents and 200 workspaces.
 - Tested with matching daemon/client builds of **0.13.0, 0.14.0, and 0.15.4**, including the 0.15.4 Electron app on macOS. Native iOS/Android clients are not supported.
 - This experimental plugin reuses **private Paseo UI components** without modifying application files. Future app builds may require a compatibility update; an unsupported build displays an error.
 - Third-party panels keep their own behavior and requirements. GitLens, conversation bookmarks, and Keep awake were exercised; this does not establish compatibility with every plugin.

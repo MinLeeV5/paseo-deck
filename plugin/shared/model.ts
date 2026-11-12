@@ -5,6 +5,9 @@ import {
   splitNodeSchema,
 } from "./split-tree.ts";
 
+export const MAX_SPLITS = 8;
+export const SPLIT_LIMIT_MESSAGE = `最多显示 ${MAX_SPLITS} 个分屏，请先关闭一个分屏。`;
+
 export const targetSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("agent"), agentId: z.string().min(1) }),
   z.object({
@@ -58,11 +61,11 @@ export const paneSchema = z.object({
 });
 export const groupSchema = z.object({
   id: z.string().min(1),
-  tabIds: z.array(z.string().min(1)).max(8),
+  tabIds: z.array(z.string().min(1)),
   activeTabId: z.string().nullable(),
 });
 const layoutShape = {
-  panes: z.array(paneSchema).max(8),
+  panes: z.array(paneSchema),
   direction: z.enum(["row", "column"]),
   ratio: z.number().min(0.2).max(0.8),
   layout: z.enum(["auto", "two", "three", "four", "grid"]).optional(),
@@ -73,12 +76,14 @@ const layoutShape = {
 export const legacyBoardSchema = z.object({
   version: z.literal(1),
   ...layoutShape,
+  // Each resource in v1 becomes a separate split during migration.
+  panes: layoutShape.panes.max(MAX_SPLITS),
 });
 export const boardSchema = z
   .object({
     version: z.literal(2),
     ...layoutShape,
-    groups: z.array(groupSchema).min(1).max(8),
+    groups: z.array(groupSchema).min(1).max(MAX_SPLITS),
   })
   .superRefine((board, context) => {
     const ids = new Set(board.panes.map((pane) => pane.id));
@@ -201,10 +206,8 @@ export function addPane(
     (item) => resourceKey(item) === resourceKey(pane),
   );
   if (duplicate) return activateTab(board, duplicate.id);
-  if (board.panes.length >= 8)
-    throw new Error("最多打开 8 个资源 Tab，请先关闭一个 Tab。");
-  if (destination?.newGroupId && board.groups.length >= 8)
-    throw new Error("最多显示 8 个分屏。");
+  if (destination?.newGroupId && board.groups.length >= MAX_SPLITS)
+    throw new Error(SPLIT_LIMIT_MESSAGE);
   const groupId = destination?.groupId ?? board.groups[0].id;
   if (
     !destination?.newGroupId &&
@@ -296,8 +299,8 @@ export function moveTab(
   }
   if (create && board.groups.some((group) => group.id === destinationId))
     return board;
-  if (create && board.groups.length >= 8 && source.tabIds.length > 1)
-    throw new Error("最多显示 8 个分屏。");
+  if (create && board.groups.length >= MAX_SPLITS && source.tabIds.length > 1)
+    throw new Error(SPLIT_LIMIT_MESSAGE);
   if (!create && !board.groups.some((group) => group.id === destinationId))
     return board;
   const without = removeTab(board, tabId);

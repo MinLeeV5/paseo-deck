@@ -3,7 +3,7 @@ import {
   useRpc,
   type PluginScreenProps,
 } from "@getpaseo/plugin/client";
-import { Icon } from "@getpaseo/plugin/client/ui";
+import { Icon, useToast } from "@getpaseo/plugin/client/ui";
 import { useQuery } from "@tanstack/react-query";
 import {
   memo,
@@ -27,6 +27,8 @@ import {
   targetSchema,
   groupInspector,
   reconcileBoardLayout,
+  MAX_SPLITS,
+  SPLIT_LIMIT_MESSAGE,
   type Board,
   type Pane,
   type RelatedTabs,
@@ -107,6 +109,7 @@ export function SplitBoard(props: PluginScreenProps) {
 function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
   const instanceId = useId(),
     paseo = usePaseo(),
+    toast = useToast(),
     bridgeInfo = useRpc(bridgeInfoRpc);
   const [board, setBoardState] = useState<Board>(() => loadBoard(host.id));
   const boardRef = useRef(board),
@@ -117,8 +120,7 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
   const [maximized, setMaximized] = useState<string | null>(null);
   const [routeActive, setRouteActive] = useState(true);
   const [picker, setPicker] = useState<Picker | null>(null);
-  const [notice, setNotice] = useState<string | null>(null),
-    [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(false);
   const archivingAgent = useRef(false);
   const [viewport, setViewport] = useState({ width: 1000, height: 700 });
   const root = useRef<View>(null),
@@ -176,9 +178,9 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
       saveBoard(host.id, boardRef.current);
       savedBoard.current = boardRef.current;
     } catch (error) {
-      setNotice(`布局保存失败：${errorMessage(error)}`);
+      toast.error(`布局保存失败：${errorMessage(error)}`);
     }
-  }, [host.id]);
+  }, [host.id, toast]);
   useEffect(() => {
     const timer = setTimeout(persist, 300);
     return () => clearTimeout(timer);
@@ -275,7 +277,6 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
   const dismiss = useCallback(() => {
     const trigger = pickerRef.current?.trigger;
     setPicker(null);
-    setNotice(null);
     if (trigger) scheduleFrame(() => focusControl(trigger));
   }, []);
   const showPicker = useCallback(
@@ -290,7 +291,6 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
       setFocusedGroup(groupId);
       focusControl(`split-${mode === "menu" ? "menu" : "add"}-${groupId}`);
       const estimated = mode === "menu" ? 360 : 500;
-      setNotice(null);
       setPicker({
         key,
         groupId,
@@ -453,12 +453,11 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
           newSplit ? null : current ? targetGroup.id : null,
         );
         setPicker(null);
-        setNotice(null);
       } catch (error) {
-        setNotice(errorMessage(error));
+        toast.error(errorMessage(error));
       }
     },
-    [bridge.data, host.id, titleFor, setBoard, groupOf],
+    [bridge.data, host.id, titleFor, setBoard, groupOf, toast],
   );
   const chooseTarget = useCallback(
     (target: Target, workspaceId: string) => {
@@ -500,7 +499,6 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
       if (!agent || !bridge.data || archivingAgent.current) return;
       archivingAgent.current = true;
       setBusy(true);
-      setNotice(null);
       try {
         const confirmed = await bridge.data.confirmDialog({
           title: "归档 Agent",
@@ -523,13 +521,13 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
         );
         void directory.refetch();
       } catch (error) {
-        setNotice(`归档失败：${errorMessage(error)}`);
+        toast.error(`归档失败：${errorMessage(error)}`);
       } finally {
         archivingAgent.current = false;
         setBusy(false);
       }
     },
-    [bridge.data, paseo, host.id, setBoard, directory.refetch],
+    [bridge.data, paseo, host.id, setBoard, directory.refetch, toast],
   );
   const openPluginPanel = useCallback(
     (request: PluginPanelRequest): boolean => {
@@ -612,13 +610,12 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
         if (destination) setFocusedGroup(destination.id);
         actionOwner.current = openedId;
         setPicker(null);
-        setNotice(null);
       } catch (error) {
-        setNotice(errorMessage(error));
+        toast.error(errorMessage(error));
       }
       return true;
     },
-    [host.id, bridge.data, groupOf, setBoard],
+    [host.id, bridge.data, groupOf, setBoard, toast],
   );
   useEffect(
     () =>
@@ -761,12 +758,12 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
             : next;
         });
       } catch (error) {
-        setNotice(errorMessage(error));
+        toast.error(errorMessage(error));
       } finally {
         pendingCloses.current.delete(tabId);
       }
     },
-    [bridge.data, confirmRunningTabs, instanceId, setBoard],
+    [bridge.data, confirmRunningTabs, instanceId, setBoard, toast],
   );
   const closeEmptyGroup = useCallback(
     (groupId: string) => {
@@ -890,14 +887,21 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
           ),
         );
       } catch (error) {
-        setNotice(errorMessage(error));
+        toast.error(errorMessage(error));
       } finally {
         if (!committed) resumes.forEach((resume) => resume());
         ids.forEach((id) => pendingCloses.current.delete(id));
         closingAll.current = false;
       }
     },
-    [bridge.data, confirmRunningTabs, closeEmptyGroup, instanceId, setBoard],
+    [
+      bridge.data,
+      confirmRunningTabs,
+      closeEmptyGroup,
+      instanceId,
+      setBoard,
+      toast,
+    ],
   );
   const closeRelatedTabs = useCallback(
     async (tabId: string, scope: RelatedTabs) => {
@@ -986,13 +990,13 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
       setFocusedGroup(boardRef.current.groups[0].id);
       actionOwner.current = null;
     } catch (error) {
-      setNotice(errorMessage(error));
+      toast.error(errorMessage(error));
     } finally {
       if (!committed) resumes.forEach((resume) => resume());
       closing.forEach((pane) => pendingCloses.current.delete(pane.id));
       closingAll.current = false;
     }
-  }, [bridge.data, confirmRunningTabs, instanceId, setBoard]);
+  }, [bridge.data, confirmRunningTabs, instanceId, setBoard, toast]);
   const retarget = useCallback(
     (tabId: string, target: Target) => {
       const parsed = targetSchema.safeParse(target);
@@ -1029,11 +1033,8 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
       selected: Pick<Picker, "groupId" | "newSplit" | "splitDirection">,
     ) => {
       if (terminalCreation.current) return;
-      if (
-        boardRef.current.panes.length >= 8 ||
-        (selected.newSplit && boardRef.current.groups.length >= 8)
-      ) {
-        setNotice("最多打开 8 个资源 Tab / 分屏，请先关闭一个。");
+      if (selected.newSplit && boardRef.current.groups.length >= MAX_SPLITS) {
+        toast.error(SPLIT_LIMIT_MESSAGE);
         return;
       }
       terminalCreation.current = true;
@@ -1052,13 +1053,13 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
         );
         void directory.refetch();
       } catch (error) {
-        setNotice(errorMessage(error));
+        toast.error(errorMessage(error));
       } finally {
         terminalCreation.current = false;
         setBusy(false);
       }
     },
-    [paseo, openTarget, directory.refetch],
+    [paseo, openTarget, directory.refetch, toast],
   );
   const createTerminal = useCallback(
     (workspaceId: string) => {
@@ -1256,11 +1257,10 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
       const pane = board.panes.find((pane) => pane.id === group.activeTabId);
       const run = (callback: () => void) => () => {
         setPicker(null);
-        setNotice(null);
         try {
           callback();
         } catch (error) {
-          setNotice(errorMessage(error));
+          toast.error(errorMessage(error));
         }
       };
       const actions: PaneMenuAction[] = [];
@@ -1440,6 +1440,7 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
       dropTab,
       splitDraggedTab,
       board.splitTree,
+      toast,
     ],
   );
   const menuActionsByGroup = useMemo(
@@ -1787,9 +1788,7 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
         onClose={dismiss}
         onRefresh={() => void directory.refetch()}
         busy={busy}
-        error={
-          notice ?? (directory.error ? errorMessage(directory.error) : null)
-        }
+        error={directory.error ? errorMessage(directory.error) : null}
         onHeightChange={resizePicker}
         menuActions={menuActions}
       />
@@ -1797,18 +1796,15 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
   }
   return (
     <View ref={root} testID="split-board" style={{ flex: 1, minHeight: 0 }}>
-      {((notice && !picker) ||
-        bridge.error ||
-        (directory.error && !picker)) && (
+      {(bridge.error || (directory.error && !picker)) && (
         <View style={{ paddingHorizontal: 12, paddingVertical: 8, gap: 6 }}>
           <Text style={{ color: colors.foreground, fontSize: 12 }}>
-            {notice ?? errorMessage(bridge.error ?? directory.error)}
+            {errorMessage(bridge.error ?? directory.error)}
           </Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="重试"
             onPress={() => {
-              setNotice(null);
               void bridge.refetch();
               void directory.refetch();
             }}

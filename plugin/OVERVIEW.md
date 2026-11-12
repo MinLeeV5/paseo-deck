@@ -44,7 +44,7 @@ Choose which plugin buttons stay in the Tab bar; narrow splits keep the same act
 
 Requires **Paseo daemon and client 0.13.0+**. Desktop and Web are supported; native iOS/Android clients are not. Current plugin menus use Simplified Chinese.
 
-A board contains up to **8 resource Tabs / 8 splits** from one selected host. The add panel reads up to 200 Agents and 200 workspaces. External editor targets depend on Paseo's desktop capabilities; third-party panels keep their own requirements.
+A board contains up to **8 splits** from one selected host, with no limit on resource Tabs. The add panel reads up to 200 Agents and 200 workspaces. External editor targets depend on Paseo's desktop capabilities; third-party panels keep their own requirements.
 
 Layouts and preferences do not sync between clients. Messages, attachments, and tool results use Paseo's existing host and configured provider connections. Scripts run in their source workspace on the selected host. No separate account or API key is needed for Deck.
 

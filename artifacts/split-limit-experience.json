@@ -1,0 +1,78 @@
+{
+  "checks": [
+    {
+      "check": "Ninth Tab opens in the same split",
+      "passed": true
+    },
+    {
+      "check": "Nine Tabs survive a full client reload",
+      "passed": true
+    },
+    {
+      "check": "Terminal opens with more than eight Tabs",
+      "passed": true,
+      "tabs": 10,
+      "terminalId": "1a6a3dd8-aaf9-498e-980e-d27336b53bf4"
+    },
+    {
+      "check": "Eight splits still accept another Tab",
+      "passed": true,
+      "tabs": 11,
+      "splits": 8
+    },
+    {
+      "check": "Ninth split uses Paseo Toast outside the board, without a banner",
+      "passed": true,
+      "splits": 8,
+      "tabs": 11
+    },
+    {
+      "check": "Terminal creation in a ninth split is blocked with native Toast",
+      "passed": true,
+      "tabs": 11,
+      "splits": 8
+    },
+    {
+      "check": "Rejected ninth split creates no extra terminal",
+      "passed": true,
+      "terminals": 1
+    },
+    {
+      "check": "Compact light client adds Tabs at eight splits and blocks a ninth split with native Toast",
+      "passed": true,
+      "width": 480,
+      "tabs": 12,
+      "splits": 8,
+      "toastWithinViewport": true,
+      "theme": "light",
+      "background": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "check": "Native Toast dismisses automatically",
+      "passed": true
+    }
+  ],
+  "validation": {
+    "typecheck": "passed",
+    "tests": 62,
+    "plugin": "running",
+    "nativeThemes": [
+      "dark",
+      "light"
+    ],
+    "viewports": [
+      {
+        "width": 1440,
+        "height": 900
+      },
+      {
+        "width": 480,
+        "height": 900
+      }
+    ]
+  },
+  "screenshots": [
+    "split-limit-toast-dark.png",
+    "split-limit-toast-light-compact.png"
+  ]
+}

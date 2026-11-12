@@ -12,6 +12,8 @@ import {
   activateTab,
   relatedTabIds,
   targetSchema,
+  MAX_SPLITS,
+  SPLIT_LIMIT_MESSAGE,
 } from "../plugin/shared/model.ts";
 import {
   matchesShortcutStroke,
@@ -73,10 +75,69 @@ test("restored state rejects invalid resource identities and split ratios", () =
     true,
   );
 });
-test("the pane limit is checked before adding another resource", () => {
+test("Tabs have no count limit and survive restoring the board", () => {
   let state = emptyBoard;
-  for (let i = 0; i < 8; i++) state = addPane(state, pane(`workspace-${i}`));
-  assert.throws(() => addPane(state, pane("workspace-9")), /8/);
+  for (let i = 0; i < 32; i++) state = addPane(state, pane(`workspace-${i}`));
+  assert.equal(state.panes.length, 32);
+  assert.equal(state.groups.length, 1);
+  assert.equal(state.groups[0].tabIds.length, 32);
+  assert.deepEqual(restoreBoard(JSON.parse(JSON.stringify(state))), state);
+});
+test("eight splits still accept Tabs, but reject a ninth split", () => {
+  let state = addPane(emptyBoard, pane("workspace-0"));
+  const groupId = state.groups[0].id;
+  for (let i = 1; i < MAX_SPLITS; i++)
+    state = addPane(state, pane(`workspace-${i}`), {
+      groupId,
+      newGroupId: `group-${i}`,
+    });
+  for (let i = MAX_SPLITS; i < 32; i++)
+    state = addPane(state, pane(`workspace-${i}`), { groupId });
+  assert.equal(state.groups.length, MAX_SPLITS);
+  assert.equal(state.panes.length, 32);
+  assert.deepEqual(restoreBoard(JSON.parse(JSON.stringify(state))), state);
+  assert.throws(
+    () =>
+      addPane(state, pane("workspace-extra"), {
+        groupId,
+        newGroupId: "ninth-split",
+      }),
+    { message: SPLIT_LIMIT_MESSAGE },
+  );
+  assert.throws(
+    () => moveTab(state, state.groups[0].tabIds[0], "ninth-split", true),
+    { message: SPLIT_LIMIT_MESSAGE },
+  );
+  const moved = moveTab(state, state.groups[0].tabIds[0], state.groups[1].id);
+  assert.equal(moved.groups.length, MAX_SPLITS);
+  assert.equal(moved.panes, state.panes);
+  assert.equal(boardSchema.safeParse(moved).success, true);
+  assert.equal(
+    addPane(state, pane("workspace-31"), { groupId, newGroupId: "duplicate" }),
+    state,
+  );
+  const ninth = {
+    ...state,
+    groups: [
+      ...state.groups,
+      { id: "ninth-split", tabIds: [], activeTabId: null },
+    ],
+  };
+  assert.equal(boardSchema.safeParse(ninth).success, false);
+  assert.equal(restoreBoard(ninth), null);
+});
+test("legacy resources migrate to at most eight splits", () => {
+  const legacy = {
+    version: 1,
+    panes: Array.from({ length: MAX_SPLITS }, (_, i) => pane(`workspace-${i}`)),
+    direction: "row",
+    ratio: 0.5,
+  };
+  assert.equal(restoreBoard(legacy).groups.length, MAX_SPLITS);
+  assert.equal(
+    restoreBoard({ ...legacy, panes: [...legacy.panes, pane("extra")] }),
+    null,
+  );
 });
 test("private component lookup follows the current build instead of a fixed module id", () => {
   const source =
