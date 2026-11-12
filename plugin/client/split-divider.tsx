@@ -1,12 +1,51 @@
-import { memo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import {
   Platform,
+  PanResponder,
   View,
   type GestureResponderHandlers,
   type ViewStyle,
 } from "react-native";
 import type { PluginScreenProps } from "@getpaseo/plugin/client";
 import type { Rect } from "./pane-frame";
+import type { Axis } from "../shared/layout";
+
+export const LayoutDivider = memo(function LayoutDivider({
+  axis,
+  boundary,
+  onStart,
+  onMove,
+  onEnd,
+  ...props
+}: Omit<Parameters<typeof SplitDivider>[0], "handlers" | "direction"> & {
+  axis: Axis;
+  boundary: number;
+  onStart(axis: Axis, boundary: number, id: string): void;
+  onMove(delta: number): void;
+  onEnd(): void;
+}) {
+  const drag = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderTerminationRequest: () => false,
+        onPanResponderGrant: () => onStart(axis, boundary, props.id),
+        onPanResponderMove: (_event, gesture) =>
+          onMove(axis === "x" ? gesture.dx : gesture.dy),
+        onPanResponderRelease: onEnd,
+        onPanResponderTerminate: onEnd,
+      }),
+    [axis, boundary, props.id, onStart, onMove, onEnd],
+  );
+  return (
+    <SplitDivider
+      {...props}
+      direction={axis === "x" ? "row" : "column"}
+      handlers={drag.panHandlers}
+    />
+  );
+});
 
 export const SplitDivider = memo(function SplitDivider({
   id,

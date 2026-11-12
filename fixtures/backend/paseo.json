@@ -1,0 +1,13 @@
+{
+  "scripts": {
+    "split:check": {
+      "command": "printf 'SCRIPT_BACK_OK\\n'; pwd"
+    },
+    "split:live": {
+      "command": "node -e \"console.log('SCRIPT_BACK_LIVE_OK'); setInterval(() => {}, 1000)\""
+    },
+    "backend:only": {
+      "command": "printf 'BACK_ONLY_OK\\n'"
+    }
+  }
+}

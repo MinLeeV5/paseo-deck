@@ -6,6 +6,12 @@ import {
   type TabGroup,
 } from "../shared/model";
 import type { NativeBridge } from "./native-types";
+import type { PluginPanelRequest } from "./workspace-types";
+import {
+  canSplitTab,
+  splitDropPosition,
+  type SplitEdge,
+} from "../shared/layout";
 import { matchesShortcutStroke, type ShortcutEvent } from "../shared/shortcuts";
 import {
   nativeExports,
@@ -120,7 +126,10 @@ export async function loadNativeBridge(
         ),
       ].map((name) => {
         const value = window.__r!(info.moduleIds[name])[name];
-        if (typeof value !== "function")
+        if (
+          typeof value !== "function" &&
+          !(value && typeof value === "object" && "$$typeof" in value)
+        )
           throw new Error(`原生入口 ${name} 已变化，已停止加载。`);
         return [name, value];
       }),
@@ -133,6 +142,15 @@ export async function loadNativeBridge(
         "function"
     )
       throw new Error("原生查询缓存入口已变化，已停止加载。");
+    const pluginButtonStore = window.__r(
+      info.moduleIds.pluginButtonStore,
+    ).pluginButtonStore;
+    if (
+      !pluginButtonStore ||
+      typeof (pluginButtonStore as { getSnapshot?: unknown }).getSnapshot !==
+        "function"
+    )
+      throw new Error("原生扩展按钮入口已变化，已停止加载。");
     const pane = window.__r(info.moduleIds.WorkspacePaneContent);
     if (typeof pane.buildWorkspacePaneContentModel !== "function")
       throw new Error("原生面板构建入口已变化。");
@@ -141,6 +159,7 @@ export async function loadNativeBridge(
       ...info,
       ...exports,
       queryClient,
+      pluginButtonStore,
       buildWorkspacePaneContentModel: pane.buildWorkspacePaneContentModel,
       hasPanel: (kind: string) => Boolean(getPanel(kind)),
     } as unknown as NativeBridge;
@@ -336,15 +355,19 @@ export function onTabScroll(
   };
 }
 
-export type TabDropTarget = {
+type DropRect = {
   groupId: string;
-  index: number;
   left: number;
   top: number;
   width: number;
   height: number;
-  markerLeft: number;
 };
+export type TabDropTarget = DropRect &
+  (
+    | { kind: "tabs"; index: number; markerLeft: number }
+    | { kind: "merge" }
+    | { kind: "split"; edge: SplitEdge }
+  );
 export type TabDragPreview = {
   tabId: string;
   title: string;
@@ -395,7 +418,7 @@ export function onTabDrag(
   view: unknown,
   getGroups: () => TabGroup[],
   preview: (value: TabDragPreview | null) => void,
-  drop: (tabId: string, groupId: string, index: number) => void,
+  drop: (tabId: string, target: TabDropTarget) => void,
 ): () => void {
   if (Platform.OS !== "web" || !view) return () => {};
   const area = view as DragElement;
@@ -413,6 +436,7 @@ export function onTabDrag(
     opacity: string;
   } | null = null;
   let cancelFrame: (() => void) | null = null;
+  let cursorSheet: CursorSheet | null = null;
   let suppressClick = false;
   const userSelect = area.style.getPropertyValue("user-select");
   const locate = (
@@ -420,7 +444,8 @@ export function onTabDrag(
   ): { target: TabDropTarget | null; scrolled: boolean } => {
     if (!current) return { target: null, scrolled: false };
     const origin = area.getBoundingClientRect();
-    for (const group of getGroups()) {
+    const groups = getGroups();
+    for (const group of groups) {
       const element = area.querySelector(
         `[data-testid="split-group-${group.id}"]`,
       );
@@ -435,9 +460,49 @@ export function onTabDrag(
         x < bounds.left ||
         x > bounds.right ||
         y < header.top ||
-        y > (group.tabIds.length ? header.bottom : bounds.bottom)
+        y > bounds.bottom
       )
         continue;
+      if (y > header.bottom) {
+        const position = group.tabIds.length
+          ? splitDropPosition(
+              bounds.width,
+              bounds.bottom - header.bottom,
+              x - bounds.left,
+              y - header.bottom,
+            )
+          : "center";
+        const rect = {
+          groupId: group.id,
+          left: bounds.left - origin.left,
+          top: bounds.top - origin.top,
+          width: bounds.width,
+          height: bounds.height,
+        };
+        if (position === "center") {
+          return {
+            target: group.tabIds.includes(current.tabId)
+              ? null
+              : { ...rect, kind: "merge" },
+            scrolled: false,
+          };
+        }
+        if (!position || !canSplitTab(groups, current.tabId, group.id))
+          return { target: null, scrolled: false };
+        const horizontal = position === "left" || position === "right";
+        return {
+          target: {
+            ...rect,
+            kind: "split",
+            edge: position,
+            left: rect.left + (position === "right" ? rect.width / 2 : 0),
+            top: rect.top + (position === "bottom" ? rect.height / 2 : 0),
+            width: horizontal ? rect.width / 2 : rect.width,
+            height: horizontal ? rect.height : rect.height / 2,
+          },
+          scrolled: false,
+        };
+      }
       const strip = element.querySelector(
         `[data-testid="split-tabs-${group.id}"]`,
       );
@@ -478,6 +543,7 @@ export function onTabDrag(
       const max = stripBounds?.width ? stripBounds.right : header.right - 6;
       return {
         target: {
+          kind: "tabs",
           groupId: group.id,
           index,
           left: header.left - origin.left,
@@ -517,6 +583,8 @@ export function onTabDrag(
   const cancel = () => {
     cancelFrame?.();
     cancelFrame = null;
+    cursorSheet?.remove();
+    cursorSheet = null;
     const previous = current;
     current = null;
     if (!previous) return;
@@ -545,7 +613,7 @@ export function onTabDrag(
     if (!item) return;
     current = {
       tabId,
-      title: tab?.textContent?.trim() || "Tab",
+      title: tab?.getAttribute("aria-label")?.split(" · ")[0] || "Tab",
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
@@ -570,6 +638,11 @@ export function onTabDrag(
       )
         return;
       current.started = true;
+      // Preserve the normal click cursor until the drag threshold is crossed.
+      // Override descendants too, including native editors and other Tab bars.
+      cursorSheet = document.createElement("style");
+      cursorSheet.textContent = "* { cursor: grabbing !important; }";
+      document.head.appendChild(cursorSheet);
       current.item.style.setProperty("opacity", "0.4");
       area.style.setProperty("user-select", "none");
       area.setPointerCapture(current.pointerId);
@@ -585,10 +658,14 @@ export function onTabDrag(
     const target = started ? locate(false).target : null;
     suppressClick = started;
     cancel();
-    if (target) drop(tabId, target.groupId, target.index);
+    if (target) drop(tabId, target);
   };
   const interrupted = (event: TabPointerEvent) => {
     if (current?.pointerId === event.pointerId) cancel();
+  };
+  const lostCapture = (event: TabPointerEvent) => {
+    // A touch Tab can lose its implicit capture when capture moves to the area.
+    if (event.target === area) interrupted(event);
   };
   const key = (event: TabPointerEvent) => {
     suppressClick = false;
@@ -612,7 +689,7 @@ export function onTabDrag(
   area.addEventListener("pointerdown", down, true);
   area.addEventListener("click", click, true);
   area.addEventListener("dragstart", nativeDrag, true);
-  area.addEventListener("lostpointercapture", interrupted, true);
+  area.addEventListener("lostpointercapture", lostCapture, true);
   document.addEventListener("pointermove", move, true);
   document.addEventListener("pointerup", up, true);
   document.addEventListener("pointercancel", interrupted, true);
@@ -623,7 +700,7 @@ export function onTabDrag(
     area.removeEventListener("pointerdown", down, true);
     area.removeEventListener("click", click, true);
     area.removeEventListener("dragstart", nativeDrag, true);
-    area.removeEventListener("lostpointercapture", interrupted, true);
+    area.removeEventListener("lostpointercapture", lostCapture, true);
     document.removeEventListener("pointermove", move, true);
     document.removeEventListener("pointerup", up, true);
     document.removeEventListener("pointercancel", interrupted, true);
@@ -742,5 +819,98 @@ function visibleControl(testId: string): WebElement | undefined {
   ).find((element) => {
     const rect = element.getBoundingClientRect();
     return rect.width > 0 && rect.height > 0;
+  });
+}
+
+// Route only plugin panel opens. The original factory handles every request
+// outside the visible split screen, and is restored when the last owner leaves.
+type PanelRouter = (request: PluginPanelRequest) => boolean;
+let navigationPatch:
+  | {
+      module: Record<string, unknown>;
+      original: NativeBridge["createPluginNavigation"];
+      wrapped: NativeBridge["createPluginNavigation"];
+      routes: Set<PanelRouter>;
+    }
+  | undefined;
+export function installPluginPanelRouter(
+  bridge: NativeBridge,
+  route: PanelRouter,
+): () => void {
+  if (Platform.OS !== "web" || !window.__r) return () => {};
+  if (!navigationPatch) {
+    const module = window.__r(bridge.moduleIds.createPluginNavigation);
+    const original =
+      module.createPluginNavigation as NativeBridge["createPluginNavigation"];
+    const routes = new Set<PanelRouter>();
+    const dispatch = (request: PluginPanelRequest) => {
+      for (const handler of [...routes].reverse())
+        if (handler(request)) return true;
+      return false;
+    };
+    const wrapped: NativeBridge["createPluginNavigation"] = (input) => {
+      const navigation = original(input);
+      return {
+        ...navigation,
+        openWorkspacePanel(pluginId, panelId, location) {
+          if (
+            input.workspaceId &&
+            dispatch({
+              ...input,
+              workspaceId: input.workspaceId,
+              pluginId,
+              panelId,
+              context: "workspace",
+              location: location === "explorer" ? "explorer" : "workspace",
+            })
+          )
+            return;
+          navigation.openWorkspacePanel(pluginId, panelId, location);
+        },
+        openAgentPanel(pluginId, panelId, agentId, location) {
+          if (
+            input.workspaceId &&
+            dispatch({
+              ...input,
+              workspaceId: input.workspaceId,
+              pluginId,
+              panelId,
+              agentId,
+              context: "agent",
+              location: location === "explorer" ? "explorer" : "workspace",
+            })
+          )
+            return;
+          navigation.openAgentPanel(pluginId, panelId, agentId, location);
+        },
+      };
+    };
+    module.createPluginNavigation = wrapped;
+    navigationPatch = { module, original, wrapped, routes };
+  }
+  const patch = navigationPatch;
+  patch.routes.add(route);
+  return () => {
+    patch.routes.delete(route);
+    if (
+      !patch.routes.size &&
+      patch.module.createPluginNavigation === patch.wrapped
+    ) {
+      patch.module.createPluginNavigation = patch.original;
+      if (navigationPatch === patch) navigationPatch = undefined;
+    }
+  };
+}
+export function focusConversation(tabId: string): Promise<void> {
+  if (Platform.OS !== "web") return Promise.resolve();
+  return new Promise((resolve) => {
+    window.requestAnimationFrame(() => {
+      const pane = visibleControl(`split-pane-${tabId}`);
+      const input = Array.from(pane?.querySelectorAll("textarea") ?? []).find(
+        (element) => element.getBoundingClientRect().width > 0,
+      );
+      input?.focus({ preventScroll: true });
+      resolve();
+    });
   });
 }

@@ -1,0 +1,28 @@
+{
+  "browser": "Chrome, real Paseo 0.15.4 Web build",
+  "checks": [
+    "same-strip reorder",
+    "insert marker",
+    "hover pointer / active grabbing / released pointer",
+    "cross-pane insertion preserves the same native Composer and unsent draft",
+    "Escape cancels drag and restores the click cursor",
+    "dropping outside the tab bars preserves layout",
+    "small pointer jitter remains a click without reorder",
+    "native file editor retains DOM identity across panes",
+    "moving the last source Tab collapses its empty group without losing resources",
+    "reordered groups survive page reload",
+    "375px overflow strip auto-scroll and end insertion",
+    "375px touch drag reorders Tabs",
+    "vertical layout: drop into empty pane body",
+    "vertical cross-pane transfer",
+    "menu sorting alternative",
+    "light and dark insertion preview",
+    "final mouse and touch cursor cleanup"
+  ],
+  "validation": {
+    "typecheck": "passed",
+    "modelTests": 13,
+    "pluginRuntimeId": "workspace-split-demo",
+    "pluginStatus": "running"
+  }
+}

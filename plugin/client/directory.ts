@@ -27,6 +27,7 @@ export function useDirectory(
   const cache = useQueryClient();
   const key = ["split-directory-v2", hostId];
   const latest = useRef(new Map<string, PaseoAgent>());
+  const latestWorkspaces = useRef(new Map<string, PaseoWorkspace>());
   const query = useQuery({
     queryKey: key,
     queryFn: async (): Promise<Directory> => {
@@ -37,7 +38,14 @@ export function useDirectory(
         paseo.terminals.list(),
       ]);
       return {
-        workspaces: workspaces.entries,
+        workspaces: workspaces.entries.map((workspace) => {
+          const observed = latestWorkspaces.current.get(workspace.id);
+          return observed?.syncSeq !== undefined &&
+            workspace.syncSeq !== undefined &&
+            observed.syncSeq > workspace.syncSeq
+            ? observed
+            : workspace;
+        }),
         projects: projects.projects,
         agents: agents.entries.map(({ agent }) => {
           const update = latest.current.get(agent.id);
@@ -52,6 +60,92 @@ export function useDirectory(
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
+  useEffect(() => {
+    if (!active) return;
+    let stopped = false;
+    let release: (() => Promise<void>) | undefined;
+    let removeSnapshot: (() => void) | undefined;
+    const apply = (workspace: PaseoWorkspace) => {
+      latestWorkspaces.current.set(workspace.id, workspace);
+      cache.setQueryData<Directory>(
+        ["split-directory-v2", hostId],
+        (current) => {
+          if (!current) return current;
+          const old = current.workspaces.find(
+            (value) => value.id === workspace.id,
+          );
+          if (
+            old &&
+            old.name === workspace.name &&
+            old.title === workspace.title &&
+            old.workspaceDirectory === workspace.workspaceDirectory &&
+            old.projectDisplayName === workspace.projectDisplayName &&
+            old.projectRootPath === workspace.projectRootPath &&
+            old.projectCustomName === workspace.projectCustomName &&
+            old.projectCustomIconRevision ===
+              workspace.projectCustomIconRevision &&
+            JSON.stringify(old.scripts) === JSON.stringify(workspace.scripts)
+          )
+            return current;
+          return {
+            ...current,
+            workspaces: old
+              ? current.workspaces.map((value) =>
+                  value.id === workspace.id ? workspace : value,
+                )
+              : [...current.workspaces, workspace].slice(0, 200),
+          };
+        },
+      );
+    };
+    const removeListener = paseo.workspaces.subscribe((update) => {
+      if (update.kind === "upsert") apply(update.workspace);
+      else if (update.kind === "remove") {
+        latestWorkspaces.current.delete(update.id);
+        cache.setQueryData<Directory>(
+          ["split-directory-v2", hostId],
+          (current) =>
+            current && {
+              ...current,
+              workspaces: current.workspaces.filter(
+                (workspace) => workspace.id !== update.id,
+              ),
+            },
+        );
+      }
+    });
+    void paseo.workspaces
+      .list({ page: { limit: 200 }, subscribe: {} })
+      .then((result) => {
+        release = () => result.subscription.release();
+        if (stopped) {
+          void release().catch(console.error);
+          return;
+        }
+        removeSnapshot = result.subscription.subscribe({
+          snapshot: (snapshot) => {
+            for (const workspace of snapshot.entries) apply(workspace);
+          },
+          update: (message) => {
+            if (
+              message.type === "workspace_update" &&
+              message.payload.kind === "upsert"
+            )
+              apply(message.payload.workspace);
+          },
+        });
+      })
+      .catch((error) => {
+        if (!stopped) console.error("[Split workspace directory]", error);
+      });
+    return () => {
+      stopped = true;
+      removeListener();
+      removeSnapshot?.();
+      void release?.().catch(console.error);
+      latestWorkspaces.current.clear();
+    };
+  }, [paseo, cache, hostId, active]);
   useEffect(() => {
     if (!active) return;
     let stopped = false;

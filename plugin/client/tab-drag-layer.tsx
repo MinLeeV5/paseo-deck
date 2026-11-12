@@ -2,7 +2,7 @@ import type { PluginScreenProps } from "@getpaseo/plugin/client";
 import { useEffect, useState, type RefObject } from "react";
 import { Text, View } from "react-native";
 import type { TabGroup } from "../shared/model";
-import { onTabDrag, type TabDragPreview } from "./web";
+import { onTabDrag, type TabDragPreview, type TabDropTarget } from "./web";
 
 // Keep pointer-move renders out of the board and its native content subtrees.
 export function TabDragLayer({
@@ -15,7 +15,7 @@ export function TabDragLayer({
   area: RefObject<View | null>;
   enabled: boolean;
   getGroups(): TabGroup[];
-  onDrop(tabId: string, groupId: string, index: number): void;
+  onDrop(tabId: string, target: TabDropTarget): void;
   theme: PluginScreenProps["theme"];
 }) {
   const [preview, setPreview] = useState<TabDragPreview | null>(null);
@@ -31,7 +31,7 @@ export function TabDragLayer({
       testID="split-tab-drag"
       style={{ position: "absolute", inset: 0, zIndex: 20 }}
     >
-      {target && (
+      {target && target.kind === "tabs" && (
         <>
           <View
             testID="split-tab-drop-target"
@@ -61,6 +61,51 @@ export function TabDragLayer({
             }}
           />
         </>
+      )}
+      {target && target.kind !== "tabs" && (
+        <View
+          testID={
+            target.kind === "split"
+              ? `split-tab-drop-${target.edge}`
+              : "split-tab-drop-merge"
+          }
+          style={{
+            position: "absolute",
+            left: target.left + 3,
+            top: target.top + 3,
+            width: Math.max(0, target.width - 6),
+            height: Math.max(0, target.height - 6),
+            borderWidth: 2,
+            borderColor: colors.accent,
+            borderRadius: 6,
+            overflow: "hidden",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <View
+            style={{
+              position: "absolute",
+              inset: 0,
+              backgroundColor: colors.accent,
+              opacity: 0.16,
+            }}
+          />
+          <View
+            style={{
+              backgroundColor: colors.surface1,
+              paddingHorizontal: 12,
+              paddingVertical: 7,
+              borderRadius: 5,
+            }}
+          >
+            <Text style={{ color: colors.foreground, fontSize: 12 }}>
+              {target.kind === "merge"
+                ? "移到此分屏"
+                : `${{ left: "左侧", right: "右侧", top: "上方", bottom: "下方" }[target.edge]}新建分屏`}
+            </Text>
+          </View>
+        </View>
       )}
       <View
         style={{

@@ -1,0 +1,6 @@
+{
+  "officialScriptsInTabBar": true,
+  "scriptRunsInCurrentTabWorkspace": true,
+  "scriptTerminalStaysInSameSplit": true,
+  "scriptOutputAndCwdVerified": true
+}

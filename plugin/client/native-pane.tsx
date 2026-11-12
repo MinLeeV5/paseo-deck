@@ -15,6 +15,7 @@ import type { Pane, Target } from "../shared/model";
 import { shortcutDigit, type ShortcutEvent } from "../shared/shortcuts";
 import type { NativeBridge, NativePaneInput } from "./native-types";
 import { onNativeActionShortcut } from "./web";
+import { SplitPluginContext, SplitPluginPanel } from "./plugin-pane";
 
 type NativeKeyboardProps = {
   bridge: NativeBridge;
@@ -182,8 +183,9 @@ type NativePaneProps = {
   focused: boolean;
   visible: boolean;
   theme: PluginScreenProps["theme"];
+  compact?: boolean;
   onFocus(): void;
-  onOpen(target: Target): void;
+  onOpen(target: Target, workspaceId?: string): void;
   onOpenSide(target: Target): void;
   onRetarget(target: Target): void;
   onState(state: Pane["state"]): void;
@@ -209,6 +211,8 @@ function NativePaneContent({
   pane,
   focused,
   visible,
+  theme,
+  compact = false,
   onFocus,
   onOpen,
   onOpenSide,
@@ -281,10 +285,12 @@ function NativePaneContent({
       openFile,
     ],
   );
-  const content = useMemo(
-    () => bridge.buildWorkspacePaneContentModel(input),
-    [bridge, input],
-  );
+  const content = useMemo(() => {
+    const native = bridge.buildWorkspacePaneContentModel(input);
+    return pane.target.kind === "plugin"
+      ? { ...(native as Record<string, unknown>), Component: SplitPluginPanel }
+      : native;
+  }, [bridge, input]);
   const sheetHost = useMemo(
     () => ({
       workspaceKey,
@@ -304,12 +310,29 @@ function NativePaneContent({
     }),
     [workspaceKey, pane.serverId, pane.workspaceId, active, bridge, input],
   );
+  const pluginContext = useMemo(
+    () => ({
+      bridge,
+      pane,
+      theme,
+      compact,
+      open: (target: Target, workspaceId: string) =>
+        onOpen(target, workspaceId),
+    }),
+    [bridge, pane, theme, compact, onOpen],
+  );
   let child: ReactNode = createElement(bridge.WorkspacePaneContent, {
     content,
     isWorkspaceFocused: active,
     isPaneFocused: focused && active,
     onFocusPane: onFocus,
   });
+  if (pane.target.kind === "plugin")
+    child = createElement(
+      SplitPluginContext.Provider,
+      { value: pluginContext },
+      child,
+    );
   child = createElement(
     bridge.AssistantFileLinkResolverProvider,
     {

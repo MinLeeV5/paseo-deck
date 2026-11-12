@@ -1,14 +1,7 @@
 import type { PluginScreenProps } from "@getpaseo/plugin/client";
 import { Icon } from "@getpaseo/plugin/client/ui";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import {
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-  type ViewStyle,
-} from "react-native";
+import { Platform, Pressable, ScrollView, Text, View } from "react-native";
 import type { Pane, TabGroup, Target } from "../shared/model";
 import type { NativeBridge } from "./native-types";
 import type { Directory } from "./directory";
@@ -16,6 +9,8 @@ import { isRunning } from "./directory";
 import { IconButton, targetIcons } from "./compact-ui";
 import { WorkspaceIcon } from "./workspace-icon";
 import { NativePane } from "./native-pane";
+import { WorkspaceActions } from "./workspace-actions";
+import type { PaneMenuAction } from "./resource-picker";
 import {
   describeControl,
   revealControl,
@@ -29,6 +24,13 @@ export const TabStrip = memo(function TabStrip({
   group,
   panes,
   agents,
+  directory,
+  host,
+  wide,
+  menuActions,
+  onFocus,
+  beforeAction,
+  onOpen,
   bridge,
   theme,
   compact,
@@ -44,6 +46,13 @@ export const TabStrip = memo(function TabStrip({
   group: TabGroup;
   panes: Pane[];
   agents: Directory["agents"];
+  directory?: Directory;
+  host: PluginScreenProps["host"];
+  wide: boolean;
+  menuActions: PaneMenuAction[];
+  onFocus(tabId: string): void;
+  beforeAction(tabId: string): Promise<void>;
+  onOpen(tabId: string, target: Target, workspaceId?: string): void;
   bridge: NativeBridge;
   theme: PluginScreenProps["theme"];
   compact: boolean;
@@ -122,7 +131,17 @@ export const TabStrip = memo(function TabStrip({
               <Tab
                 key={pane.id}
                 pane={pane}
-                title={agent?.title ?? pane.title}
+                title={
+                  agent?.title ??
+                  (pane.target.kind === "terminal"
+                    ? directory?.terminals.find(
+                        (terminal) =>
+                          pane.target.kind === "terminal" &&
+                          terminal.id === pane.target.terminalId,
+                      )?.name
+                    : undefined) ??
+                  pane.title
+                }
                 running={Boolean(agent && isRunning(agent))}
                 selected={group.activeTabId === pane.id}
                 bridge={bridge}
@@ -144,21 +163,22 @@ export const TabStrip = memo(function TabStrip({
           testID={`split-add-${group.id}`}
         />
       </View>
-      <IconButton
-        label={maximized ? "还原分屏" : "放大分屏"}
-        icon={maximized ? "Minimize2" : "Maximize2"}
+      <WorkspaceActions
+        bridge={bridge}
+        pane={panes.find((pane) => pane.id === group.activeTabId)}
+        directory={directory}
+        host={host}
         theme={theme}
-        size={compact ? 30 : 24}
-        onPress={() => onMaximize(group.id)}
-      />
-      <IconButton
-        label="分屏操作"
-        icon="Ellipsis"
-        theme={theme}
-        size={compact ? 30 : 24}
-        onPress={() => onMenu(group.id, menu.current)}
-        anchorRef={menu}
-        testID={`split-menu-${group.id}`}
+        compact={compact}
+        wide={wide}
+        groupId={group.id}
+        menuActions={menuActions}
+        maximized={maximized}
+        onFocus={onFocus}
+        beforeAction={beforeAction}
+        onOpen={onOpen}
+        onMenu={onMenu}
+        onMaximize={onMaximize}
       />
     </View>
   );
@@ -234,7 +254,7 @@ const Tab = memo(function Tab({
           borderRadius: 4,
           borderColor: focused ? colors.foregroundMuted : "transparent",
           ...(Platform.OS === "web"
-            ? { cursor: "grab" as ViewStyle["cursor"], touchAction: "none" }
+            ? { cursor: "pointer", touchAction: "none" }
             : {}),
         }}
       >
@@ -317,7 +337,7 @@ export const PaneFrame = memo(function PaneFrame({
   onFocus(id: string): void;
   onClose(id: string): void;
   onImport(id: string): void;
-  onOpen(id: string, target: Target): void;
+  onOpen(id: string, target: Target, workspaceId?: string): void;
   onOpenSide(id: string, target: Target): void;
   onRetarget(id: string, target: Target): void;
   onState(id: string, state: Pane["state"]): void;
@@ -327,7 +347,8 @@ export const PaneFrame = memo(function PaneFrame({
   const focus = useCallback(() => onFocus(pane.id), [onFocus, pane.id]);
   const close = useCallback(() => onClose(pane.id), [onClose, pane.id]);
   const open = useCallback(
-    (target: Target) => onOpen(pane.id, target),
+    (target: Target, workspaceId?: string) =>
+      onOpen(pane.id, target, workspaceId),
     [onOpen, pane.id],
   );
   const side = useCallback(
@@ -353,6 +374,14 @@ export const PaneFrame = memo(function PaneFrame({
         minWidth: 0,
         minHeight: 0,
         overflow: "hidden",
+        ...(pane.presentation === "inspector"
+          ? {
+              zIndex: 2,
+              backgroundColor: theme.colors.surface1,
+              borderLeftWidth: 1,
+              borderColor: theme.colors.border,
+            }
+          : {}),
         display: visible ? "flex" : "none",
       }}
     >
@@ -362,6 +391,7 @@ export const PaneFrame = memo(function PaneFrame({
           bridge={bridge}
           pane={pane}
           theme={theme}
+          compact={rect.width < 600}
           visible={visible}
           focused={focused}
           onFocus={focus}

@@ -1,6 +1,7 @@
 import type { ComponentType, ReactNode } from "react";
 import type { QueryClient } from "@tanstack/react-query";
 import type { Pane, Target } from "../shared/model";
+import type { WorkspaceBridge } from "./workspace-types";
 export interface NativePaneInput {
   tab: {
     tabId: string;
@@ -33,7 +34,7 @@ export interface ProjectIconTarget {
   customIconRevision?: string | null;
   iconRevision?: string;
 }
-export interface NativeBridge {
+export interface NativeBridge extends WorkspaceBridge {
   projectIconPlaceholderLabelFromDisplayName?(name: string): string;
   useProjectIcons(input: {
     projects: ProjectIconTarget[];

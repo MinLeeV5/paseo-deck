@@ -1,0 +1,13 @@
+{
+  "scripts": {
+    "split:check": {
+      "command": "printf 'SCRIPT_FRONT_OK\\n'; pwd"
+    },
+    "split:live": {
+      "command": "node -e \"console.log('SCRIPT_FRONT_LIVE_OK'); setInterval(() => {}, 1000)\""
+    },
+    "frontend:only": {
+      "command": "printf 'FRONT_ONLY_OK\\n'"
+    }
+  }
+}

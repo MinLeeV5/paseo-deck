@@ -1,0 +1,29 @@
+{
+  "date": "2026-11-12",
+  "runtime": "Paseo 0.15.4 original Web build, isolated Chrome",
+  "viewports": [[1500, 913], [390, 844]],
+  "checks": [
+    "two panes become three by dropping a draft onto the bottom edge",
+    "unchanged neighboring pane retains its rectangle",
+    "left, right, top and bottom directional previews and drops",
+    "nested four-pane layout and independent divider resize",
+    "draft Composer identity and unsent text preserved across split",
+    "file editor identity and edited content preserved across split and merge; autosaved fixture restored afterward",
+    "center drop merges and collapses empty source",
+    "tab strip insertion and sorting still work",
+    "Escape and outside drop cancel without changing layout",
+    "pointer-move previews do not persist layout or remount current content",
+    "saved split tree and proportions restored after reload",
+    "light theme with reduced motion",
+    "all compact pane selectors remain reachable",
+    "compact menu can split a Tab below its source group"
+  ],
+  "automated": { "typecheck": "passed", "tests": 33, "newSplitTests": 10 },
+  "screenshots": [
+    "tab-split-preview.png",
+    "tab-split-three-panes.png",
+    "tab-split-four-panes.png",
+    "tab-split-light-preview.png",
+    "tab-split-compact.png"
+  ]
+}

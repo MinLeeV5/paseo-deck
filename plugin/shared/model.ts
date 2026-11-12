@@ -1,9 +1,27 @@
 import { z } from "zod";
+import {
+  reconcileSplitTree,
+  splitGroupIds,
+  splitNodeSchema,
+} from "./split-tree.ts";
 
 export const targetSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("agent"), agentId: z.string().min(1) }),
   z.object({ kind: z.literal("draft"), draftId: z.string().min(1) }),
   z.object({ kind: z.literal("terminal"), terminalId: z.string().min(1) }),
+  z.object({ kind: z.literal("browser"), browserId: z.string().min(1) }),
+  z
+    .object({
+      kind: z.literal("plugin"),
+      pluginId: z.string().min(1),
+      panelId: z.string().min(1),
+      context: z.enum(["workspace", "agent"]),
+      agentId: z.string().min(1).optional(),
+    })
+    .refine(
+      (target) => target.context !== "agent" || Boolean(target.agentId),
+      "Agent 面板缺少会话 ID",
+    ),
   z.object({
     kind: z.literal("file"),
     path: z.string().min(1),
@@ -30,6 +48,8 @@ export const paneSchema = z.object({
   title: z.string(),
   target: targetSchema,
   state: z.json().optional(),
+  presentation: z.enum(["tab", "inspector"]).optional(),
+  openerTabId: z.string().optional(),
 });
 export const groupSchema = z.object({
   id: z.string().min(1),
@@ -40,6 +60,10 @@ const layoutShape = {
   panes: z.array(paneSchema).max(8),
   direction: z.enum(["row", "column"]),
   ratio: z.number().min(0.2).max(0.8),
+  layout: z.enum(["auto", "two", "three", "four", "grid"]).optional(),
+  columnWeights: z.array(z.number().positive().max(1)).min(1).max(8).optional(),
+  rowWeights: z.array(z.number().positive().max(1)).min(1).max(8).optional(),
+  splitTree: splitNodeSchema.optional(),
 };
 export const legacyBoardSchema = z.object({
   version: z.literal(1),
@@ -54,6 +78,7 @@ export const boardSchema = z
   .superRefine((board, context) => {
     const ids = new Set(board.panes.map((pane) => pane.id));
     const assigned = board.groups.flatMap((group) => group.tabIds);
+    const leaves = board.splitTree ? splitGroupIds(board.splitTree) : null;
     if (
       ids.size !== board.panes.length ||
       new Set(assigned).size !== assigned.length ||
@@ -65,7 +90,11 @@ export const boardSchema = z
         group.tabIds.length
           ? !group.activeTabId || !group.tabIds.includes(group.activeTabId)
           : group.activeTabId !== null,
-      )
+      ) ||
+      (leaves &&
+        (leaves.length !== board.groups.length ||
+          new Set(leaves).size !== leaves.length ||
+          leaves.some((id) => !board.groups.some((group) => group.id === id))))
     )
       context.addIssue({
         code: "custom",
@@ -76,6 +105,34 @@ export type Target = z.infer<typeof targetSchema>;
 export type Pane = z.infer<typeof paneSchema>;
 export type TabGroup = z.infer<typeof groupSchema>;
 export type Board = z.infer<typeof boardSchema>;
+export function reconcileBoardLayout(board: Board): Board {
+  if (!board.splitTree) return board;
+  const splitTree = reconcileSplitTree(
+    board.splitTree,
+    board.groups.map((group) => group.id),
+    board.direction === "row" ? "x" : "y",
+  );
+  return splitTree === board.splitTree ? board : { ...board, splitTree };
+}
+export function groupInspector(
+  board: Board,
+  group: TabGroup,
+): { panel: Pane; opener: Pane } | null {
+  const panel = board.panes.find((pane) => pane.id === group.activeTabId);
+  if (
+    panel?.target.kind !== "plugin" ||
+    panel.presentation !== "inspector" ||
+    !panel.openerTabId ||
+    !group.tabIds.includes(panel.openerTabId)
+  )
+    return null;
+  const opener = board.panes.find((pane) => pane.id === panel.openerTabId);
+  return opener &&
+    opener.target.kind !== "plugin" &&
+    opener.workspaceId === panel.workspaceId
+    ? { panel, opener }
+    : null;
+}
 export const emptyBoard: Board = {
   version: 2,
   panes: [],
@@ -135,7 +192,7 @@ export function addPane(
     !board.groups.some((group) => group.id === groupId)
   )
     throw new Error("目标分屏已关闭，请重新选择。");
-  return {
+  return reconcileBoardLayout({
     ...board,
     panes: [...board.panes, pane],
     groups: destination?.newGroupId
@@ -156,7 +213,7 @@ export function addPane(
               }
             : group,
         ),
-  };
+  });
 }
 export function removeTab(board: Board, tabId: string): Board {
   const group = board.groups.find((group) => group.tabIds.includes(tabId));
@@ -224,12 +281,12 @@ export function moveTab(
   );
   if (create)
     groups.push({ id: destinationId, tabIds: [tabId], activeTabId: tabId });
-  return {
+  return reconcileBoardLayout({
     ...board,
     groups: groups.filter(
       (group) => group.id !== source.id || group.tabIds.length > 0,
     ),
-  };
+  });
 }
 
 // Resolve the current build, never a hard-coded Metro ID from another release.

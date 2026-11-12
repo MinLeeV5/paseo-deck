@@ -28,6 +28,9 @@ export type PaneMenuAction = {
   icon: string;
   run(): void;
   disabled?: boolean;
+  category?: "移动" | "排版" | "其它" | "关闭";
+  selected?: boolean;
+  destructive?: boolean;
 };
 const RESULT_HEIGHT = 56;
 const HEADING_HEIGHT = 30;

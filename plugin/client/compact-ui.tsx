@@ -8,6 +8,8 @@ export const targetIcons = {
   agent: "Bot",
   draft: "SquarePen",
   terminal: "Terminal",
+  browser: "Globe",
+  plugin: "Puzzle",
   file: "FileCode2",
   files: "FolderTree",
   working_diff: "GitCompare",

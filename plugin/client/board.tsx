@@ -15,14 +15,7 @@ import {
   useRef,
   useState,
 } from "react";
-import {
-  PanResponder,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from "react-native";
+import { Platform, Pressable, ScrollView, Text, View } from "react-native";
 import {
   activateTab,
   addPane,
@@ -30,6 +23,8 @@ import {
   removeTab,
   resourceKey,
   targetSchema,
+  groupInspector,
+  reconcileBoardLayout,
   type Board,
   type Pane,
   type Target,
@@ -42,9 +37,27 @@ import {
   onPageExit,
   saveBoard,
   scheduleFrame,
+  focusConversation,
+  installPluginPanelRouter,
+  type TabDropTarget,
 } from "./web";
 import { PaneFrame, TabStrip, type Rect } from "./pane-frame";
-import { SplitDivider } from "./split-divider";
+import { LayoutDivider } from "./split-divider";
+import {
+  applyLayoutPreset,
+  boardGeometry,
+  layoutTracks,
+  canSplitTab,
+  splitTab,
+  type SplitEdge,
+  type Axis,
+  type LayoutPreset,
+} from "../shared/layout";
+import {
+  equalizeSplitTree,
+  resizeSplitTree,
+  type SplitNode,
+} from "../shared/split-tree";
 import { TabDragLayer } from "./tab-drag-layer";
 import { NativeKeyboard } from "./native-pane";
 import {
@@ -55,6 +68,7 @@ import {
 import { WorkspaceIcons } from "./workspace-icon";
 import { useDirectory, workspaceLabel } from "./directory";
 import type { NativeBridge } from "./native-types";
+import type { PluginPanelRequest } from "./workspace-types";
 
 const id = () =>
   `split-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
@@ -91,6 +105,8 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
   const [board, setBoardState] = useState<Board>(() => loadBoard(host.id));
   const boardRef = useRef(board),
     savedBoard = useRef(board);
+  const actionOwner = useRef<string | null>(null);
+  const routeActiveRef = useRef(true);
   const [focusedGroup, setFocusedGroup] = useState(board.groups[0].id);
   const [maximized, setMaximized] = useState<string | null>(null);
   const [routeActive, setRouteActive] = useState(true);
@@ -102,13 +118,24 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
     workarea = useRef<View>(null),
     anchors = useRef(new Map<string, View>());
   const pendingCloses = useRef(new Set<string>()),
+    closingAll = useRef(false),
     terminalCreation = useRef(false),
     cancelFrame = useRef<(() => void) | null>(null),
-    pendingRatio = useRef<number | null>(null),
-    startRatio = useRef(0.5);
+    pendingResize = useRef<Partial<
+      Pick<Board, "ratio" | "columnWeights" | "rowWeights" | "splitTree">
+    > | null>(null),
+    resizeStart = useRef<{
+      axis: Axis;
+      boundary: number;
+      weights: number[];
+      dimension: number;
+      treePath?: string;
+      tree?: SplitNode;
+    } | null>(null);
   const setBoard = useCallback((update: Board | ((value: Board) => Board)) => {
-    const next =
-      typeof update === "function" ? update(boardRef.current) : update;
+    const next = reconcileBoardLayout(
+      typeof update === "function" ? update(boardRef.current) : update,
+    );
     if (next === boardRef.current) return;
     boardRef.current = next;
     setBoardState(next);
@@ -127,6 +154,7 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
   const groupFocus = board.groups.some((group) => group.id === focusedGroup)
     ? focusedGroup
     : board.groups[0].id;
+  routeActiveRef.current = routeActive;
   const visibleGroup = maximized ?? (layout.compact ? groupFocus : null);
   const barHeight = layout.compact ? 36 : 32;
   const persist = useCallback(() => {
@@ -160,6 +188,7 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
   );
   const focusTab = useCallback(
     (tabId: string) => {
+      actionOwner.current = tabId;
       const group = groupOf(tabId);
       if (group) setFocusedGroup(group.id);
     },
@@ -167,6 +196,7 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
   );
   const selectTab = useCallback(
     (tabId: string) => {
+      actionOwner.current = tabId;
       const group = groupOf(tabId);
       if (!group) return;
       setBoard((current) => activateTab(current, tabId));
@@ -174,6 +204,16 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
       setMaximized((current) => (current ? group.id : null));
     },
     [groupOf, setBoard],
+  );
+  const beforeWorkspaceAction = useCallback(
+    async (tabId: string) => {
+      focusTab(tabId);
+      const pane = boardRef.current.panes.find((pane) => pane.id === tabId);
+      const conversation =
+        pane?.presentation === "inspector" ? pane.openerTabId : pane?.id;
+      if (conversation) await focusConversation(conversation);
+    },
+    [focusTab],
   );
   const getGroups = useCallback(() => boardRef.current.groups, []);
   const dropTab = useCallback(
@@ -185,6 +225,35 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
       scheduleFrame(() => focusControl(`split-tab-${tabId}`));
     },
     [setBoard, selectTab],
+  );
+  const splitDraggedTab = useCallback(
+    (tabId: string, groupId: string, edge: SplitEdge) => {
+      const current = boardRef.current;
+      const next = splitTab(current, tabId, groupId, edge, `group-${id()}`);
+      if (next === current) return;
+      setBoard(next);
+      selectTab(tabId);
+      setMaximized(null);
+      scheduleFrame(() => focusControl(`split-tab-${tabId}`));
+    },
+    [setBoard, selectTab],
+  );
+  const dropOnTarget = useCallback(
+    (tabId: string, target: TabDropTarget) => {
+      if (target.kind === "split")
+        splitDraggedTab(tabId, target.groupId, target.edge);
+      else
+        dropTab(
+          tabId,
+          target.groupId,
+          target.kind === "tabs"
+            ? target.index
+            : (boardRef.current.groups.find(
+                (group) => group.id === target.groupId,
+              )?.tabIds.length ?? 0),
+        );
+    },
+    [dropTab, splitDraggedTab],
   );
   const registerAnchor = useCallback((groupId: string, anchor: View | null) => {
     if (anchor) anchors.current.set(groupId, anchor);
@@ -352,7 +421,17 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
         setBoard((current) => {
           const next = addPane(current, pane, { groupId, newGroupId });
           return splitDirection && next.groups.length > current.groups.length
-            ? { ...next, direction: splitDirection }
+            ? {
+                ...next,
+                direction: splitDirection,
+                splitTree:
+                  next.splitTree?.type === "split"
+                    ? {
+                        ...next.splitTree,
+                        axis: splitDirection === "row" ? "x" : "y",
+                      }
+                    : next.splitTree,
+              }
             : next;
         });
         const targetGroup = groupOf(duplicate?.id ?? pane.id)!;
@@ -399,6 +478,87 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
       );
     else showPicker(groupId, null, "new");
   }, [visibleGroup, groupFocus, openTarget, showPicker]);
+  const openPluginPanel = useCallback(
+    (request: PluginPanelRequest): boolean => {
+      if (!routeActiveRef.current || request.serverId !== host.id) return false;
+      const current = boardRef.current;
+      const source = current.panes.find(
+        (pane) => pane.id === actionOwner.current,
+      );
+      const group = source ? groupOf(source.id) : undefined;
+      if (!source || !group || source.workspaceId !== request.workspaceId)
+        return false;
+      try {
+        const target: Target = {
+          kind: "plugin",
+          pluginId: request.pluginId,
+          panelId: request.panelId,
+          context: request.context,
+          ...(request.agentId ? { agentId: request.agentId } : {}),
+        };
+        const installation = bridge.data?.pluginButtonStore
+          .getSnapshot()
+          .find(
+            (entry) =>
+              entry.installation.id === request.pluginId &&
+              entry.installation.serverId === request.serverId,
+          )?.installation;
+        const panel = installation?.workspacePanels.find(
+          (panel) =>
+            panel.id === request.panelId && panel.context === request.context,
+        );
+        const openerTabId =
+          source.presentation === "inspector" ? source.openerTabId : source.id;
+        const pane: Pane = {
+          id: id(),
+          serverId: source.serverId,
+          workspaceId: source.workspaceId,
+          workspaceName: source.workspaceName,
+          title:
+            typeof panel?.title === "string" ? panel.title : request.panelId,
+          target,
+          presentation: request.location === "explorer" ? "inspector" : "tab",
+          openerTabId,
+        };
+        let openedId = pane.id;
+        setBoard((value) => {
+          const duplicate = value.panes.find(
+            (item) => resourceKey(item) === resourceKey(pane),
+          );
+          openedId = duplicate?.id ?? pane.id;
+          let next = addPane(value, pane, { groupId: group.id });
+          if (duplicate && pane.presentation === "inspector")
+            next = moveTab(next, duplicate.id, group.id);
+          if (duplicate)
+            next = {
+              ...next,
+              panes: next.panes.map((item) =>
+                item.id === duplicate.id
+                  ? { ...item, presentation: pane.presentation, openerTabId }
+                  : item,
+              ),
+            };
+          return next;
+        });
+        const destination = groupOf(openedId);
+        if (destination) setFocusedGroup(destination.id);
+        actionOwner.current = openedId;
+        setPicker(null);
+        setNotice(null);
+      } catch (error) {
+        setNotice(errorMessage(error));
+      }
+      return true;
+    },
+    [host.id, bridge.data, groupOf, setBoard],
+  );
+  useEffect(
+    () =>
+      bridge.data
+        ? installPluginPanelRouter(bridge.data, openPluginPanel)
+        : undefined,
+    [bridge.data, openPluginPanel],
+  );
   const openFromPane = useCallback(
     (tabId: string, target: Target, side = false) => {
       const pane = boardRef.current.panes.find((pane) => pane.id === tabId),
@@ -411,12 +571,19 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
           side,
           pane.workspaceName,
         );
+      if (target.kind === "terminal") void directory.refetch();
     },
-    [groupOf, openTarget],
+    [groupOf, openTarget, directory.refetch],
   );
   const openInPlace = useCallback(
-    (tabId: string, target: Target) => openFromPane(tabId, target),
-    [openFromPane],
+    (tabId: string, target: Target, workspaceId?: string) => {
+      const source = boardRef.current.panes.find((pane) => pane.id === tabId);
+      const group = groupOf(tabId);
+      if (source && group && workspaceId && workspaceId !== source.workspaceId)
+        openTarget(target, workspaceId, group.id);
+      else openFromPane(tabId, target);
+    },
+    [openFromPane, openTarget, groupOf],
   );
   const openToSide = useCallback(
     (tabId: string, target: Target) => openFromPane(tabId, target, true),
@@ -456,7 +623,14 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
           }
           if (!discard) return;
         }
-        setBoard((current) => removeTab(current, tabId));
+        setBoard((current) => {
+          const next = removeTab(current, tabId);
+          return pane.presentation === "inspector" &&
+            pane.openerTabId &&
+            next.panes.some((value) => value.id === pane.openerTabId)
+            ? activateTab(next, pane.openerTabId)
+            : next;
+        });
       } catch (error) {
         setNotice(errorMessage(error));
       } finally {
@@ -483,6 +657,77 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
       );
     });
   }, [closeTab, groupFocus, visibleGroup]);
+  const closeAllTabs = useCallback(async () => {
+    if (closingAll.current) return;
+    closingAll.current = true;
+    const closing = [...boardRef.current.panes];
+    const resumes: (() => void)[] = [];
+    let committed = false;
+    try {
+      for (const pane of closing) {
+        const attributes = bridge.data?.getPanelInstanceAttributes({
+          serverId: pane.serverId,
+          workspaceId: pane.workspaceId,
+          tabId: `${instanceId}:${pane.id}`,
+        });
+        if (!attributes?.modified || !bridge.data) continue;
+        const resume = attributes.suspendPendingSave?.();
+        if (resume) resumes.push(resume);
+        const discard = await bridge.data.confirmDialog({
+          title: "文件尚未保存",
+          message: `「${pane.title}」有未保存的更改。放弃这些更改并继续关闭所有 Tab？`,
+          confirmLabel: "放弃更改并继续",
+          cancelLabel: "取消关闭所有 Tab",
+          destructive: true,
+        });
+        if (!discard) return;
+      }
+      const ids = new Set(closing.map((pane) => pane.id));
+      setBoard((current) => {
+        const panes = current.panes.filter((pane) => !ids.has(pane.id));
+        const groups = current.groups
+          .map((group) => {
+            const tabIds = group.tabIds.filter((id) => !ids.has(id));
+            return {
+              ...group,
+              tabIds,
+              activeTabId: tabIds.includes(group.activeTabId ?? "")
+                ? group.activeTabId
+                : (tabIds[0] ?? null),
+            };
+          })
+          .filter((group) => group.tabIds.length);
+        if (!groups.length)
+          groups.push({
+            id: current.groups[0].id,
+            tabIds: [],
+            activeTabId: null,
+          });
+        return {
+          ...current,
+          panes,
+          groups,
+          ...(panes.length
+            ? {}
+            : {
+                layout: "auto" as const,
+                ratio: 0.5,
+                columnWeights: undefined,
+                rowWeights: undefined,
+              }),
+        };
+      });
+      committed = true;
+      setMaximized(null);
+      setFocusedGroup(boardRef.current.groups[0].id);
+      actionOwner.current = null;
+    } catch (error) {
+      setNotice(errorMessage(error));
+    } finally {
+      if (!committed) resumes.forEach((resume) => resume());
+      closingAll.current = false;
+    }
+  }, [bridge.data, instanceId, setBoard]);
   const retarget = useCallback(
     (tabId: string, target: Target) => {
       const parsed = targetSchema.safeParse(target);
@@ -571,94 +816,114 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
     setFocusedGroup(groupId);
     setMaximized((current) => (current === groupId ? null : groupId));
   }, []);
-  const finishDrag = useCallback(() => {
+  const flushResize = useCallback(() => {
     cancelFrame.current?.();
     cancelFrame.current = null;
-    const ratio = pendingRatio.current;
-    pendingRatio.current = null;
-    if (ratio !== null)
-      setBoard((current) =>
-        current.ratio === ratio ? current : { ...current, ratio },
-      );
+    const next = pendingResize.current;
+    pendingResize.current = null;
+    if (next) setBoard((current) => ({ ...current, ...next }));
   }, [setBoard]);
-  const drag = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
-        onPanResponderTerminationRequest: () => false,
-        onPanResponderGrant: () => {
-          cancelFrame.current?.();
+  const startResize = useCallback(
+    (axis: Axis, boundary: number, dividerId: string) => {
+      flushResize();
+      const current = boardRef.current;
+      if (current.splitTree) {
+        const divider = boardGeometry(
+          current,
+          viewport.width,
+          viewport.height,
+        ).dividers.find((value) => value.id === dividerId);
+        if (!divider || divider.treePath === undefined) return;
+        resizeStart.current = {
+          axis,
+          boundary,
+          weights: [divider.ratio!, 1 - divider.ratio!],
+          dimension: divider.dimension!,
+          treePath: divider.treePath,
+          tree: current.splitTree,
+        };
+        return;
+      }
+      const tracks = layoutTracks(boardRef.current);
+      resizeStart.current = {
+        axis,
+        boundary,
+        weights: axis === "x" ? tracks.columnWeights : tracks.rowWeights,
+        dimension: axis === "x" ? viewport.width : viewport.height,
+      };
+    },
+    [flushResize, viewport.width, viewport.height],
+  );
+  const moveResize = useCallback(
+    (delta: number) => {
+      const start = resizeStart.current;
+      if (!start || start.dimension <= 0) return;
+      const index = start.boundary - 1;
+      const weights = [...start.weights];
+      const pair = weights[index] + weights[index + 1];
+      const minimum = Math.min(100 / start.dimension, pair / 3);
+      const next = Math.max(
+        minimum,
+        Math.min(pair - minimum, weights[index] + delta / start.dimension),
+      );
+      weights[index] = next;
+      weights[index + 1] = pair - next;
+      pendingResize.current =
+        start.tree && start.treePath !== undefined
+          ? { splitTree: resizeSplitTree(start.tree, start.treePath, next) }
+          : start.axis === "x"
+            ? {
+                columnWeights: weights,
+                ...(weights.length === 2
+                  ? { ratio: Math.max(0.2, Math.min(0.8, weights[0])) }
+                  : {}),
+              }
+            : { rowWeights: weights };
+      if (!cancelFrame.current)
+        cancelFrame.current = scheduleFrame(() => {
           cancelFrame.current = null;
-          pendingRatio.current = null;
-          startRatio.current = boardRef.current.ratio;
-        },
-        onPanResponderMove: (_event, gesture) => {
-          const current = boardRef.current;
-          const delta =
-            current.direction === "row"
-              ? gesture.dx / viewport.width
-              : gesture.dy /
-                (viewport.height / Math.ceil(current.groups.length / 2));
-          pendingRatio.current = Math.max(
-            0.2,
-            Math.min(0.8, startRatio.current + delta),
-          );
-          if (!cancelFrame.current)
-            cancelFrame.current = scheduleFrame(() => {
-              cancelFrame.current = null;
-              const ratio = pendingRatio.current;
-              if (ratio !== null)
-                setBoard((value) =>
-                  value.ratio === ratio ? value : { ...value, ratio },
-                );
-            });
-        },
-        onPanResponderRelease: finishDrag,
-        onPanResponderTerminate: finishDrag,
-      }),
-    [viewport, finishDrag, setBoard],
+          const update = pendingResize.current;
+          pendingResize.current = null;
+          if (update) setBoard((current) => ({ ...current, ...update }));
+        });
+    },
+    [setBoard],
+  );
+  const finishResize = useCallback(() => {
+    flushResize();
+    resizeStart.current = null;
+  }, [flushResize]);
+  const calculatedLayout = useMemo(
+    () => boardGeometry(board, viewport.width, viewport.height),
+    [
+      board.groups,
+      board.direction,
+      board.ratio,
+      board.layout,
+      board.columnWeights,
+      board.rowWeights,
+      board.splitTree,
+      viewport,
+    ],
   );
   const geometry = useMemo(
     () =>
-      new Map(
-        board.groups.map((group, index) => {
-          if (visibleGroup)
-            return [
+      visibleGroup
+        ? new Map(
+            board.groups.map((group) => [
               group.id,
               {
                 left: 0,
                 top: 0,
                 width: viewport.width,
                 height: viewport.height,
-                separator: false,
+                insetX: 0,
+                insetY: 0,
               },
-            ];
-          const rows = Math.ceil(board.groups.length / 2),
-            odd = index % 2 === 1,
-            unpaired = index === board.groups.length - 1 && !odd;
-          const share = unpaired ? 1 : odd ? 1 - board.ratio : board.ratio;
-          const rect =
-            board.direction === "row"
-              ? {
-                  left: odd ? viewport.width * board.ratio : 0,
-                  top: (Math.floor(index / 2) * viewport.height) / rows,
-                  width: viewport.width * share,
-                  height: viewport.height / rows,
-                }
-              : {
-                  left: 0,
-                  top:
-                    ((Math.floor(index / 2) + (odd ? board.ratio : 0)) *
-                      viewport.height) /
-                    rows,
-                  width: viewport.width,
-                  height: (viewport.height * share) / rows,
-                };
-          return [group.id, { ...rect, separator: odd }];
-        }),
-      ),
-    [board.groups, board.direction, board.ratio, viewport, visibleGroup],
+            ]),
+          )
+        : calculatedLayout.rects,
+    [visibleGroup, board.groups, viewport, calculatedLayout],
   );
   const groupPanes = useMemo(
     () =>
@@ -680,18 +945,30 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
               group.tabIds.includes(pane.id),
             )!,
             rect = geometry.get(group.id)!;
-          const horizontal = board.direction === "row",
-            offset = rect.separator ? 4 : 0;
+          const inspector = groupInspector(board, group);
+          const sideWidth = Math.min(
+            320,
+            Math.max(0, rect.width - 16),
+            Math.max(240, rect.width * 0.45),
+          );
+          const isSide = inspector?.panel.id === pane.id;
+          const isOpener = inspector?.opener.id === pane.id;
+          const insetX = rect.insetX,
+            insetY = rect.insetY;
           return [
             pane.id,
             {
-              left: rect.left + (horizontal ? offset : 0),
-              top: rect.top + barHeight + (horizontal ? 0 : offset),
-              width: Math.max(0, rect.width - (horizontal ? offset : 0)),
-              height: Math.max(
+              left: rect.left + insetX + (isSide ? rect.width - sideWidth : 0),
+              top: rect.top + barHeight + insetY,
+              width: Math.max(
                 0,
-                rect.height - barHeight - (horizontal ? 0 : offset),
+                (isSide
+                  ? sideWidth
+                  : isOpener && rect.width >= 560
+                    ? rect.width - sideWidth
+                    : rect.width) - insetX,
               ),
+              height: Math.max(0, rect.height - barHeight - insetY),
             },
           ];
         }),
@@ -707,134 +984,209 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
       ),
     [board.panes],
   );
-  const menuActions = useMemo<PaneMenuAction[]>(() => {
-    if (!picker) return [];
-    const group = board.groups.find((group) => group.id === picker.groupId);
-    if (!group) return [];
-    const pane = board.panes.find((pane) => pane.id === group.activeTabId);
-    const run = (callback: () => void) => () => {
-      setPicker(null);
-      setNotice(null);
-      try {
-        callback();
-      } catch (error) {
-        setNotice(errorMessage(error));
+  const menuActionsFor = useCallback(
+    (groupId: string): PaneMenuAction[] => {
+      const group = board.groups.find((group) => group.id === groupId);
+      if (!group) return [];
+      const pane = board.panes.find((pane) => pane.id === group.activeTabId);
+      const run = (callback: () => void) => () => {
+        setPicker(null);
+        setNotice(null);
+        try {
+          callback();
+        } catch (error) {
+          setNotice(errorMessage(error));
+        }
+      };
+      const actions: PaneMenuAction[] = [];
+      if (pane) {
+        const index = group.tabIds.indexOf(pane.id);
+        if (index > 0)
+          actions.push({
+            label: "将当前 Tab 向左移动",
+            icon: "ArrowLeft",
+            category: "移动",
+            run: run(() => dropTab(pane.id, group.id, index - 1)),
+          });
+        if (index < group.tabIds.length - 1)
+          actions.push({
+            label: "将当前 Tab 向右移动",
+            icon: "ArrowRight",
+            category: "移动",
+            run: run(() => dropTab(pane.id, group.id, index + 1)),
+          });
+        actions.push({
+          label: "将当前 Tab 移到新分屏",
+          icon: "PanelRightOpen",
+          category: "移动",
+          disabled: !canSplitTab(board.groups, pane.id, group.id),
+          run: run(() => splitDraggedTab(pane.id, group.id, "right")),
+        });
+        for (const [edge, label, icon] of [
+          ["left", "左侧", "PanelLeftOpen"],
+          ["top", "上方", "ArrowUp"],
+          ["bottom", "下方", "ArrowDown"],
+        ] as const) {
+          actions.push({
+            label: `将当前 Tab 移到${label}分屏`,
+            icon,
+            category: "移动",
+            disabled: !canSplitTab(board.groups, pane.id, group.id),
+            run: run(() => splitDraggedTab(pane.id, group.id, edge)),
+          });
+        }
+        for (const destination of board.groups.filter(
+          (item) => item.id !== group.id,
+        )) {
+          const active = board.panes.find(
+            (pane) => pane.id === destination.activeTabId,
+          );
+          actions.push({
+            label: `移到「${active ? titleFor(active.target) : "空分屏"}」`,
+            icon: "ArrowRightToLine",
+            category: "移动",
+            run: run(() => {
+              setBoard((current) => moveTab(current, pane.id, destination.id));
+              setFocusedGroup(destination.id);
+              setMaximized((current) => (current ? destination.id : null));
+            }),
+          });
+        }
       }
-    };
-    const actions: PaneMenuAction[] = [
-      {
-        label: "新增分屏…",
-        icon: "Columns2",
-        run: () => showPicker(group.id, null, "agent", true),
-      },
-    ];
-    if (pane) {
-      const index = group.tabIds.indexOf(pane.id);
-      if (index > 0)
+      const presets: [LayoutPreset, string, string][] = [
+        ["two", "两分屏", "Columns2"],
+        ["three", "三分屏（横向）", "Columns3"],
+        ["four", "四分屏（横向）", "PanelsTopLeft"],
+        ["grid", "四宫格", "Grid2x2"],
+      ];
+      for (const [preset, label, icon] of presets)
         actions.push({
-          label: "将当前 Tab 向左移动",
-          icon: "ArrowLeft",
-          run: run(() => dropTab(pane.id, group.id, index - 1)),
-        });
-      if (index < group.tabIds.length - 1)
-        actions.push({
-          label: "将当前 Tab 向右移动",
-          icon: "ArrowRight",
-          run: run(() => dropTab(pane.id, group.id, index + 1)),
-        });
-      actions.push({
-        label: "将当前 Tab 移到新分屏",
-        icon: "PanelRightOpen",
-        run: run(() => {
-          const next = `group-${id()}`;
-          setBoard((current) => moveTab(current, pane.id, next, true));
-          setFocusedGroup(next);
-          setMaximized(null);
-        }),
-      });
-      for (const destination of board.groups.filter(
-        (item) => item.id !== group.id,
-      )) {
-        const active = board.panes.find(
-          (pane) => pane.id === destination.activeTabId,
-        );
-        actions.push({
-          label: `移到「${active ? titleFor(active.target) : "空分屏"}」`,
-          icon: "ArrowRightToLine",
+          label,
+          icon,
+          category: "排版",
+          selected: board.layout === preset,
           run: run(() => {
-            setBoard((current) => moveTab(current, pane.id, destination.id));
-            setFocusedGroup(destination.id);
-            setMaximized((current) => (current ? destination.id : null));
+            cancelFrame.current?.();
+            cancelFrame.current = null;
+            pendingResize.current = null;
+            resizeStart.current = null;
+            setBoard((current) => applyLayoutPreset(current, preset, pane?.id));
+            const nextGroup = pane
+              ? groupOf(pane.id)
+              : boardRef.current.groups[0];
+            if (nextGroup) setFocusedGroup(nextGroup.id);
+            setMaximized(null);
           }),
         });
-      }
-    }
-    actions.push({
-      label: board.direction === "row" ? "切换为上下排列" : "切换为左右排列",
-      icon: board.direction === "row" ? "Rows2" : "Columns2",
-      run: run(() =>
-        setBoard((current) => ({
-          ...current,
-          direction: current.direction === "row" ? "column" : "row",
-        })),
-      ),
-    });
-    actions.push({
-      label: "均分",
-      icon: "Equal",
-      run: run(() =>
-        setBoard((current) =>
-          current.ratio === 0.5 ? current : { ...current, ratio: 0.5 },
-        ),
-      ),
-    });
-    if (pane) {
       actions.push({
-        label: "在原 workspace 打开",
-        icon: "ExternalLink",
-        run: run(() => {
-          if (pane.target.kind === "agent")
-            navigation?.openAgent({
-              serverId: pane.serverId,
-              agentId: pane.target.agentId,
-            });
-          else
-            navigation?.openWorkspace({
-              serverId: pane.serverId,
-              workspaceId: pane.workspaceId,
-            });
-        }),
-      });
-      actions.push({
-        label: "关闭当前 Tab",
-        icon: "X",
-        run: run(() => void closeTab(pane.id)),
-      });
-    } else if (board.groups.length > 1)
-      actions.push({
-        label: "关闭空分屏",
-        icon: "X",
-        run: run(() => {
+        label: "上下排列",
+        icon: "Rows2",
+        category: "排版",
+        selected:
+          board.direction === "column" &&
+          !board.splitTree &&
+          (!board.layout || board.layout === "auto"),
+        run: run(() =>
           setBoard((current) => ({
             ...current,
-            groups: current.groups.filter((item) => item.id !== group.id),
-          }));
-          setMaximized(null);
-        }),
+            direction: "column",
+            layout: "auto",
+            splitTree: undefined,
+            columnWeights: undefined,
+            rowWeights: undefined,
+          })),
+        ),
       });
-    return actions;
-  }, [
-    picker?.groupId,
-    board.groups,
-    board.panes,
-    board.direction,
-    showPicker,
-    titleFor,
-    setBoard,
-    navigation,
-    closeTab,
-    dropTab,
-  ]);
+      actions.push({
+        label: "均分",
+        icon: "Equal",
+        category: "排版",
+        run: run(() =>
+          setBoard((current) => ({
+            ...current,
+            ratio: 0.5,
+            splitTree: current.splitTree
+              ? equalizeSplitTree(current.splitTree)
+              : undefined,
+            columnWeights: undefined,
+            rowWeights: undefined,
+          })),
+        ),
+      });
+      if (pane) {
+        actions.push({
+          label: "在原 workspace 打开",
+          icon: "ExternalLink",
+          category: "其它",
+          run: run(() => {
+            if (pane.target.kind === "agent")
+              navigation?.openAgent({
+                serverId: pane.serverId,
+                agentId: pane.target.agentId,
+              });
+            else
+              navigation?.openWorkspace({
+                serverId: pane.serverId,
+                workspaceId: pane.workspaceId,
+              });
+          }),
+        });
+        actions.push({
+          label: "关闭当前 Tab",
+          icon: "X",
+          category: "关闭",
+          run: run(() => void closeTab(pane.id)),
+        });
+      } else if (board.groups.length > 1)
+        actions.push({
+          label: "关闭空分屏",
+          icon: "X",
+          category: "其它",
+          run: run(() => {
+            setBoard((current) => ({
+              ...current,
+              groups: current.groups.filter((item) => item.id !== group.id),
+            }));
+            setMaximized(null);
+          }),
+        });
+      actions.push({
+        label: "关闭所有 Tab",
+        icon: "X",
+        category: "关闭",
+        destructive: true,
+        disabled: board.panes.length === 0,
+        run: run(() => void closeAllTabs()),
+      });
+      return actions;
+    },
+    [
+      board.layout,
+      groupOf,
+      closeAllTabs,
+      board.groups,
+      board.panes,
+      board.direction,
+      showPicker,
+      titleFor,
+      setBoard,
+      navigation,
+      closeTab,
+      dropTab,
+      splitDraggedTab,
+      board.splitTree,
+    ],
+  );
+  const menuActionsByGroup = useMemo(
+    () =>
+      new Map(
+        board.groups.map((group) => [group.id, menuActionsFor(group.id)]),
+      ),
+    [board.groups, menuActionsFor],
+  );
+  const menuActions = picker
+    ? (menuActionsByGroup.get(picker.groupId) ?? [])
+    : [];
   const updateDestination = useCallback(
     (newSplit: boolean) =>
       setPicker((current) => (current ? { ...current, newSplit } : current)),
@@ -977,18 +1329,18 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
         {board.groups.map((group) => {
           const rect = geometry.get(group.id)!,
             hidden = Boolean(visibleGroup && visibleGroup !== group.id),
-            horizontal = board.direction === "row",
-            offset = rect.separator ? 4 : 0;
+            insetX = rect.insetX,
+            insetY = rect.insetY;
           return (
             <View
               key={group.id}
               testID={`split-group-${group.id}`}
               style={{
                 position: "absolute",
-                left: rect.left + (horizontal ? offset : 0),
-                top: rect.top + (horizontal ? 0 : offset),
-                width: Math.max(0, rect.width - (horizontal ? offset : 0)),
-                height: Math.max(0, rect.height - (horizontal ? 0 : offset)),
+                left: rect.left + insetX,
+                top: rect.top + insetY,
+                width: Math.max(0, rect.width - insetX),
+                height: Math.max(0, rect.height - insetY),
                 display: hidden ? "none" : "flex",
               }}
             >
@@ -996,6 +1348,13 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
                 group={group}
                 panes={groupPanes.get(group.id)!}
                 agents={directory.data?.agents ?? []}
+                directory={directory.data}
+                host={host}
+                wide={!layout.compact && rect.width >= 560}
+                menuActions={menuActionsByGroup.get(group.id) ?? []}
+                onFocus={focusTab}
+                beforeAction={beforeWorkspaceAction}
+                onOpen={openInPlace}
                 bridge={bridge.data!}
                 theme={theme}
                 compact={layout.compact}
@@ -1048,8 +1407,10 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
           const group = board.groups.find((group) =>
             group.tabIds.includes(pane.id),
           )!;
+          const inspector = groupInspector(board, group);
           const visible =
-            group.activeTabId === pane.id &&
+            (group.activeTabId === pane.id ||
+              inspector?.opener.id === pane.id) &&
             (!visibleGroup || visibleGroup === group.id);
           return (
             <PaneFrame
@@ -1072,24 +1433,24 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
           );
         })}
         {!visibleGroup &&
-          board.groups.map((group) => {
-            const rect = geometry.get(group.id)!;
-            return rect.separator ? (
-              <SplitDivider
-                key={`divider-${group.id}`}
-                id={group.id}
-                rect={rect}
-                direction={board.direction}
-                theme={theme}
-                handlers={drag.panHandlers}
-              />
-            ) : null;
-          })}
+          calculatedLayout.dividers.map((divider) => (
+            <LayoutDivider
+              key={divider.id}
+              id={divider.id}
+              rect={divider.rect}
+              axis={divider.axis}
+              boundary={divider.boundary}
+              theme={theme}
+              onStart={startResize}
+              onMove={moveResize}
+              onEnd={finishResize}
+            />
+          ))}
         <TabDragLayer
           area={workarea}
-          enabled={routeActive && picker === null}
+          enabled={routeActive && !picker}
           getGroups={getGroups}
-          onDrop={dropTab}
+          onDrop={dropOnTarget}
           theme={theme}
         />
       </View>

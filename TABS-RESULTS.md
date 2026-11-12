@@ -38,6 +38,17 @@
 
 分隔条补充验收见 [divider-experience.json](artifacts/divider-experience.json)，[左右排列悬停效果](artifacts/divider-hover.png)、[上下排列悬停效果](artifacts/divider-horizontal-hover.png)。抓取区覆盖原有间隙附近，不额外压缩工作区域；反馈状态仅保存在分隔条内部。
 
+## Tab 拖拽补充验收
+
+2026-11-12，Paseo 0.15.4 原始 Web 构建，在独立 Chrome 会话中使用真实指针与触摸事件验证：
+
+- 同栏排序、跨分屏指定位置插入、上下排列，以及拖入空分屏；源分屏移走最后一个 Tab 后自动收起。
+- 悬停和小幅按下移动保持 `pointer`，超过 6px 才进入拖动并显示 `grabbing`；松手、Esc 或无效落点恢复点击光标。取消不改变顺序。
+- 跨分屏移动后，原生 Composer 与文件编辑器 DOM 均保持相同实例，未发送草稿保留；页面重载后恢复新顺序。
+- 375px 窄屏的边缘自动滚动、触摸排序，以及菜单中的向左 / 向右移动。
+
+拖动预览按帧更新独立图层，松手时才提交布局。记录见 [tab-drag-experience.json](artifacts/tab-drag-experience.json)，[插入预览](artifacts/tab-drag-preview.png)、[跨分屏拖动](artifacts/tab-drag-cross-pane.png)、[窄屏](artifacts/tab-drag-compact.png)。模型测试补充了排序、指定位置插入、空分屏与失效目标，共 13 项通过。
+
 ## 状态与资源
 
 已访问的 Tab 切换时保持挂载，未访问的内容延迟创建；隐藏 Tab 取消可见时间线登记。关闭时释放编辑会话缓存。所有资源宿主保持为同级稳定节点，跨分屏移动也保留原生实例。图标观察器独立缓存，不跟随分隔线拖动重复执行；运行状态采用单个可释放的元数据订阅。
