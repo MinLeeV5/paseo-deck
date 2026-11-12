@@ -1,0 +1,35 @@
+artifacts/composer-focus-experience.json
+  8fc93eec1c10d563 1-23
+plugin/client/pane-frame.tsx
+  8fc93eec1c10d563 29,519,523-526,548
+plugin/client/web.ts
+  8fc93eec1c10d563 437-471
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.8.2",
+  "base_commit_sha": "8a8c73b3371f82dd8d5696edeb8b07fd6002082d",
+  "prompts": {
+    "8fc93eec1c10d563": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1cf7b-4af4-7c41-845d-ef2cfc1551a2",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 105,
+      "total_deletions": 20,
+      "accepted_lines": 66,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/7da1b572611e2846102f347fb0ddf56ba4ec4ea312f0c068a82c6ad7eaa8935e",
+      "token_usage": {
+        "input_tokens": 878995,
+        "output_tokens": 92160,
+        "cache_read_tokens": 27443456,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    }
+  }
+}
