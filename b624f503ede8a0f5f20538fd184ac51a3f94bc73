@@ -1,0 +1,131 @@
+plugin/client/resource-picker.tsx
+  1e57af26bfafcab7 52,68,86,161,193,266-267,274-275,692-695,764,771,777,780,789-822,824,826-828,831-837,840-882,884
+tools/empty-group.test.mjs
+  e9b2ce1ed185b3b4 1-120
+README.zh-CN.md
+  e9b2ce1ed185b3b4 114
+plugin/client/web.ts
+  e9b2ce1ed185b3b4 444,454,466-490
+plugin/client/board.tsx
+  1e57af26bfafcab7 23,73,120,126,492-531,669-703,710,746-772,779-782,794,1585-1587,1739
+  db370f3894dd7727 875,878,882,944
+plugin/client/directory.ts
+  1e57af26bfafcab7 31,57,59-62,165-176,178-181,214
+plugin/client/pane-frame.tsx
+  e9b2ce1ed185b3b4 4-12,51,53,79,81,105,107-112,183,219-228,244,311,321-324,429,441
+plugin/shared/model.ts
+  e9b2ce1ed185b3b4 254-261
+README.md
+  e9b2ce1ed185b3b4 114
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.8.2",
+  "base_commit_sha": "b624f503ede8a0f5f20538fd184ac51a3f94bc73",
+  "prompts": {
+    "1e57af26bfafcab7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ce81-f90e-7521-a908-2921218ab0d2",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 207,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/d485b8e67df4cc0879f836dd1e59d28c872ad2b9e62c4288c16360ed10ca4c0f",
+      "token_usage": {
+        "input_tokens": 109810,
+        "output_tokens": 14031,
+        "cache_read_tokens": 2068224,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    },
+    "4449cd184e33becd": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ce86-d334-7652-8306-e329b296d4e1",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 130,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/2f4c2fa05cd328663007b49dd075a36e2465655414dd1bfe8a44c4dfca2a1dcd",
+      "token_usage": {
+        "input_tokens": 94426,
+        "output_tokens": 12444,
+        "cache_read_tokens": 2307840,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    },
+    "db370f3894dd7727": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ce8d-9805-7862-bf6a-6f4419d25fc5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 3,
+      "total_deletions": 1,
+      "accepted_lines": 3,
+      "overriden_lines": 0,
+      "token_usage": {
+        "input_tokens": 103151,
+        "output_tokens": 8012,
+        "cache_read_tokens": 804608,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    },
+    "e2f4dc71efaec743": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ce89-7410-7331-ae1c-fb4f625f8e31",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 0,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/21bb6ecba7a87c76ec0e0bc1a97de7b015ed71ca72f73a8e7b52b9ec99805910",
+      "token_usage": {
+        "input_tokens": 139691,
+        "output_tokens": 27471,
+        "cache_read_tokens": 7412992,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    },
+    "e9b2ce1ed185b3b4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ce96-dfba-74f1-98b6-b0ed5e513232",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 197,
+      "total_deletions": 4,
+      "accepted_lines": 197,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/ca13686badaf2960eaa433b04af7fabfe51ce729d220951bc7ec1e459d45bed3",
+      "token_usage": {
+        "input_tokens": 65594,
+        "output_tokens": 3664,
+        "cache_read_tokens": 360448,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    }
+  }
+}
