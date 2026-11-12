@@ -1,0 +1,33 @@
+README.md
+  07eaa191d6018f1f 85-88,93-95
+README.zh-CN.md
+  07eaa191d6018f1f 85-88,93-95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.8.2",
+  "base_commit_sha": "26ae82b6af241b3fdae6542288d87eb88d5b08b8",
+  "prompts": {
+    "07eaa191d6018f1f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ce69-8f03-7e80-b7ee-df49a9894e72",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 311,
+      "total_deletions": 0,
+      "accepted_lines": 311,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/c8f7b8c42430cc7ca82989258de193c2936a6a2878a07ebe6571c4bda9ff77b8",
+      "token_usage": {
+        "input_tokens": 170453,
+        "output_tokens": 32915,
+        "cache_read_tokens": 6376192,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    }
+  }
+}
