@@ -32,17 +32,33 @@ _Screenshots show the current Paseo Deck interface in isolated demo workspaces._
 
 ## Get started
 
-Requires **Paseo daemon and client 0.13.0+**. Supports the desktop app and Web client.
+Requires **Paseo daemon and client 0.13.0+**, with Git available on the daemon host. Supports the desktop app and Web client.
 
-Enable plugins in **Settings → Plugins** on the target daemon. Clone the repository and install the plugin on that host:
+In **Settings → Plugins**, enable plugins on the target daemon. Paste the following into **Plugin source**, then select **Install plugin**:
 
-```bash
-git clone https://github.com/MinLeeV5/paseo-deck.git
-cd paseo-deck
-paseo plugin install "$PWD/plugin"
+```text
+git:MinLeeV5/paseo-deck:plugin
 ```
 
+Or install from a terminal on the daemon host:
+
+```bash
+paseo plugin install git:MinLeeV5/paseo-deck:plugin
+```
+
+The `:plugin` suffix selects the plugin directory inside the repository. Paseo downloads the source; no manual clone or dependency installation is needed.
+
 Open **Paseo Deck** in the sidebar, or search for **Paseo Deck** in the Command Center (`⌘K` / `Ctrl+K`). Plugin ID: `paseo-deck`. Current plugin menu labels are in Simplified Chinese.
+
+To update an installation made from this GitHub source, run:
+
+```bash
+paseo plugin update paseo-deck
+```
+
+Paseo shows the latest revision from the repository's default branch and asks for confirmation before updating.
+
+The [Paseo Plugins listing is under review](https://github.com/getpaseo/plugins/pull/2343). Use the GitHub source above while it is pending.
 
 ## Add Agents and resources
 
@@ -117,9 +133,11 @@ On Windows/Linux, creation, closing, and composer focus use Paseo's `Ctrl` bindi
 
 ## Develop and verify
 
-Requires **Node.js 24+**. From the repository root:
+For local development, clone the repository and install the development dependencies. Requires **Node.js 24+**:
 
 ```bash
+git clone https://github.com/MinLeeV5/paseo-deck.git
+cd paseo-deck
 npm run setup
 npm run typecheck
 npm test

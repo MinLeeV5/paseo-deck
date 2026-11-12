@@ -32,17 +32,33 @@ _截图使用独立示例工作区，展示当前 Paseo Deck 界面。_
 
 ## 快速开始
 
-要求 **Paseo daemon 和客户端均为 0.13.0+**，支持桌面应用与 Web 客户端。
+要求 **Paseo daemon 和客户端均为 0.13.0+**，且 daemon 所在主机已安装 Git。支持桌面应用与 Web 客户端。
 
-在目标 daemon 的 **Settings → Plugins** 中启用插件，然后在该主机克隆仓库并安装：
+在目标 daemon 的 **Settings → Plugins** 中启用插件，将以下来源粘贴到 **Plugin source**，点击 **Install plugin**：
 
-```bash
-git clone https://github.com/MinLeeV5/paseo-deck.git
-cd paseo-deck
-paseo plugin install "$PWD/plugin"
+```text
+git:MinLeeV5/paseo-deck:plugin
 ```
 
+也可以在 daemon 所在主机的终端执行：
+
+```bash
+paseo plugin install git:MinLeeV5/paseo-deck:plugin
+```
+
+末尾的 `:plugin` 指定仓库中的插件目录。Paseo 会自行下载源码，无需手动克隆仓库或安装依赖。
+
 点击侧栏 **Paseo Deck**，或在 Command Center（`⌘K` / `Ctrl+K`）中搜索 **Paseo Deck**。插件 ID 为 `paseo-deck`，当前插件菜单使用简体中文。
+
+通过上述 GitHub 来源安装后，可执行以下命令更新：
+
+```bash
+paseo plugin update paseo-deck
+```
+
+Paseo 会显示仓库默认分支的最新版本，确认后才会更新。
+
+[Paseo Plugins 市场收录仍在审核中](https://github.com/getpaseo/plugins/pull/2343)，审核期间请使用上述 GitHub 来源安装。
 
 ## 添加 Agent 与资源
 
@@ -117,9 +133,11 @@ Windows / Linux 的创建、关闭和聚焦沿用 Paseo 的 `Ctrl` 绑定。Web 
 
 ## 开发与验证
 
-要求 **Node.js 24+**。在仓库根目录执行：
+本地开发需要克隆仓库并安装开发依赖，要求 **Node.js 24+**：
 
 ```bash
+git clone https://github.com/MinLeeV5/paseo-deck.git
+cd paseo-deck
 npm run setup
 npm run typecheck
 npm test
