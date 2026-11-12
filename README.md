@@ -58,8 +58,6 @@ paseo plugin update paseo-deck
 
 Paseo shows the latest revision from the repository's default branch and asks for confirmation before updating.
 
-The [Paseo Plugins listing is under review](https://github.com/getpaseo/plugins/pull/2343). Use the GitHub source above while it is pending.
-
 ## Add Agents and resources
 
 Click a split's **`＋`** to open the unified add panel. Search existing Agents, filter by workspace, or create an Agent, terminal, or file view. Running and initializing Agents have a separate section; Agent Tabs use their source workspace's icon.

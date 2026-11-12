@@ -58,8 +58,6 @@ paseo plugin update paseo-deck
 
 Paseo 会显示仓库默认分支的最新版本，确认后才会更新。
 
-[Paseo Plugins 市场收录仍在审核中](https://github.com/getpaseo/plugins/pull/2343)，审核期间请使用上述 GitHub 来源安装。
-
 ## 添加 Agent 与资源
 
 点击分屏 Tab 栏中的 **`＋`**，打开统一添加面板。可以搜索已有 Agent、筛选来源工作区，也可以新建 Agent、终端或文件视图。运行中与启动中的 Agent 单独分栏，Agent Tab 使用来源工作区的图标。
