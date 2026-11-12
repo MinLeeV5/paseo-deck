@@ -1,4 +1,4 @@
-import { Platform } from "react-native";
+import { Platform, type ScrollView } from "react-native";
 import {
   restoreBoard,
   emptyBoard,
@@ -442,6 +442,7 @@ interface TabScrollElement extends WebElement {
 }
 
 export function onTabScroll(
+  scrollView: ScrollView | null,
   groupId: string,
   thumbColor: string,
   trackColor: string,
@@ -449,7 +450,8 @@ export function onTabScroll(
 ): () => void {
   if (Platform.OS !== "web") return () => {};
   const selector = `[data-testid="split-tabs-${groupId}"]`;
-  const strip = document.querySelector(selector) as TabScrollElement | null;
+  // Retained route trees can share test IDs. Bind to this ScrollView instance.
+  const strip = scrollView?.getScrollableNode() as TabScrollElement | null;
   if (!strip) return () => {};
   // An explicit track keeps overflowing Tabs discoverable on desktop systems
   // that otherwise hide their overlay scrollbars until a gesture starts.

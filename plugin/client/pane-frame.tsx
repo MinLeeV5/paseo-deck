@@ -88,7 +88,8 @@ export const TabStrip = memo(function TabStrip({
   onMaximize(groupId: string): void;
   onAnchor(groupId: string, anchor: View | null): void;
 }) {
-  const plus = useRef<View>(null),
+  const tabs = useRef<ScrollView>(null),
+    plus = useRef<View>(null),
     menu = useRef<View>(null);
   useEffect(() => {
     onAnchor(group.id, plus.current);
@@ -101,6 +102,7 @@ export const TabStrip = memo(function TabStrip({
   useEffect(
     () =>
       onTabScroll(
+        tabs.current,
         group.id,
         theme.colors.foregroundMuted,
         theme.colors.surface1,
@@ -140,6 +142,7 @@ export const TabStrip = memo(function TabStrip({
         }}
       >
         <ScrollView
+          ref={tabs}
           testID={`split-tabs-${group.id}`}
           accessibilityRole="tablist"
           horizontal
