@@ -251,6 +251,14 @@ export function removeTab(board: Board, tabId: string): Board {
     ),
   };
 }
+export function removeEmptyGroup(board: Board, groupId: string): Board {
+  const group = board.groups.find((group) => group.id === groupId);
+  if (!group || group.tabIds.length || board.groups.length <= 1) return board;
+  return reconcileBoardLayout({
+    ...board,
+    groups: board.groups.filter((group) => group.id !== groupId),
+  });
+}
 export function moveTab(
   board: Board,
   tabId: string,

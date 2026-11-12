@@ -20,6 +20,7 @@ import {
   activateTab,
   addPane,
   moveTab,
+  removeEmptyGroup,
   removeTab,
   relatedTabIds,
   resourceKey,
@@ -69,7 +70,7 @@ import {
   type PickerMode,
 } from "./resource-picker";
 import { WorkspaceIcons } from "./workspace-icon";
-import { useDirectory, workspaceLabel } from "./directory";
+import { isRunning, useDirectory, workspaceLabel } from "./directory";
 import type { NativeBridge } from "./native-types";
 import type { PluginPanelRequest } from "./workspace-types";
 
@@ -116,11 +117,13 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
   const [picker, setPicker] = useState<Picker | null>(null);
   const [notice, setNotice] = useState<string | null>(null),
     [busy, setBusy] = useState(false);
+  const archivingAgent = useRef(false);
   const [viewport, setViewport] = useState({ width: 1000, height: 700 });
   const root = useRef<View>(null),
     workarea = useRef<View>(null),
     anchors = useRef(new Map<string, View>());
   const pendingCloses = useRef(new Set<string>()),
+    runningTabs = useRef(new Set<string>()),
     closingAll = useRef(false),
     terminalCreation = useRef(false),
     cancelFrame = useRef<(() => void) | null>(null),
@@ -486,6 +489,46 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
       );
     else showPicker(groupId, null, "new");
   }, [visibleGroup, groupFocus, openTarget, showPicker]);
+
+  const archiveAgent = useCallback(
+    async (agentId: string) => {
+      const agent = directoryRef.current?.agents.find(
+        (item) => item.id === agentId,
+      );
+      if (!agent || !bridge.data || archivingAgent.current) return;
+      archivingAgent.current = true;
+      setBusy(true);
+      setNotice(null);
+      try {
+        const confirmed = await bridge.data.confirmDialog({
+          title: "归档 Agent",
+          message: `确定归档「${agent.title ?? "未命名 Agent"}」吗？${isRunning(agent) ? "\n\n该 Agent 正在运行，归档会停止当前任务。" : ""}\n\n归档后将从资源列表移除，并关闭它在工作台中的标签页。`,
+          confirmLabel: "归档",
+          cancelLabel: "取消",
+          destructive: true,
+        });
+        if (!confirmed) return;
+        await paseo.agents.ref(agentId).archive();
+        setBoard((current) =>
+          current.panes
+            .filter(
+              (pane) =>
+                pane.serverId === host.id &&
+                pane.target.kind === "agent" &&
+                pane.target.agentId === agentId,
+            )
+            .reduce((next, pane) => removeTab(next, pane.id), current),
+        );
+        void directory.refetch();
+      } catch (error) {
+        setNotice(`归档失败：${errorMessage(error)}`);
+      } finally {
+        archivingAgent.current = false;
+        setBusy(false);
+      }
+    },
+    [bridge.data, paseo, host.id, setBoard, directory.refetch],
+  );
   const openPluginPanel = useCallback(
     (request: PluginPanelRequest): boolean => {
       if (!routeActiveRef.current || request.serverId !== host.id) return false;
@@ -623,12 +666,48 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
     },
     [groupOf, showPicker],
   );
+  const onRunningChange = useCallback((tabId: string, running: boolean) => {
+    if (running) runningTabs.current.add(tabId);
+    else runningTabs.current.delete(tabId);
+  }, []);
+  const confirmRunningTabs = useCallback(
+    async (panes: Pane[]) => {
+      const running = panes.filter((pane) => {
+        if (runningTabs.current.has(pane.id)) return true;
+        if (pane.target.kind !== "agent") return false;
+        const agentId = pane.target.agentId;
+        const agent = directoryRef.current?.agents.find(
+          (item) => item.id === agentId,
+        );
+        return agent && isRunning(agent);
+      });
+      if (!running.length) return true;
+      if (!bridge.data) return false;
+      const titles = running.map((pane) => {
+        const agentId =
+          pane.target.kind === "agent" ? pane.target.agentId : null;
+        const title = directoryRef.current?.agents.find(
+          (item) => item.id === agentId,
+        )?.title;
+        return `「${title ?? pane.title}」`;
+      });
+      return bridge.data.confirmDialog({
+        title: "关闭运行中的 Tab",
+        message: `${titles.join("、")}仍在运行，确定${panes.length === 1 ? "关闭这个 Tab" : "关闭所选 Tab"}吗？\n\n关闭只会移除工作台中的标签页，Agent 会继续运行，可从添加面板重新打开。`,
+        confirmLabel: "关闭 Tab",
+        cancelLabel: "取消",
+        destructive: false,
+      });
+    },
+    [bridge.data],
+  );
   const closeTab = useCallback(
     async (tabId: string) => {
       const pane = boardRef.current.panes.find((item) => item.id === tabId);
       if (!pane || pendingCloses.current.has(tabId)) return;
       pendingCloses.current.add(tabId);
       try {
+        if (!(await confirmRunningTabs([pane]))) return;
         const attributes = bridge.data?.getPanelInstanceAttributes({
           serverId: pane.serverId,
           workspaceId: pane.workspaceId,
@@ -664,14 +743,43 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
         pendingCloses.current.delete(tabId);
       }
     },
-    [bridge.data, instanceId, setBoard],
+    [bridge.data, confirmRunningTabs, instanceId, setBoard],
+  );
+  const closeEmptyGroup = useCallback(
+    (groupId: string) => {
+      const current = boardRef.current;
+      const next = removeEmptyGroup(current, groupId);
+      if (next === current) return;
+      cancelFrame.current?.();
+      cancelFrame.current = null;
+      pendingResize.current = null;
+      resizeStart.current = null;
+      setBoard(next);
+      const index = current.groups.findIndex((group) => group.id === groupId);
+      const remaining = next.groups[Math.min(index, next.groups.length - 1)];
+      setFocusedGroup(remaining.id);
+      setMaximized((value) => (value === groupId ? null : value));
+      setPicker((value) => (value?.groupId === groupId ? null : value));
+      actionOwner.current = remaining.activeTabId;
+      scheduleFrame(() =>
+        focusControl(
+          remaining.activeTabId
+            ? `split-tab-${remaining.activeTabId}`
+            : `split-add-${remaining.id}`,
+        ),
+      );
+    },
+    [setBoard],
   );
   const closeCurrentTab = useCallback(() => {
     const group = boardRef.current.groups.find(
       (item) => item.id === (visibleGroup ?? groupFocus),
     );
     const tabId = group?.activeTabId;
-    if (!tabId) return;
+    if (!tabId) {
+      if (group) closeEmptyGroup(group.id);
+      return;
+    }
     void closeTab(tabId).then(() => {
       if (boardRef.current.panes.some((pane) => pane.id === tabId)) return;
       const activeTabId = boardRef.current.groups.find(
@@ -683,7 +791,7 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
         ),
       );
     });
-  }, [closeTab, groupFocus, visibleGroup]);
+  }, [closeTab, closeEmptyGroup, groupFocus, visibleGroup]);
   const closeTabAndFocus = useCallback(
     async (tabId: string) => {
       const group = groupOf(tabId);
@@ -723,6 +831,7 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
       closingAll.current = true;
       ids.forEach((id) => pendingCloses.current.add(id));
       try {
+        if (!(await confirmRunningTabs(closing))) return;
         for (const pane of closing) {
           const attributes = bridge.data?.getPanelInstanceAttributes({
             serverId: pane.serverId,
@@ -760,15 +869,17 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
         closingAll.current = false;
       }
     },
-    [bridge.data, groupOf, instanceId, setBoard],
+    [bridge.data, confirmRunningTabs, groupOf, instanceId, setBoard],
   );
   const closeAllTabs = useCallback(async () => {
-    if (closingAll.current) return;
+    if (closingAll.current || pendingCloses.current.size) return;
     closingAll.current = true;
     const closing = [...boardRef.current.panes];
+    closing.forEach((pane) => pendingCloses.current.add(pane.id));
     const resumes: (() => void)[] = [];
     let committed = false;
     try {
+      if (!(await confirmRunningTabs(closing))) return;
       for (const pane of closing) {
         const attributes = bridge.data?.getPanelInstanceAttributes({
           serverId: pane.serverId,
@@ -830,9 +941,10 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
       setNotice(errorMessage(error));
     } finally {
       if (!committed) resumes.forEach((resume) => resume());
+      closing.forEach((pane) => pendingCloses.current.delete(pane.id));
       closingAll.current = false;
     }
-  }, [bridge.data, instanceId, setBoard]);
+  }, [bridge.data, confirmRunningTabs, instanceId, setBoard]);
   const retarget = useCallback(
     (tabId: string, target: Target) => {
       const parsed = targetSchema.safeParse(target);
@@ -1468,7 +1580,11 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
                 active={routeActive && !hidden}
                 maximized={maximized === group.id}
                 onSelect={selectTab}
+                onRunningChange={onRunningChange}
                 onClose={closeTabAndFocus}
+                onCloseGroup={
+                  board.groups.length > 1 ? closeEmptyGroup : undefined
+                }
                 onCloseRelated={closeRelatedTabs}
                 onResourceChanged={directory.refetch}
                 onAdd={showPicker}
@@ -1620,6 +1736,7 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
         onDestination={updateDestination}
         onOpen={chooseTarget}
         onTerminal={createTerminal}
+        onArchive={archiveAgent}
         onClose={dismiss}
         onRefresh={() => void directory.refetch()}
         busy={busy}

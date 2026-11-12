@@ -28,7 +28,7 @@ export function useDirectory(
   const paseo = usePaseo();
   const cache = useQueryClient();
   const key = ["split-directory-v2", hostId];
-  const latest = useRef(new Map<string, PaseoAgent>());
+  const latest = useRef(new Map<string, PaseoAgent | null>());
   const latestWorkspaces = useRef(new Map<string, PaseoWorkspace>());
   const query = useQuery({
     queryKey: key,
@@ -54,9 +54,12 @@ export function useDirectory(
             : workspace;
         }),
         projects: projects.projects,
-        agents: agents.entries.map(({ agent }) => {
+        agents: agents.entries.flatMap(({ agent }) => {
           const update = latest.current.get(agent.id);
-          return update && update.updatedAt >= agent.updatedAt ? update : agent;
+          if (update === null) return [];
+          const current =
+            update && update.updatedAt >= agent.updatedAt ? update : agent;
+          return current.archivedAt ? [] : [current];
         }),
         terminals,
       };
@@ -159,7 +162,23 @@ export function useDirectory(
     let release: (() => Promise<void>) | undefined;
     let removeSnapshot: (() => void) | undefined;
     const controller = new AbortController();
+    const remove = (agentId: string) => {
+      latest.current.delete(agentId);
+      latest.current.set(agentId, null);
+      cache.setQueryData<Directory>(
+        ["split-directory-v2", hostId],
+        (current) =>
+          current && {
+            ...current,
+            agents: current.agents.filter((agent) => agent.id !== agentId),
+          },
+      );
+    };
     const apply = (agent: PaseoAgent) => {
+      if (agent.archivedAt) {
+        remove(agent.id);
+        return;
+      }
       latest.current.delete(agent.id);
       latest.current.set(agent.id, agent);
       if (latest.current.size > 200)
@@ -192,6 +211,7 @@ export function useDirectory(
     };
     const removeListener = paseo.agents.subscribe((update) => {
       if (update.kind === "upsert") apply(update.agent);
+      else if (update.kind === "remove") remove(update.agentId);
     });
     // subscribe() only listens to this API scope. Own one metadata observation
     // while the page is active; it does not request Agent timelines or tokens.

@@ -441,6 +441,7 @@ export function onTabScroll(
   groupId: string,
   thumbColor: string,
   trackColor: string,
+  foregroundColor: string,
 ): () => void {
   if (Platform.OS !== "web") return () => {};
   const selector = `[data-testid="split-tabs-${groupId}"]`;
@@ -450,6 +451,7 @@ export function onTabScroll(
   // that otherwise hide their overlay scrollbars until a gesture starts.
   const sheet = document.createElement("style");
   const subtleThumbColor = `color-mix(in srgb, ${thumbColor} 35%, ${trackColor})`;
+  const close = `${selector} [data-testid^="split-close-tab-"]`;
   sheet.textContent = `
     ${selector} { scrollbar-width: auto; scrollbar-color: auto; }
     ${selector}::-webkit-scrollbar { height: 3px; }
@@ -460,6 +462,32 @@ export function onTabScroll(
     }
     @supports not selector(::-webkit-scrollbar) {
       ${selector} { scrollbar-width: thin; scrollbar-color: ${subtleThumbColor} ${trackColor}; }
+    }
+    ${close}::before {
+      content: "";
+      position: absolute;
+      width: calc(100% - 2px);
+      aspect-ratio: 1;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 4px;
+      background: ${foregroundColor};
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 120ms ease-out;
+    }
+    ${close}:hover::before { opacity: 0.1; }
+    ${close}:active::before { opacity: 0.18; }
+    ${close}:focus-visible {
+      outline: 1px solid ${foregroundColor};
+      outline-offset: -2px;
+    }
+    ${close} svg, ${close} svg * { transition: stroke 120ms ease-out; }
+    ${close}:hover svg, ${close}:hover svg *,
+    ${close}:focus-visible svg, ${close}:focus-visible svg * { stroke: ${foregroundColor}; }
+    @media (prefers-reduced-motion: reduce) {
+      ${close}::before, ${close} svg, ${close} svg * { transition: none; }
     }
   `;
   document.head.appendChild(sheet);

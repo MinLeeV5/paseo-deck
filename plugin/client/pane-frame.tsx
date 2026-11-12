@@ -1,7 +1,15 @@
 import type { PluginScreenProps } from "@getpaseo/plugin/client";
 import { Icon } from "@getpaseo/plugin/client/ui";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Platform, Pressable, ScrollView, Text, View } from "react-native";
 import type { Pane, RelatedTabs, TabGroup, Target } from "../shared/model";
 import type { NativeBridge, NativeStatusBucket } from "./native-types";
@@ -40,7 +48,9 @@ export const TabStrip = memo(function TabStrip({
   active,
   maximized,
   onSelect,
+  onRunningChange,
   onClose,
+  onCloseGroup,
   onCloseRelated,
   onResourceChanged,
   onAdd,
@@ -66,7 +76,9 @@ export const TabStrip = memo(function TabStrip({
   active: boolean;
   maximized: boolean;
   onSelect(id: string): void;
+  onRunningChange(id: string, running: boolean): void;
   onClose(id: string): void;
+  onCloseGroup?(groupId: string): void;
   onCloseRelated(id: string, scope: RelatedTabs): void;
   onResourceChanged(): Promise<unknown>;
   onAdd(groupId: string, anchor: View | null): void;
@@ -90,8 +102,14 @@ export const TabStrip = memo(function TabStrip({
         group.id,
         theme.colors.foregroundMuted,
         theme.colors.surface1,
+        theme.colors.foreground,
       ),
-    [group.id, theme.colors.foregroundMuted, theme.colors.surface1],
+    [
+      group.id,
+      theme.colors.foregroundMuted,
+      theme.colors.surface1,
+      theme.colors.foreground,
+    ],
   );
   useEffect(() => {
     if (active && group.activeTabId)
@@ -162,6 +180,7 @@ export const TabStrip = memo(function TabStrip({
                 theme={theme}
                 compact={compact}
                 onSelect={onSelect}
+                onRunningChange={onRunningChange}
                 onClose={onClose}
                 onCloseRelated={onCloseRelated}
                 onResourceChanged={onResourceChanged}
@@ -197,6 +216,16 @@ export const TabStrip = memo(function TabStrip({
         onMenu={onMenu}
         onMaximize={onMaximize}
       />
+      {!group.tabIds.length && onCloseGroup && (
+        <IconButton
+          label="关闭空分屏"
+          icon="X"
+          theme={theme}
+          size={compact ? 30 : 26}
+          onPress={() => onCloseGroup(group.id)}
+          testID={`split-close-group-${group.id}`}
+        />
+      )}
     </View>
   );
 });
@@ -212,6 +241,7 @@ type TabProps = {
   theme: PluginScreenProps["theme"];
   compact: boolean;
   onSelect(id: string): void;
+  onRunningChange(id: string, running: boolean): void;
   onClose(id: string): void;
   onCloseRelated(id: string, scope: RelatedTabs): void;
   onResourceChanged(): Promise<unknown>;
@@ -278,6 +308,7 @@ const TabButton = memo(function TabButton({
   theme,
   compact,
   onSelect,
+  onRunningChange,
   onClose,
   onCloseRelated,
   onResourceChanged,
@@ -287,6 +318,10 @@ const TabButton = memo(function TabButton({
   const colors = theme.colors;
   const statusLabel = statusBucket ? statusLabels[statusBucket] : "";
   const label = `${title} · ${pane.workspaceName}${statusLabel ? ` · ${statusLabel}` : ""}`;
+  useLayoutEffect(() => {
+    onRunningChange(pane.id, statusBucket === "running");
+    return () => onRunningChange(pane.id, false);
+  }, [onRunningChange, pane.id, statusBucket]);
   useEffect(
     () => describeControl(`split-tab-${pane.id}`, label),
     [pane.id, label],
@@ -391,6 +426,7 @@ const TabButton = memo(function TabButton({
           </Text>
         </TabMenuTrigger>
         <Pressable
+          testID={`split-close-tab-${pane.id}`}
           accessibilityRole="button"
           accessibilityLabel={`关闭 Tab ${title}`}
           tabIndex={selected ? 0 : -1}
@@ -402,6 +438,7 @@ const TabButton = memo(function TabButton({
             height: compact ? 30 : 26,
             alignItems: "center",
             justifyContent: "center",
+            borderRadius: 4,
             opacity: selected || hovered || focused ? 1 : 0,
           }}
         >

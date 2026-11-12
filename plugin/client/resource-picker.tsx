@@ -49,6 +49,7 @@ type Row =
       title: string;
       subtitle: string;
       workspaceId: string;
+      agentId?: string;
       badge?: string;
       running?: boolean;
       run(): void;
@@ -64,6 +65,7 @@ export function ResourcePicker({
   onDestination,
   onOpen,
   onTerminal,
+  onArchive,
   onClose,
   onRefresh,
   busy,
@@ -81,6 +83,7 @@ export function ResourcePicker({
   onDestination(next: boolean): void;
   onOpen(target: Target, workspaceId: string): void;
   onTerminal(workspaceId: string): void;
+  onArchive(agentId: string): Promise<void>;
   onClose(): void;
   onRefresh(): void;
   busy: boolean;
@@ -155,6 +158,7 @@ export function ResourcePicker({
     } else if (mode === "agent") {
       const agents = (directory?.agents ?? []).filter(
         (agent) =>
+          !agent.archivedAt &&
           agent.workspaceId &&
           (scope === "all" || agent.workspaceId === scope) &&
           matches(
@@ -186,6 +190,7 @@ export function ResourcePicker({
             title: agent.title ?? "未命名 Agent",
             subtitle: workspace ? workspaceLabel(workspace) : agent.cwd,
             workspaceId: agent.workspaceId!,
+            agentId: agent.id,
             badge:
               agent.status === "running"
                 ? "运行中"
@@ -258,15 +263,16 @@ export function ResourcePicker({
       return value;
     });
   }, [rows]);
-  const keyboard = useRef({ options, selected });
-  keyboard.current = { options, selected };
+  const keyboard = useRef({ options, selected, busy });
+  keyboard.current = { options, selected, busy };
   useEffect(() => {
     if (mode !== "menu") search.current?.focus();
   }, [mode]);
   useEffect(
     () =>
       onPickerKeys((key) => {
-        const { options, selected } = keyboard.current;
+        const { options, selected, busy } = keyboard.current;
+        if (busy) return true;
         if (key === "Enter") {
           if (options.length)
             options[Math.min(selected, options.length - 1)]?.run();
@@ -683,6 +689,10 @@ export function ResourcePicker({
                 selected={activeOption?.key === item.key}
                 theme={theme}
                 busy={busy}
+                onArchive={async (agentId) => {
+                  await onArchive(agentId);
+                  search.current?.focus();
+                }}
               />
             )
           }
@@ -751,101 +761,127 @@ function ResultRow({
   selected,
   theme,
   busy,
+  onArchive,
 }: {
   bridge: NativeBridge;
   row: Extract<Row, { kind: "option" }>;
   selected: boolean;
   theme: PluginScreenProps["theme"];
   busy: boolean;
+  onArchive(agentId: string): Promise<void>;
 }) {
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const colors = theme.colors;
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`打开 ${row.title} · ${row.subtitle}${row.badge ? " · " + row.badge : ""}`}
-      disabled={busy}
-      accessibilityState={{ disabled: busy }}
-      onPress={row.run}
-      onHoverIn={() => setHovered(true)}
-      onHoverOut={() => setHovered(false)}
-      onFocus={() => setFocused(keyboardFocusVisible())}
-      onBlur={() => setFocused(false)}
+    <View
       style={{
         height: RESULT_HEIGHT,
-        paddingHorizontal: 9,
-        gap: 10,
+        paddingRight: row.agentId ? 4 : 0,
         flexDirection: "row",
         alignItems: "center",
         borderRadius: 7,
-        borderWidth: 1,
-        borderColor: focused ? colors.foregroundMuted : "transparent",
         marginHorizontal: 6,
         backgroundColor: hovered || selected ? colors.surface2 : "transparent",
         opacity: busy ? 0.5 : 1,
       }}
     >
-      {row.workspaceId ? (
-        <WorkspaceIcon
-          bridge={bridge}
-          workspaceId={row.workspaceId}
-          label={row.subtitle}
-          size={22}
-        />
-      ) : (
-        <Icon name="Layers" size={16} color={colors.foregroundMuted} />
-      )}
-      <View style={{ flex: 1, minWidth: 0, gap: 5 }}>
-        <Text
-          numberOfLines={1}
-          style={{
-            fontSize: 12,
-            color: colors.foreground,
-            fontWeight: selected || row.running ? "500" : "400",
-          }}
-        >
-          {row.title}
-        </Text>
-        <Text
-          numberOfLines={1}
-          style={{ fontSize: 11, color: colors.foregroundMuted }}
-        >
-          {row.subtitle}
-        </Text>
-      </View>
-      {row.badge && (
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 4,
-          }}
-        >
-          {row.running && (
-            <View
-              style={{
-                width: 5,
-                height: 5,
-                borderRadius: 3,
-                backgroundColor: colors.statusSuccess,
-              }}
-            />
-          )}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`打开 ${row.title} · ${row.subtitle}${row.badge ? " · " + row.badge : ""}`}
+        disabled={busy}
+        accessibilityState={{ disabled: busy }}
+        onPress={row.run}
+        onHoverIn={() => setHovered(true)}
+        onHoverOut={() => setHovered(false)}
+        onFocus={() => setFocused(keyboardFocusVisible())}
+        onBlur={() => setFocused(false)}
+        style={{
+          flex: 1,
+          minWidth: 0,
+          height: "100%",
+          paddingHorizontal: 9,
+          gap: 10,
+          flexDirection: "row",
+          alignItems: "center",
+          borderRadius: 7,
+          borderWidth: 1,
+          borderColor: focused ? colors.foregroundMuted : "transparent",
+        }}
+      >
+        {row.workspaceId ? (
+          <WorkspaceIcon
+            bridge={bridge}
+            workspaceId={row.workspaceId}
+            label={row.subtitle}
+            size={22}
+          />
+        ) : (
+          <Icon name="Layers" size={16} color={colors.foregroundMuted} />
+        )}
+        <View style={{ flex: 1, minWidth: 0, gap: 5 }}>
           <Text
+            numberOfLines={1}
             style={{
-              fontSize: 10,
-              fontWeight: row.running ? "600" : "400",
-              color: row.running
-                ? colors.statusSuccess
-                : colors.foregroundMuted,
+              fontSize: 12,
+              color: colors.foreground,
+              fontWeight: selected || row.running ? "500" : "400",
             }}
           >
-            {row.badge}
+            {row.title}
+          </Text>
+          <Text
+            numberOfLines={1}
+            style={{ fontSize: 11, color: colors.foregroundMuted }}
+          >
+            {row.subtitle}
           </Text>
         </View>
+        {row.badge && (
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 4,
+            }}
+          >
+            {row.running && (
+              <View
+                style={{
+                  width: 5,
+                  height: 5,
+                  borderRadius: 3,
+                  backgroundColor: colors.statusSuccess,
+                }}
+              />
+            )}
+            <Text
+              style={{
+                fontSize: 10,
+                fontWeight: row.running ? "600" : "400",
+                color: row.running
+                  ? colors.statusSuccess
+                  : colors.foregroundMuted,
+              }}
+            >
+              {row.badge}
+            </Text>
+          </View>
+        )}
+      </Pressable>
+      {row.agentId && (
+        <IconButton
+          theme={theme}
+          label={`归档 ${row.title}`}
+          icon="Archive"
+          size={24}
+          disabled={busy}
+          tooltip={false}
+          testID={`split-archive-agent-${row.agentId}`}
+          onPress={() => void onArchive(row.agentId!)}
+        />
       )}
-    </Pressable>
+    </View>
   );
 }
 function PickerRow({
