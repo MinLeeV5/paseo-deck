@@ -1,0 +1,68 @@
+artifacts/tab-status-experience.json
+  ba2dbe04fd144743 1-22
+README.zh-CN.md
+  ba2dbe04fd144743 24,66-67,160
+README.md
+  07eaa191d6018f1f 24,66-67,160
+plugin/shared/bridge.ts
+  ba2dbe04fd144743 7-8
+tools/model.test.mjs
+  ba2dbe04fd144743 79-80
+plugin/client/pane-frame.tsx
+  ba2dbe04fd144743 3-4,7,203,218-284,288-289,356-373
+artifacts/tab-status-compatibility.json
+  ba2dbe04fd144743 1-20
+plugin/client/native-types.ts
+  ba2dbe04fd144743 7-20,54-65
+TAB-STATUS-RESULTS.md
+  07eaa191d6018f1f 1-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.8.2",
+  "base_commit_sha": "a00522c8d67ac2d751efefbca14bf9dfcdb5050b",
+  "prompts": {
+    "07eaa191d6018f1f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ce69-8f03-7e80-b7ee-df49a9894e72",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 825,
+      "total_deletions": 1,
+      "accepted_lines": 825,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/232bdddeb5969383c643f079fab0b93d85cc9f30dee3e7f5e2d1468b5a5a33b8",
+      "token_usage": {
+        "input_tokens": 112578,
+        "output_tokens": 17463,
+        "cache_read_tokens": 3413888,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    },
+    "ba2dbe04fd144743": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ce6e-9a7a-7350-8a6c-1e10b383356d",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 4,
+      "total_deletions": 1,
+      "accepted_lines": 166,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/71cf3bf2cd2829b93a9865b77b819606cd2ee15864de2601112747776f7b9465",
+      "token_usage": {
+        "input_tokens": 164587,
+        "output_tokens": 23079,
+        "cache_read_tokens": 4655104,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    }
+  }
+}
