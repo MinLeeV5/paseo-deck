@@ -2,7 +2,7 @@ import type { PluginScreenProps } from "@getpaseo/plugin/client";
 import { Icon } from "@getpaseo/plugin/client/ui";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { Platform, Pressable, ScrollView, Text, View } from "react-native";
-import type { Pane, TabGroup, Target } from "../shared/model";
+import type { Pane, RelatedTabs, TabGroup, Target } from "../shared/model";
 import type { NativeBridge } from "./native-types";
 import type { Directory } from "./directory";
 import { isRunning } from "./directory";
@@ -10,6 +10,7 @@ import { IconButton, targetIcons } from "./compact-ui";
 import { WorkspaceIcon } from "./workspace-icon";
 import { NativePane } from "./native-pane";
 import { WorkspaceActions } from "./workspace-actions";
+import { TabContextMenu, TabMenuTrigger } from "./tab-context-menu";
 import type { PaneMenuAction } from "./resource-picker";
 import {
   describeControl,
@@ -22,11 +23,13 @@ import {
 export type Rect = { left: number; top: number; width: number; height: number };
 export const TabStrip = memo(function TabStrip({
   group,
+  instanceId,
   panes,
   agents,
   directory,
   host,
   wide,
+  width,
   menuActions,
   onFocus,
   beforeAction,
@@ -38,17 +41,21 @@ export const TabStrip = memo(function TabStrip({
   maximized,
   onSelect,
   onClose,
+  onCloseRelated,
+  onResourceChanged,
   onAdd,
   onMenu,
   onMaximize,
   onAnchor,
 }: {
   group: TabGroup;
+  instanceId: string;
   panes: Pane[];
   agents: Directory["agents"];
   directory?: Directory;
   host: PluginScreenProps["host"];
   wide: boolean;
+  width: number;
   menuActions: PaneMenuAction[];
   onFocus(tabId: string): void;
   beforeAction(tabId: string): Promise<void>;
@@ -60,6 +67,8 @@ export const TabStrip = memo(function TabStrip({
   maximized: boolean;
   onSelect(id: string): void;
   onClose(id: string): void;
+  onCloseRelated(id: string, scope: RelatedTabs): void;
+  onResourceChanged(): Promise<unknown>;
   onAdd(groupId: string, anchor: View | null): void;
   onMenu(groupId: string, anchor: View | null): void;
   onMaximize(groupId: string): void;
@@ -118,7 +127,7 @@ export const TabStrip = memo(function TabStrip({
           style={{ flexGrow: 0, flexShrink: 1, minWidth: 0 }}
           contentContainerStyle={{ alignItems: "center", gap: 2 }}
         >
-          {panes.map((pane) => {
+          {panes.map((pane, index) => {
             const agent =
               pane.target.kind === "agent"
                 ? agents.find(
@@ -127,19 +136,25 @@ export const TabStrip = memo(function TabStrip({
                       agent.id === pane.target.agentId,
                   )
                 : undefined;
+            const terminal =
+              pane.target.kind === "terminal"
+                ? directory?.terminals.find(
+                    (terminal) =>
+                      pane.target.kind === "terminal" &&
+                      terminal.id === pane.target.terminalId,
+                  )
+                : undefined;
             return (
               <Tab
                 key={pane.id}
                 pane={pane}
+                nativeTabId={`${instanceId}:${pane.id}`}
+                index={index}
+                tabCount={panes.length}
+                directory={directory}
                 title={
                   agent?.title ??
-                  (pane.target.kind === "terminal"
-                    ? directory?.terminals.find(
-                        (terminal) =>
-                          pane.target.kind === "terminal" &&
-                          terminal.id === pane.target.terminalId,
-                      )?.name
-                    : undefined) ??
+                  (terminal?.title || terminal?.name) ??
                   pane.title
                 }
                 running={Boolean(agent && isRunning(agent))}
@@ -149,6 +164,8 @@ export const TabStrip = memo(function TabStrip({
                 compact={compact}
                 onSelect={onSelect}
                 onClose={onClose}
+                onCloseRelated={onCloseRelated}
+                onResourceChanged={onResourceChanged}
               />
             );
           })}
@@ -171,6 +188,7 @@ export const TabStrip = memo(function TabStrip({
         theme={theme}
         compact={compact}
         wide={wide}
+        width={width}
         groupId={group.id}
         menuActions={menuActions}
         maximized={maximized}
@@ -185,6 +203,10 @@ export const TabStrip = memo(function TabStrip({
 });
 const Tab = memo(function Tab({
   pane,
+  nativeTabId,
+  index,
+  tabCount,
+  directory,
   title,
   running,
   selected,
@@ -193,8 +215,14 @@ const Tab = memo(function Tab({
   compact,
   onSelect,
   onClose,
+  onCloseRelated,
+  onResourceChanged,
 }: {
   pane: Pane;
+  nativeTabId: string;
+  index: number;
+  tabCount: number;
+  directory?: Directory;
   title: string;
   running: boolean;
   selected: boolean;
@@ -203,6 +231,8 @@ const Tab = memo(function Tab({
   compact: boolean;
   onSelect(id: string): void;
   onClose(id: string): void;
+  onCloseRelated(id: string, scope: RelatedTabs): void;
+  onResourceChanged(): Promise<unknown>;
 }) {
   const [hovered, setHovered] = useState(false),
     [focused, setFocused] = useState(false);
@@ -213,99 +243,115 @@ const Tab = memo(function Tab({
     [pane.id, label],
   );
   return (
-    <View
-      testID={`split-tab-item-${pane.id}`}
-      onPointerEnter={() => setHovered(true)}
-      onPointerLeave={() => setHovered(false)}
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        height: compact ? 30 : 26,
-        borderRadius: 5,
-        maxWidth: compact ? 190 : 230,
-        backgroundColor: selected
-          ? colors.surface2
-          : hovered
-            ? colors.surface1
-            : "transparent",
-      }}
+    <TabContextMenu
+      pane={pane}
+      nativeTabId={nativeTabId}
+      title={title}
+      index={index}
+      tabCount={tabCount}
+      directory={directory}
+      bridge={bridge}
+      theme={theme}
+      onClose={onClose}
+      onCloseRelated={onCloseRelated}
+      onResourceChanged={onResourceChanged}
     >
-      <Pressable
-        testID={`split-tab-${pane.id}`}
-        accessibilityRole="tab"
-        accessibilityLabel={label}
-        accessibilityHint="可拖动排序或移到其他分屏，也可使用分屏操作菜单移动"
-        accessibilityState={{ selected }}
-        aria-selected={selected}
-        tabIndex={selected ? 0 : -1}
-        onPress={() => onSelect(pane.id)}
-        onFocus={() => setFocused(keyboardFocusVisible())}
-        onBlur={() => setFocused(false)}
+      <View
+        testID={`split-tab-item-${pane.id}`}
+        onPointerEnter={() => setHovered(true)}
+        onPointerLeave={() => setHovered(false)}
         style={{
           flexDirection: "row",
           alignItems: "center",
-          gap: 6,
-          paddingLeft: 8,
-          paddingRight: 3,
-          height: "100%",
-          flexShrink: 1,
-          minWidth: 0,
-          borderWidth: 1,
-          borderRadius: 4,
-          borderColor: focused ? colors.foregroundMuted : "transparent",
-          ...(Platform.OS === "web"
-            ? { cursor: "pointer", touchAction: "none" }
-            : {}),
+          height: compact ? 30 : 26,
+          borderRadius: 5,
+          maxWidth: compact ? 190 : 230,
+          backgroundColor: selected
+            ? colors.surface2
+            : hovered
+              ? colors.surface1
+              : "transparent",
         }}
       >
-        {pane.target.kind === "agent" || pane.target.kind === "draft" ? (
-          <WorkspaceIcon
-            bridge={bridge}
-            workspaceId={pane.workspaceId}
-            label={pane.workspaceName}
-          />
-        ) : (
-          <Icon
-            name={targetIcons[pane.target.kind]}
-            size={13}
-            color={colors.foregroundMuted}
-          />
-        )}
-        <Text
-          numberOfLines={1}
+        <TabMenuTrigger
+          bridge={bridge}
+          tabId={pane.id}
+          testID={`split-tab-${pane.id}`}
+          accessibilityRole="tab"
+          accessibilityLabel={label}
+          accessibilityHint="右键或 Shift+F10 打开 Tab 菜单；可拖动排序或移到其他分屏"
+          accessibilityState={{ selected }}
+          aria-selected={selected}
+          tabIndex={selected ? 0 : -1}
+          onPress={() => onSelect(pane.id)}
+          onFocus={() => setFocused(keyboardFocusVisible())}
+          onBlur={() => setFocused(false)}
           style={{
-            fontSize: 12,
-            maxWidth: compact ? 116 : 155,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 6,
+            paddingLeft: 8,
+            paddingRight: 3,
+            height: "100%",
             flexShrink: 1,
-            color: selected ? colors.foreground : colors.foregroundMuted,
+            minWidth: 0,
+            borderWidth: 1,
+            borderRadius: 4,
+            borderColor: focused ? colors.foregroundMuted : "transparent",
+            ...(Platform.OS === "web"
+              ? { cursor: "pointer", touchAction: "none" }
+              : {}),
           }}
         >
-          {title}
-        </Text>
-        {running && (
-          <View accessibilityLabel="运行中" style={{ paddingLeft: 2 }}>
-            <Icon name="Activity" size={12} color={colors.statusSuccess} />
-          </View>
-        )}
-      </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`关闭 Tab ${title}`}
-        tabIndex={selected ? 0 : -1}
-        onPress={() => onClose(pane.id)}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        style={{
-          width: compact ? 24 : 20,
-          height: compact ? 30 : 26,
-          alignItems: "center",
-          justifyContent: "center",
-          opacity: selected || hovered || focused ? 1 : 0,
-        }}
-      >
-        <Icon name="X" size={12} color={colors.foregroundMuted} />
-      </Pressable>
-    </View>
+          {pane.target.kind === "agent" || pane.target.kind === "draft" ? (
+            <WorkspaceIcon
+              bridge={bridge}
+              workspaceId={pane.workspaceId}
+              label={pane.workspaceName}
+            />
+          ) : (
+            <Icon
+              name={targetIcons[pane.target.kind]}
+              size={13}
+              color={colors.foregroundMuted}
+            />
+          )}
+          <Text
+            numberOfLines={1}
+            style={{
+              fontSize: 12,
+              maxWidth: compact ? 116 : 155,
+              flexShrink: 1,
+              color: selected ? colors.foreground : colors.foregroundMuted,
+            }}
+          >
+            {title}
+          </Text>
+          {running && (
+            <View accessibilityLabel="运行中" style={{ paddingLeft: 2 }}>
+              <Icon name="Activity" size={12} color={colors.statusSuccess} />
+            </View>
+          )}
+        </TabMenuTrigger>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`关闭 Tab ${title}`}
+          tabIndex={selected ? 0 : -1}
+          onPress={() => onClose(pane.id)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          style={{
+            width: compact ? 24 : 20,
+            height: compact ? 30 : 26,
+            alignItems: "center",
+            justifyContent: "center",
+            opacity: selected || hovered || focused ? 1 : 0,
+          }}
+        >
+          <Icon name="X" size={12} color={colors.foregroundMuted} />
+        </Pressable>
+      </View>
+    </TabContextMenu>
   );
 });
 

@@ -39,7 +39,7 @@ evaluate("""(() => {
   if (iconHook) bridge.useProjectIcons = (...args) => {b.iconHookCalls++;return iconHook(...args);};
   const store = Storage.prototype.setItem, send = WebSocket.prototype.send;
   Storage.prototype.setItem = function(key, value) {
-    if (key.startsWith('paseo-split-demo:board:')) b.writes++;
+    if (key.startsWith('paseo-deck:board:')) b.writes++;
     return store.call(this, key, value);
   };
   WebSocket.prototype.send = function(data) {

@@ -105,6 +105,20 @@ export type Target = z.infer<typeof targetSchema>;
 export type Pane = z.infer<typeof paneSchema>;
 export type TabGroup = z.infer<typeof groupSchema>;
 export type Board = z.infer<typeof boardSchema>;
+export type RelatedTabs = "before" | "after" | "others";
+
+export function relatedTabIds(
+  board: Board,
+  tabId: string,
+  scope: RelatedTabs,
+): string[] {
+  const group = board.groups.find((group) => group.tabIds.includes(tabId));
+  if (!group) return [];
+  const index = group.tabIds.indexOf(tabId);
+  if (scope === "before") return group.tabIds.slice(0, index);
+  if (scope === "after") return group.tabIds.slice(index + 1);
+  return group.tabIds.filter((id) => id !== tabId);
+}
 export function reconcileBoardLayout(board: Board): Board {
   if (!board.splitTree) return board;
   const splitTree = reconcileSplitTree(

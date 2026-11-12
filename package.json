@@ -1,13 +1,21 @@
 {
-  "name": "paseo-workspace-split-demo",
+  "name": "paseo-deck",
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MinLeeV5/paseo-deck.git"
+  },
+  "homepage": "https://github.com/MinLeeV5/paseo-deck#readme",
+  "bugs": {
+    "url": "https://github.com/MinLeeV5/paseo-deck/issues"
+  },
   "scripts": {
     "setup": "npm install --ignore-scripts --no-audit --no-fund && npm --prefix plugin install --ignore-scripts --no-audit --no-fund",
     "typecheck": "npm --prefix plugin run typecheck",
     "install:plugin": "paseo plugin install ./plugin",
-    "reload:plugin": "paseo plugin reload workspace-split-demo",
+    "reload:plugin": "paseo plugin reload paseo-deck",
     "demo": "node tools/demo.mjs",
     "test": "node --test tools/*.test.mjs",
     "format": "prettier --write plugin/index.* plugin/client plugin/server plugin/shared tools/*.mjs"

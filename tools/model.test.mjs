@@ -10,6 +10,7 @@ import {
   removeTab,
   moveTab,
   activateTab,
+  relatedTabIds,
 } from "../plugin/shared/model.ts";
 import {
   matchesShortcutStroke,
@@ -66,7 +67,7 @@ test("private component lookup follows the current build instead of a fixed modu
 });
 test("the installed Paseo build exposes the native panel contract", async () => {
   const base =
-    process.env.PASEO_SPLIT_APP_DIST ??
+    process.env.PASEO_DECK_APP_DIST ??
     "/Applications/Paseo.app/Contents/Resources/app-dist";
   const html = await readFile(`${base}/index.html`, "utf8");
   const path = html.match(
@@ -86,6 +87,11 @@ test("the installed Paseo build exposes the native panel contract", async () => 
     "queryClient",
     "ProjectIconView",
     "useProjectIcons",
+    "ContextMenuTrigger",
+    "buildWorkspaceTabMenuEntries",
+    "WorkspaceTabRenameModal",
+    "useFilePanelOpenWithMenu",
+    "buildProviderCommand",
   ])
     assert.ok(Number.isInteger(findMetroModule(source, name)));
 });
@@ -310,4 +316,36 @@ test("stale moves and existing new-group IDs cannot corrupt the board", () => {
   assert.equal(moveTab(board, tab.id, board.groups[0].id), board);
   const split = moveTab(addPane(board, pane("b")), tab.id, "other", true);
   assert.equal(moveTab(split, tab.id, split.groups[0].id, true), split);
+});
+
+test("context-menu closes follow visual order in the clicked Tab's own split", () => {
+  const tabs = [pane("a"), pane("b"), pane("c"), pane("d")];
+  let board = tabs.reduce((state, tab) => addPane(state, tab), emptyBoard);
+  board = moveTab(board, tabs[3].id, "other", true);
+  board = moveTab(board, tabs[2].id, board.groups[0].id, false, 0);
+  board = activateTab(board, tabs[1].id);
+  assert.deepEqual(relatedTabIds(board, tabs[0].id, "before"), [tabs[2].id]);
+  assert.deepEqual(relatedTabIds(board, tabs[0].id, "after"), [tabs[1].id]);
+  const others = relatedTabIds(board, tabs[0].id, "others");
+  assert.deepEqual(others, [tabs[2].id, tabs[1].id]);
+  const closed = others.reduce(removeTab, board);
+  assert.equal(closed.groups[0].activeTabId, tabs[0].id);
+  assert.equal(
+    closed.panes.find((p) => p.id === tabs[3].id),
+    tabs[3],
+  );
+  assert.equal(boardSchema.safeParse(closed).success, true);
+});
+
+test("context-menu boundary and stale Tabs never target unrelated resources", () => {
+  const first = pane("a"),
+    last = pane("b");
+  const board = addPane(addPane(emptyBoard, first), last);
+  assert.deepEqual(relatedTabIds(board, first.id, "before"), []);
+  assert.deepEqual(relatedTabIds(board, last.id, "after"), []);
+  const alone = moveTab(board, last.id, "other", true);
+  for (const scope of ["before", "after", "others"]) {
+    assert.deepEqual(relatedTabIds(alone, last.id, scope), []);
+    assert.deepEqual(relatedTabIds(alone, "missing", scope), []);
+  }
 });

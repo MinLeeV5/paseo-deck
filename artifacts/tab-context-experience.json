@@ -1,0 +1,15 @@
+{
+  "results": [
+    "Right-click an inactive agent keeps active Tab and matches native eight-item menu",
+    "Copy agent ID copies the clicked agent, not the active draft",
+    "Shift+F10 opens menu, arrows navigate, Escape restores Tab focus",
+    "Agent rename uses native dialog and persists to the daemon",
+    "Terminal menu, clipboard and native rename persist",
+    "File menu exposes native open-with and copies the file path",
+    "Reload dispatches to the provider, reports the outcome and keeps Tabs intact",
+    "Close right affects only the clicked Tab group and focuses the survivor",
+    "Close left and boundary disabled states follow current visual order",
+    "Close others retains clicked inactive agent and the other split",
+    "Close last Tab retains empty pane and focuses Add"
+  ]
+}

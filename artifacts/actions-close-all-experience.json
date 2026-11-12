@@ -1,0 +1,54 @@
+{
+  "nativeDirtyAttributes": true,
+  "cancelFirstKeepsAllTabs": true,
+  "cancelSecondKeepsPreviouslyApprovedTabs": true,
+  "approveAllClearsTabsAndKeepsOneEmptyGroup": true,
+  "confirmationBackend": "native confirmDialog with deterministic desktop ask responses",
+  "prompts": [
+    {
+      "message": "「测试面板」有未保存的更改。放弃这些更改并继续关闭所有 Tab？",
+      "options": {
+        "title": "文件尚未保存",
+        "okLabel": "放弃更改并继续",
+        "cancelLabel": "取消关闭所有 Tab",
+        "kind": "warning"
+      }
+    },
+    {
+      "message": "「测试面板」有未保存的更改。放弃这些更改并继续关闭所有 Tab？",
+      "options": {
+        "title": "文件尚未保存",
+        "okLabel": "放弃更改并继续",
+        "cancelLabel": "取消关闭所有 Tab",
+        "kind": "warning"
+      }
+    },
+    {
+      "message": "「测试面板」有未保存的更改。放弃这些更改并继续关闭所有 Tab？",
+      "options": {
+        "title": "文件尚未保存",
+        "okLabel": "放弃更改并继续",
+        "cancelLabel": "取消关闭所有 Tab",
+        "kind": "warning"
+      }
+    },
+    {
+      "message": "「测试面板」有未保存的更改。放弃这些更改并继续关闭所有 Tab？",
+      "options": {
+        "title": "文件尚未保存",
+        "okLabel": "放弃更改并继续",
+        "cancelLabel": "取消关闭所有 Tab",
+        "kind": "warning"
+      }
+    },
+    {
+      "message": "「测试面板」有未保存的更改。放弃这些更改并继续关闭所有 Tab？",
+      "options": {
+        "title": "文件尚未保存",
+        "okLabel": "放弃更改并继续",
+        "cancelLabel": "取消关闭所有 Tab",
+        "kind": "warning"
+      }
+    }
+  ]
+}

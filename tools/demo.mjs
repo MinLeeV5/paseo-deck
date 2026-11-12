@@ -9,22 +9,22 @@ import { fileURLToPath } from "node:url";
 // A temporary, authenticated loopback harness for the unmodified packaged Web UI.
 // The existing local credential stays in this process and is never sent to the browser.
 const root = fileURLToPath(new URL("..", import.meta.url));
-const cli = process.env.PASEO_SPLIT_CLI ?? "paseo";
+const cli = process.env.PASEO_DECK_CLI ?? "paseo";
 const cliArgs = ["daemon", "status", "--json"];
-if (process.env.PASEO_SPLIT_HOME)
-  cliArgs.push("--home", process.env.PASEO_SPLIT_HOME);
+const daemonHome = process.env.PASEO_DECK_HOME;
+if (daemonHome) cliArgs.push("--home", daemonHome);
 const status = JSON.parse(execFileSync(cli, cliArgs, { encoding: "utf8" }));
 const credential = (
   await readFile(join(status.home, "local-credential"), "utf8")
 ).trim();
-const port = Number(process.env.PASEO_SPLIT_DEMO_PORT ?? 4178);
+const port = Number(process.env.PASEO_DECK_DEMO_PORT ?? 4178);
 const origin = `http://localhost:${port}`;
 const appDist =
-  process.env.PASEO_SPLIT_APP_DIST ??
+  process.env.PASEO_DECK_APP_DIST ??
   "/Applications/Paseo.app/Contents/Resources/app-dist";
 const secret = randomBytes(24).toString("base64url");
-const cookie = `paseo_split_demo_${port}=${secret}`;
-const destination = `/h/${encodeURIComponent(status.serverId)}/plugin/workspace-split-demo/surface/main`;
+const cookie = `paseo_deck_demo_${port}=${secret}`;
+const destination = `/h/${encodeURIComponent(status.serverId)}/plugin/paseo-deck/surface/main`;
 const index = await readFile(join(appDist, "index.html"), "utf8");
 const bootstrap = `<script>globalThis.__PASEO_INITIAL_DAEMON_CONNECTION__=${JSON.stringify({ listen: `localhost:${port}`, useTls: false })};</script>`;
 const mime = {
@@ -108,7 +108,7 @@ server.on("upgrade", (request, socket, head) => {
   wss.handleUpgrade(request, socket, head, (client) => {
     const headers = {};
     const endpoint =
-      process.env.PASEO_SPLIT_UPSTREAM ??
+      process.env.PASEO_DECK_UPSTREAM ??
       `ws://${status.listen ?? "127.0.0.1:6767"}/ws`;
     const upstream = new WebSocket(endpoint, { headers });
     const queued = [];
@@ -166,7 +166,7 @@ server.listen(port, "127.0.0.1", async () => {
     JSON.stringify({ url, port, pid: process.pid, serverId: status.serverId }),
     { mode: 0o600 },
   );
-  console.log(`Paseo split demo: ${url}`);
+  console.log(`Paseo Deck demo: ${url}`);
   console.log(
     "Serving the installed Paseo Web UI read-only. Ctrl+C stops this harness.",
   );

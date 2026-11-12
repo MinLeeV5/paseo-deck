@@ -1,0 +1,9 @@
+{
+  "results": [
+    "Cancel native unsaved confirmation leaves every targeted tab and its content intact",
+    "Confirm native unsaved prompt closes only tabs in the same split",
+    "Light desktop menu stays in the viewport and dismisses on outside click",
+    "Compact native sheet includes all actions without horizontal overflow",
+    "Resume command reports unavailable sessions safely"
+  ]
+}

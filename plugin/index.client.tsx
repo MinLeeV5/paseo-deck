@@ -9,7 +9,7 @@ function SidebarItem({ currentScreen, openScreen }: PluginSidebarItemProps) {
   return (
     <SidebarRow
       icon="PanelsTopLeft"
-      label="跨 Workspace 分屏"
+      label="Paseo Deck"
       active={currentScreen?.screenId === "main"}
       onPress={() => {
         if (currentScreen?.screenId !== "main")
@@ -27,12 +27,12 @@ export default function contribute(client: PluginClientContext) {
   });
   client.addSidebarHeaderItem({
     id: "main",
-    title: "跨 Workspace 分屏",
+    title: "Paseo Deck",
     Component: SidebarItem,
   });
   client.addCommandCenterItem({
-    id: "open-split",
-    title: "打开跨 Workspace 分屏",
+    id: "open-deck",
+    title: "打开 Paseo Deck",
     icon: "PanelsTopLeft",
     context: "global",
     onSelect({ openScreen }) {

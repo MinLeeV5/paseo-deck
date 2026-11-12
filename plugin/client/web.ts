@@ -8,6 +8,12 @@ import {
 import type { NativeBridge } from "./native-types";
 import type { PluginPanelRequest } from "./workspace-types";
 import {
+  restoreToolbarPreferences,
+  chooseFlyoutSide,
+  type FlyoutPositionInput,
+  type ToolbarPreferences,
+} from "../shared/toolbar";
+import {
   canSplitTab,
   splitDropPosition,
   type SplitEdge,
@@ -43,6 +49,7 @@ declare const window: {
 };
 declare const navigator: { platform: string };
 interface WebElement {
+  parentElement?: WebElement | null;
   getAttribute(name: string): string | null;
   setAttribute(name: string, value: string): void;
   matches(selector: string): boolean;
@@ -172,17 +179,8 @@ export async function loadNativeBridge(
 export function loadBoard(serverId: string): Board {
   if (Platform.OS !== "web") return emptyBoard;
   try {
-    const raw = window.localStorage.getItem(
-      `paseo-split-demo:board:${serverId}`,
-    );
-    const value = raw ? JSON.parse(raw) : null;
-    const parsed = restoreBoard(value);
-    if (parsed && value?.version === 1 && raw) {
-      const backupKey = `paseo-split-demo:board:v1-backup:${serverId}`;
-      if (!window.localStorage.getItem(backupKey))
-        window.localStorage.setItem(backupKey, raw);
-    }
-    return parsed ?? emptyBoard;
+    const raw = window.localStorage.getItem(`paseo-deck:board:${serverId}`);
+    return restoreBoard(raw ? JSON.parse(raw) : null) ?? emptyBoard;
   } catch {
     return emptyBoard;
   }
@@ -190,9 +188,111 @@ export function loadBoard(serverId: string): Board {
 export function saveBoard(serverId: string, board: Board): void {
   if (Platform.OS !== "web") return;
   window.localStorage.setItem(
-    `paseo-split-demo:board:${serverId}`,
+    `paseo-deck:board:${serverId}`,
     JSON.stringify(board),
   );
+}
+
+const toolbarPreferences = new Map<string, ToolbarPreferences>();
+const toolbarListeners = new Set<() => void>();
+export function readToolbarPreferences(serverId: string): ToolbarPreferences {
+  let preferences = toolbarPreferences.get(serverId);
+  if (!preferences) {
+    let value: unknown;
+    if (Platform.OS === "web") {
+      try {
+        const raw = window.localStorage.getItem(
+          `paseo-deck:toolbar:${serverId}`,
+        );
+        value = raw ? JSON.parse(raw) : null;
+      } catch {
+        // A client without storage can still use the default toolbar.
+      }
+    }
+    preferences = restoreToolbarPreferences(value);
+    toolbarPreferences.set(serverId, preferences);
+  }
+  return preferences;
+}
+export function subscribeToolbarPreferences(listener: () => void): () => void {
+  toolbarListeners.add(listener);
+  return () => toolbarListeners.delete(listener);
+}
+export function writeToolbarPreferences(
+  serverId: string,
+  pinned: string[] | null,
+): void {
+  const preferences: ToolbarPreferences = {
+    version: 1,
+    pinned: pinned === null ? null : [...new Set(pinned)],
+  };
+  if (Platform.OS === "web")
+    window.localStorage.setItem(
+      `paseo-deck:toolbar:${serverId}`,
+      JSON.stringify(preferences),
+    );
+  toolbarPreferences.set(serverId, preferences);
+  for (const listener of toolbarListeners) listener();
+}
+
+// Paseo's current menu clamps a right flyout against the viewport. Scope the
+// horizontal flip to our own menu anchors; every other native menu delegates.
+let flyoutPatch:
+  | {
+      module: Record<string, unknown>;
+      original: (input: FlyoutPositionInput) => unknown;
+      wrapped: (input: FlyoutPositionInput) => unknown;
+      owners: number;
+      sheet: CursorSheet;
+    }
+  | undefined;
+export function installSplitMenuPlacement(bridge: NativeBridge): () => void {
+  if (Platform.OS !== "web" || !window.__r) return () => {};
+  if (!flyoutPatch) {
+    const module = window.__r(bridge.moduleIds.computePosition);
+    const original = module.computePosition as (
+      input: FlyoutPositionInput,
+    ) => unknown;
+    const wrapped = (input: FlyoutPositionInput) => {
+      if (input.placement !== "right") return original(input);
+      const anchor = input.triggerRect;
+      const item = Array.from(
+        document.querySelectorAll(
+          '[data-testid^="split-more-"] [data-menu-item="true"]',
+        ),
+      ).find((element) => {
+        const rect = element.parentElement?.getBoundingClientRect();
+        return (
+          rect &&
+          rect.width > 0 &&
+          Math.abs(rect.left - anchor.x) < 1 &&
+          Math.abs(rect.top - anchor.y) < 1 &&
+          Math.abs(rect.width - anchor.width) < 1 &&
+          Math.abs(rect.height - anchor.height) < 1
+        );
+      });
+      if (!item) return original(input);
+      const placement = { ...input, offset: 8 };
+      const side = chooseFlyoutSide(placement);
+      item.setAttribute("data-split-flyout-side", side);
+      return original({ ...placement, placement: side });
+    };
+    const sheet = document.createElement("style");
+    sheet.textContent =
+      '[data-split-flyout-side="left"] > div:last-child svg:last-child { transform: rotate(180deg); }';
+    document.head.appendChild(sheet);
+    module.computePosition = wrapped;
+    flyoutPatch = { module, original, wrapped, owners: 0, sheet };
+  }
+  const patch = flyoutPatch;
+  patch.owners++;
+  return () => {
+    if (--patch.owners) return;
+    if (patch.module.computePosition === patch.wrapped)
+      patch.module.computePosition = patch.original;
+    patch.sheet.remove();
+    if (flyoutPatch === patch) flyoutPatch = undefined;
+  };
 }
 
 export function scheduleFrame(callback: () => void): () => void {
@@ -748,6 +848,35 @@ export function onTabKeys(
     event.stopPropagation();
     select(ids[next]);
     focusControl(`split-tab-${ids[next]}`);
+  };
+  window.addEventListener("keydown", handle, true);
+  return () => window.removeEventListener("keydown", handle, true);
+}
+export function onTabContextMenuKeys(
+  tabId: string,
+  open: (rect: { x: number; y: number; width: number; height: number }) => void,
+  dismiss?: () => void,
+): () => void {
+  if (Platform.OS !== "web") return () => {};
+  const handle = (event: ShortcutInput) => {
+    if (event.isComposing || event.altKey || event.ctrlKey || event.metaKey)
+      return;
+    if (event.key === "Escape" && dismiss) {
+      event.preventDefault();
+      event.stopPropagation();
+      dismiss();
+      return;
+    }
+    if (event.key !== "ContextMenu" && !(event.key === "F10" && event.shiftKey))
+      return;
+    const tab = event.target?.closest(
+      `[data-testid="split-tab-item-${tabId}"]`,
+    );
+    if (!tab) return;
+    const rect = tab.getBoundingClientRect();
+    event.preventDefault();
+    event.stopPropagation();
+    open({ x: rect.left, y: rect.bottom, width: 0, height: 0 });
   };
   window.addEventListener("keydown", handle, true);
   return () => window.removeEventListener("keydown", handle, true);

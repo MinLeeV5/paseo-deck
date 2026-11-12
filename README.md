@@ -1,70 +1,140 @@
-# Paseo 跨 Workspace 分屏
+<h1 align="center">Paseo Deck</h1>
 
-在一个界面中使用不同 workspace 的原生 Agent、终端和文件。每个分屏有自己的 **Tab 栏**，通过 `＋` 搜索已有 Agent、新建 Agent 或添加终端 / 文件。
+<p align="center"><strong>Agents, terminals, and files across workspaces, in one Paseo window.</strong></p>
 
-本机插件已安装，入口为左侧 **跨 Workspace 分屏**，也可在 Command Center 搜索 **打开跨 Workspace 分屏**。
+<p align="center">
+  <a href="plugin/paseo-plugin.json"><img src="https://img.shields.io/badge/Paseo-0.13.0%2B-0078D4" alt="Paseo 0.13.0 or later" /></a>
+  <a href="#scope-and-compatibility"><img src="https://img.shields.io/badge/platform-desktop%20%2F%20Web-2DA44E" alt="Desktop and Web" /></a>
+</p>
 
-![原生 Tab 分屏](artifacts/tabs-native-workspace.png)
+<p align="center"><strong>English</strong> · <a href="README.zh-CN.md">简体中文</a></p>
 
-## 使用方式
+<p align="center">
+  <a href="#get-started">Get started</a> ·
+  <a href="#add-agents-and-resources">Add resources</a> ·
+  <a href="#arrange-your-splits">Layouts</a> ·
+  <a href="#use-workspace-actions">Workspace actions</a> ·
+  <a href="#develop-and-verify">Development</a> ·
+  <a href="https://github.com/MinLeeV5/paseo-deck">GitHub</a> ·
+  <a href="https://github.com/MinLeeV5/paseo-deck/issues">Issues</a>
+</p>
 
-- **添加资源**：点击目标分屏 Tab 栏中的 `＋`，或按 `Command+T`（Windows / Linux 为 `Ctrl+T`）打开当前分屏的添加面板。快捷键遵循 Paseo 的“新建 Tab”设置。统一面板支持搜索、来源 workspace 筛选、新建 Agent、终端与文件。
-- **识别来源**：Agent Tab 使用来源 workspace 的原生项目图标；悬停显示完整标题与来源。运行中的 Agent 独立置顶分栏，有文字标识，Tab 也会同步显示状态。
-- **选择位置**：默认加入当前分屏；在面板底部选择“新分屏”可并排打开。重复导入会切到已有 Tab。
-- **拖拽 Tab**：拖到 Tab 栏可排序或跨分屏移动；拖到内容区的左、右、上、下边缘，会显示半屏预览，松手就在该方向拆出新分屏，支持从两屏继续拆成三屏、四屏。拖到内容区中央可合并到该分屏；移走最后一个 Tab 后自动收拢空区域。按 `Esc` 或拖到区域外松手取消，窄屏 Tab 栏支持边缘自动滚动。
-- **整理分屏**：`···` 中可移动当前 Tab、新增分屏、切换排列、均分或返回原 workspace。窗口右侧保留放大 / 还原。
-- **关闭**：关闭 Tab 只移除展示，保留 Agent 与终端；未保存文件先询问。切换、移动 Tab 会保留原生编辑器与草稿。
+- **Work across workspaces**: Bring existing Agents, terminals, and files into the same view on one host.
+- **Keep native conversations**: Use Paseo's conversation UI, composer, and file panels inside each split.
+- **Arrange your work**: Give each split its own Tabs, drag to reorder or split, and choose common layouts.
+- **Follow the current workspace**: Run its scripts, open its files in an editor, and use its plugin buttons.
+- **Remember your setup**: Restore layouts and choose which plugin buttons stay in the Tab bar.
 
-### 快捷键
+![Paseo Deck with native conversation and file panels from two workspaces](assets/workspace.png)
 
-| 操作 | macOS 桌面默认快捷键 |
-| --- | --- |
-| 打开当前分屏的添加面板 | `Command+T` |
-| 关闭当前 Tab | `Command+W` |
-| 向右切换 Tab，末尾回到第一个 | `Ctrl+Tab` |
-| 向左切换 Tab，开头回到最后一个 | `Ctrl+Shift+Tab` |
-| 直接选中当前分屏的第 1–8 个 Tab | `Command+Option+1` … `Command+Option+8` |
-| 在当前来源 workspace 新建 Agent | `Command+Shift+A` |
-| 在当前来源 workspace 新建终端 | `Command+Shift+T` |
-| 添加分屏，按左右 / 上下方向排列 | `Command+\` / `Command+Shift+\` |
-| 向右 / 向左切换的宿主快捷键 | `Option+Shift+]` / `Option+Shift+[` |
-| 聚焦当前 Agent 输入框 | `Command+L` |
+_Screenshots show the current Paseo Deck interface in isolated demo workspaces._
 
-快捷键作用于当前分屏，支持消息输入框和文件编辑器内触发；切换后聚焦目标 Tab，关闭后聚焦相邻 Tab，关闭最后一个时聚焦 `＋`。添加面板或宿主弹窗打开时暂停这些快捷键，关闭未保存文件仍须确认。`Ctrl+Tab` / `Ctrl+Shift+Tab` 固定可用，其余沿用 Paseo 的快捷键设置。Windows / Linux 的新建、关闭与聚焦默认使用 `Ctrl`；Web 版关闭默认使用 `Alt+Shift+W`，避免浏览器保留快捷键冲突。
+## Get started
 
-数字跳转按当前 Tab 顺序选择，序号超出当前数量时不执行。新建 Agent / 终端默认使用活动 Tab 的来源 workspace；空分屏先选择 workspace。分屏快捷键打开目标为“新分屏”的添加面板，选定资源后再应用现有布局的左右 / 上下排列，取消不会改变布局。
+Requires **Paseo daemon and client 0.13.0+**. Supports the desktop app and Web client.
 
-桌面只保留 32px Tab 栏，无整窗选中描边或独立工具栏；活动 Tab 使用中性底色。窄屏为 36px Tab 栏，添加面板自适应可用宽度，仍贴着 Tab 显示。
+Enable plugins in **Settings → Plugins** on the target daemon. Clone the repository and install the plugin on that host:
 
-分隔条带灰色握柄，悬停时显示对应方向的缩放光标，拖动时高亮；抓取区域扩大至 12px，不额外占用工作空间。
-
-拖出的分屏可独立调整大小，其他区域保留原有排列。要增加分屏数量，源分屏需要至少有两个 Tab；只有一个 Tab 时，跨区域拖动会同时收拢原区域。`··· → 移动` 也提供各方向的拆分操作。布局自动保存，刷新后恢复。
-
-## 兼容与安装
-
-要求 **Paseo >=0.13.0**，实测 0.13.0、0.14.0、0.15.4，含 0.15.4 真实 Electron 桌面端。桌面和 Web 可用，iOS / Android 原生客户端显示不支持提示。
-
-需要 Node.js 24，且 Paseo 已开启插件功能：
-
-```sh
-npm run setup
-npm run typecheck
-npm test
+```bash
+git clone https://github.com/MinLeeV5/paseo-deck.git
+cd paseo-deck
 paseo plugin install "$PWD/plugin"
 ```
 
-修改源码后使用 `npm run reload:plugin` 热重载。原有 v1 布局自动迁移，每个旧窗口成为一个单 Tab 分屏，迁移前保留本地备份。布局仍保存在当前客户端 `paseo-split-demo:board:<hostId>`，独立于 Paseo 原有布局。
+Open **Paseo Deck** in the sidebar, or search for **Paseo Deck** in the Command Center (`⌘K` / `Ctrl+K`). Plugin ID: `paseo-deck`. Current plugin menu labels are in Simplified Chinese.
 
-公开 API 尚未提供完整原生面板嵌入组件。本插件通过当前客户端的私有 Metro 运行时复用原生组件、上下文、查询缓存、图标和快捷键，不修改应用安装文件。运行入口按实际构建动态识别；缺失能力或回退构建不匹配时提示失败。允许安装到后续版本不代表未来版本均已验收。
+## Add Agents and resources
 
-## 验收与性能
+Click a split's **`＋`** to open the unified add panel. Search existing Agents, filter by workspace, or create an Agent, terminal, or file view. Running and initializing Agents have a separate section; Agent Tabs use their source workspace's icon.
 
-[Tab 版验收记录](TABS-RESULTS.md) · [拖动创建分屏验收](SPLIT-DRAG-RESULTS.md) · [交互方案](design/INTERACTION-DESIGN.md) · [性能报告](PERFORMANCE.md) · [初期可行性调研](RESEARCH.md)
+Choose the current split or a new split as the destination. Adding an Agent or terminal that is already on the board focuses its existing Tab.
 
-保留原生会话与内容实例，未访问 Tab 延迟挂载，隐藏内容释放可见时间线登记。运行状态使用一个可释放的元数据订阅；图标查询不进入拖动渲染路径。布局按帧更新、300ms 防抖写入，退出补写。
+![Unified add panel with workspace selection and existing Agents](assets/add-tab.png)
 
-当前支持同一所选 host 内跨 workspace，总计最多 8 个资源 Tab / 8 个分屏；选择器读取最近最多 200 个 Agent / workspace。语音、系统拖放、所有 provider / MCP 及长期高负载等未逐项覆盖，详见验收记录。
+## Arrange your splits
 
-独立浏览器验收可运行 `npm run demo`，命令打印临时本地链接。服务只监听 loopback，读取已安装 Paseo 的静态资源，在服务端使用本地 credential 转发连接；credential 不传给浏览器，不修改应用文件。Ctrl+C 停止服务不影响已安装插件。
+Drag a Tab within its bar to reorder it, or into another bar to move it. Drag to a content area's edge to split in that direction; drag to its center to merge into that group. A preview shows the destination. Press `Esc` or release outside the board to cancel.
 
-macOS 默认读取 `/Applications/Paseo.app/Contents/Resources/app-dist`；可通过 `PASEO_SPLIT_APP_DIST` 指定对应版本目录，通过 `PASEO_SPLIT_DEMO_PORT` 调整验收端口。
+Moving a group's last Tab also removes its empty area. To increase the number of splits by dragging, split off an extra Tab. Resize using the divider grips, or maximize a split temporarily.
+
+Use **`··· → 排版`** for presets:
+
+| Layout         | Arrangement   |
+| -------------- | ------------- |
+| 两分屏         | Two columns   |
+| 三分屏（横向） | Three columns |
+| 四分屏（横向） | Four columns  |
+| 四宫格         | A 2 × 2 grid  |
+
+Presets redistribute existing Tabs and preserve their content instances, creating empty splits when needed. Vertical stacking and equal sizing are also available.
+
+Closing Tabs removes their views and keeps the Agents and terminals. **关闭所有 Tab** closes the whole board after checking unsaved content; canceling any confirmation keeps the entire batch. Tab context menus provide rename, copy, reload, and close-left/right/others actions where applicable; those batch actions stay within the clicked Tab's group.
+
+## Use workspace actions
+
+The right side of a Tab bar follows the **active Tab's source workspace**, even when a group contains Tabs from several workspaces.
+
+- **启动脚本**: Start, stop, restart, or view a workspace script. Its native terminal opens in the same split.
+- **外部打开**: Open the workspace or current file using a target available through Paseo, such as an editor or file manager.
+- **插件**: Use registered workspace buttons and open their panels inside the board. GitLens uses a Tab; conversation bookmarks can sit beside their source conversation.
+
+These actions remain available in **`···`** when narrow splits hide their toolbar shortcuts. Menus share the same row style and open to the left when there is insufficient room on the right; compact layouts use native sheets.
+
+![Workspace actions with the external editor submenu opening to the left](assets/workspace-actions.png)
+
+## Choose your toolbar buttons
+
+Open **`··· → 插件 → 按钮显示设置`** to choose which plugin buttons stay outside the menu. Defaults use the current workspace's first three available buttons. Selected buttons move into the menu when space is limited; unavailable workspace contributions are labeled.
+
+Layouts and toolbar preferences are saved **per host on the current client**. They do not sync between clients. Agent messages, files, terminals, and scripts continue through Paseo's existing host and provider connections.
+
+![Plugin button preferences in Paseo Deck](assets/button-settings.png)
+
+## Keyboard shortcuts
+
+Shortcuts act on the focused split and follow Paseo's configured bindings. These are desktop defaults on macOS:
+
+| Shortcut                      | Action                                             |
+| ----------------------------- | -------------------------------------------------- |
+| `⌘T` / `⌘W`                   | Add / close a Tab                                  |
+| `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous Tab                                |
+| `⌘⌥1` … `⌘⌥8`                 | Select a Tab by its position                       |
+| `⌘⇧A` / `⌘⇧T`                 | New Agent / terminal in the current workspace      |
+| `⌘\` / `⌘⇧\`                  | Add a split with horizontal / vertical arrangement |
+| `⌘L`                          | Focus the Agent composer                           |
+| `Shift+F10`                   | Open the focused Tab's context menu                |
+| `Esc`                         | Dismiss a menu or cancel a drag                    |
+
+On Windows/Linux, creation, closing, and composer focus use Paseo's `Ctrl` bindings. Web closing defaults to `Alt+Shift+W` to avoid the browser's reserved shortcut. Dialogs and the add panel suspend board shortcuts; unsaved-content checks still apply.
+
+## Scope and compatibility
+
+- One selected host, up to **8 resource Tabs / 8 splits**. The add panel reads up to 200 Agents and 200 workspaces.
+- Tested with matching daemon/client builds of **0.13.0, 0.14.0, and 0.15.4**, including the 0.15.4 Electron app on macOS. Native iOS/Android clients are not supported.
+- This experimental plugin reuses **private Paseo UI components** without modifying application files. Future app builds may require a compatibility update; an unsupported build displays an error.
+- Third-party panels keep their own behavior and requirements. GitLens, conversation bookmarks, and Keep awake were exercised; this does not establish compatibility with every plugin.
+
+## Develop and verify
+
+Requires **Node.js 24+**. From the repository root:
+
+```bash
+npm run setup
+npm run typecheck
+npm test
+npm run install:plugin
+```
+
+After source changes, run the checks and `npm run reload:plugin`. Reload the plugin to apply code changes.
+
+| Command                 | Purpose                                                           |
+| ----------------------- | ----------------------------------------------------------------- |
+| `npm run setup`         | Install development dependencies for the repository and plugin    |
+| `npm run typecheck`     | Check TypeScript                                                  |
+| `npm test`              | Run model, layout, shortcut, and menu-placement tests             |
+| `npm run reload:plugin` | Reload `paseo-deck` on the selected local daemon                  |
+| `npm run demo`          | Open the installed Paseo Web UI through a temporary local harness |
+
+The demo prints an authenticated loopback URL. On macOS it reads `/Applications/Paseo.app/Contents/Resources/app-dist`; override with `PASEO_DECK_APP_DIST` and change the port with `PASEO_DECK_DEMO_PORT`. `PASEO_DECK_HOME` selects an isolated daemon. See [the harness](tools/demo.mjs) for all options.
+
+Verification: [Tabs](TABS-RESULTS.md), [dragging to split](SPLIT-DRAG-RESULTS.md), [workspace actions and menus](ACTIONS-RESULTS.md), and [Tab context menus](TAB-CONTEXT-RESULTS.md). Measurements and test boundaries are in the [performance report](PERFORMANCE.md); see the [interaction design](design/INTERACTION-DESIGN.md) and [initial feasibility research](RESEARCH.md) for background.

@@ -1,8 +1,19 @@
 import type { ComponentType, ReactNode } from "react";
 import type { PluginScreenProps } from "@getpaseo/plugin/client";
 import type { Pane, Target } from "../shared/model";
+import type { PaseoWorkspace } from "@getpaseo/client";
 
 type UI = ComponentType<{ children?: ReactNode; [key: string]: unknown }>;
+type ServiceLink = { kind: string; label: string; url: string };
+type OpenTarget =
+  | {
+      source: "desktop";
+      id: string;
+      label: string;
+      icon: unknown;
+      openInput: Record<string, unknown>;
+    }
+  | { source: "forge"; id: string; label: string; url: string };
 export type PluginIcon = unknown;
 export type ButtonBehavior =
   | { kind: "action" }
@@ -22,10 +33,12 @@ export type ButtonItem =
 export type InstalledPlugin = {
   id: string;
   serverId: string;
+  locale?: string;
+  i18n?: { resolve(message: unknown, locale?: string): string };
   workspacePanels: {
     id: string;
     context: "workspace" | "agent";
-    title: string;
+    title: unknown;
     Component: UI;
   }[];
   [key: string]: unknown;
@@ -56,7 +69,56 @@ export type PluginPanelRequest = {
   location?: "workspace" | "explorer";
 };
 export interface WorkspaceBridge {
-  pluginIconComponent(icon: PluginIcon): ComponentType<{ size: number; color: string; [key: string]: unknown }>;
+  useWorkspaceScriptActions(input: {
+    serverId: string;
+    workspaceId: string;
+    scripts: PaseoWorkspace["scripts"];
+    onScriptTerminalStarted(id: string): void;
+  }): {
+    start(name: string): void;
+    stop(name: string): void;
+    restart(name: string): void;
+    copyUrl(link: ServiceLink): void;
+    selectRoute(kind: string): void;
+    resolveLinks(script: PaseoWorkspace["scripts"][number]): {
+      selected: ServiceLink | null;
+      targets: ServiceLink[];
+    };
+    isStartPending: boolean;
+    isStopPending: boolean;
+  };
+  usePreferredEditor(input: { serverId: string; projectId: string | null }): {
+    preferredEditorId: string | null | undefined;
+    updatePreferredEditor(id: string): Promise<void>;
+  };
+  resolvePreferredEditorId(
+    ids: string[],
+    preferred: string | null | undefined,
+  ): string | null;
+  useDesktopOpenTargets(input: {
+    isLocalExecution: boolean;
+    workspacePath: string;
+  }): { targets: unknown[]; isAvailable: boolean };
+  useHostRuntimeIsConnected(serverId: string): boolean;
+  useIsLocalDaemon(serverId: string): boolean;
+  useCheckoutStatusQuery(input: { serverId: string; cwd: string }): {
+    status: unknown;
+  };
+  useCheckoutPrStatusQuery(input: { serverId: string; cwd: string }): {
+    resolvedForge: unknown;
+  };
+  planWorkspaceOpenTargets(input: Record<string, unknown>): OpenTarget[];
+  openDesktopTarget(input: Record<string, unknown>): Promise<void>;
+  openExternalUrl(url: string): Promise<void>;
+  EditorTargetIcon: UI;
+  useWorkspaceFields<T>(
+    serverId: string,
+    workspaceId: string,
+    select: (workspace: PaseoWorkspace) => T,
+  ): T | null;
+  pluginIconComponent(
+    icon: PluginIcon,
+  ): ComponentType<{ size: number; color: string; [key: string]: unknown }>;
   WorkspaceScriptsButton: UI;
   WorkspaceOpenInEditorButton: UI;
   MenuRoot: UI;

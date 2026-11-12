@@ -160,7 +160,7 @@ class PaneErrorBoundary extends Component<
     return { error: error.message };
   }
   componentDidCatch(error: Error) {
-    console.error("[Split native pane]", error.stack ?? error.message);
+    console.error("[Paseo Deck native pane]", error.stack ?? error.message);
   }
   render() {
     if (!this.state.error) return this.props.children;
@@ -224,7 +224,7 @@ function NativePaneContent({
   const client = bridge.useHostRuntimeClient(pane.serverId);
   const workspaceRoot =
     bridge.useWorkspaceDirectory(pane.serverId, pane.workspaceId) ?? undefined;
-  const workspaceKey = `split-demo:${pane.serverId}:${pane.workspaceId}:${tabId}`;
+  const workspaceKey = `paseo-deck:${pane.serverId}:${pane.workspaceId}:${tabId}`;
   const routeFocused = bridge.useIsFocused();
   const active = routeFocused && visible;
   const timelineSync = bridge.useSessionStore(
@@ -236,7 +236,7 @@ function NativePaneContent({
       void bridge
         .getHostRuntimeStore()
         .prepareAgentTimeline(pane.serverId, agentId)
-        .catch((error) => console.error("[Split timeline]", error));
+        .catch((error) => console.error("[Paseo Deck timeline]", error));
   }, [bridge, pane.serverId, agentId, active]);
   useLayoutEffect(() => {
     timelineSync?.replaceVisibleAgentIds(

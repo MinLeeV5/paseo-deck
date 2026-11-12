@@ -1,6 +1,6 @@
 # 原生 Tab 与统一添加面板验收
 
-2026-11-12。已按 [交互方案](design/INTERACTION-DESIGN.md) 实施，安装入口仍为左侧 **跨 Workspace 分屏**。
+2026-11-12。已按 [交互方案](design/INTERACTION-DESIGN.md) 实施。验收时的左侧入口名为 **跨 Workspace 分屏**，现已更名为 **Paseo Deck**（ID：`paseo-deck`）；最新安装与使用见[中文 README](README.zh-CN.md)。
 
 [真实 Electron 分屏](artifacts/tabs-native-workspace.png) · [统一添加与运行分栏](artifacts/tabs-unified-picker.png) · [窄屏面板](artifacts/tabs-compact-picker.png)
 

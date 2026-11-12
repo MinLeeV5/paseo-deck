@@ -1,6 +1,7 @@
 import { usePaseo } from "@getpaseo/plugin/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
+import type { NativeBridge } from "./native-types";
 import type {
   PaseoAgent,
   PaseoProject,
@@ -12,7 +13,7 @@ export type Directory = {
   workspaces: PaseoWorkspace[];
   projects: PaseoProject[];
   agents: PaseoAgent[];
-  terminals: PaseoTerminal[];
+  terminals: (PaseoTerminal & { title?: string | null })[];
 };
 export const workspaceLabel = (workspace: PaseoWorkspace) =>
   `${workspace.projectCustomName ?? workspace.projectDisplayName} / ${workspace.title ?? workspace.name}`;
@@ -22,6 +23,7 @@ export function useDirectory(
   hostId: string,
   active: boolean,
   pickerOpen: boolean,
+  bridge?: NativeBridge,
 ) {
   const paseo = usePaseo();
   const cache = useQueryClient();
@@ -31,11 +33,16 @@ export function useDirectory(
   const query = useQuery({
     queryKey: key,
     queryFn: async (): Promise<Directory> => {
+      // The public terminal projection omits the user-assigned title.
+      // Borrow the host client so renamed tabs also restore their native title.
+      const client = bridge?.getHostRuntimeStore().getClient(hostId);
       const [workspaces, projects, agents, terminals] = await Promise.all([
         paseo.workspaces.list({ page: { limit: 200 } }),
         paseo.projects.list(),
         paseo.agents.list({ page: { limit: 200 } }),
-        paseo.terminals.list(),
+        client
+          ? client.listTerminals().then((result) => result.terminals)
+          : paseo.terminals.list().then((result) => result.entries),
       ]);
       return {
         workspaces: workspaces.entries.map((workspace) => {
@@ -51,10 +58,10 @@ export function useDirectory(
           const update = latest.current.get(agent.id);
           return update && update.updatedAt >= agent.updatedAt ? update : agent;
         }),
-        terminals: terminals.entries,
+        terminals,
       };
     },
-    enabled: active,
+    enabled: active && Boolean(bridge),
     staleTime: 15000,
     refetchInterval: pickerOpen && active ? 15000 : false,
     refetchOnWindowFocus: false,
@@ -136,7 +143,7 @@ export function useDirectory(
         });
       })
       .catch((error) => {
-        if (!stopped) console.error("[Split workspace directory]", error);
+        if (!stopped) console.error("[Paseo Deck workspace directory]", error);
       });
     return () => {
       stopped = true;
@@ -196,7 +203,7 @@ export function useDirectory(
           : undefined;
         if (stopped) {
           void release?.().catch((error) =>
-            console.error("[Split directory cleanup]", error),
+            console.error("[Paseo Deck directory cleanup]", error),
           );
           return;
         }
@@ -210,7 +217,7 @@ export function useDirectory(
         else for (const { agent } of result.entries) apply(agent);
       })
       .catch((error) => {
-        if (!stopped) console.error("[Split agent directory]", error);
+        if (!stopped) console.error("[Paseo Deck agent directory]", error);
       });
     return () => {
       stopped = true;
@@ -218,7 +225,7 @@ export function useDirectory(
       removeSnapshot?.();
       controller.abort();
       void release?.().catch((error) =>
-        console.error("[Split directory cleanup]", error),
+        console.error("[Paseo Deck directory cleanup]", error),
       );
       latest.current.clear();
     };

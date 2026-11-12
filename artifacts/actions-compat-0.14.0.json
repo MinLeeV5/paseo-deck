@@ -1,0 +1,13 @@
+{
+  "version": "0.14.0",
+  "nativeCrossWorkspaceFiles": true,
+  "uniformMenusAndLeftFlip": true,
+  "gridPresetPreservesResources": true,
+  "officialScriptNativeTerminalInSameGroup": true,
+  "terminalId": "84eae279-76c5-4059-a26e-66f4bf270552",
+  "pluginPopover": true,
+  "nestedPluginMenuAndInSplitPanelContext": true,
+  "pinSettingsPersistReload": true,
+  "closeAllTabs": true,
+  "closeAllPreservesTerminal": true
+}

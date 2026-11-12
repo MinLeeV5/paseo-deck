@@ -104,5 +104,15 @@
         }
       ]
     }
-  }
+  },
+  "gridBothDividersDragged": [
+    {
+      "axis": "x",
+      "delta": 48
+    },
+    {
+      "axis": "y",
+      "delta": 48
+    }
+  ]
 }

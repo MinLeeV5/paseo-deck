@@ -4,7 +4,6 @@ import {
   memo,
   useEffect,
   useMemo,
-  useRef,
   useState,
   useSyncExternalStore,
   type ReactNode,
@@ -13,6 +12,7 @@ import { Pressable, Text, View } from "react-native";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Icon, useToast } from "@getpaseo/plugin/client/ui";
 import type { PluginScreenProps } from "@getpaseo/plugin/client";
+import type { PaseoWorkspace } from "@getpaseo/client";
 import type { Pane, Target } from "../shared/model";
 import type { NativeBridge } from "./native-types";
 import type {
@@ -23,8 +23,28 @@ import type {
 } from "./workspace-types";
 import type { Directory } from "./directory";
 import { IconButton } from "./compact-ui";
-import { describeControl } from "./web";
+import {
+  describeControl,
+  readToolbarPreferences,
+  subscribeToolbarPreferences,
+  writeToolbarPreferences,
+} from "./web";
+import { pinnedButtonCapacity, pluginButtonIdentity } from "../shared/toolbar";
+import {
+  ScriptMenu,
+  ExternalOpenMenu,
+  type ScriptMenuProps,
+  type EditorMenuProps,
+} from "./official-menus";
 import type { PaneMenuAction } from "./resource-picker";
+
+const actionWorkspaceFields = (workspace: PaseoWorkspace) => ({
+  id: workspace.id,
+  projectId: workspace.projectId,
+  projectRootPath: workspace.projectRootPath,
+  workspaceDirectory: workspace.workspaceDirectory,
+  scripts: workspace.scripts,
+});
 
 export const WorkspaceActions = memo(function WorkspaceActions(props: {
   bridge: NativeBridge;
@@ -34,6 +54,7 @@ export const WorkspaceActions = memo(function WorkspaceActions(props: {
   host: PluginScreenProps["host"];
   compact: boolean;
   wide: boolean;
+  width: number;
   maximized: boolean;
   groupId: string;
   menuActions: PaneMenuAction[];
@@ -60,6 +81,7 @@ function Actions({
   host,
   compact,
   wide,
+  width,
   maximized,
   groupId,
   menuActions,
@@ -73,9 +95,33 @@ function Actions({
     bridge.pluginButtonStore.getSnapshot,
     bridge.pluginButtonStore.getSnapshot,
   );
-  const workspace = directory?.workspaces.find(
-    (value) => value.id === pane?.workspaceId,
+  const preferences = useSyncExternalStore(
+    subscribeToolbarPreferences,
+    () => readToolbarPreferences(host.id),
+    () => readToolbarPreferences(host.id),
   );
+  const settingsButtons = useMemo(() => {
+    const unique = new Map<string, PluginButton>();
+    for (const entry of entries)
+      if (
+        entry.placement === "header" &&
+        entry.installation.serverId === host.id &&
+        entry.button.visible &&
+        !unique.has(pluginButtonIdentity(entry))
+      )
+        unique.set(pluginButtonIdentity(entry), entry);
+    return [...unique.values()];
+  }, [entries, host.id]);
+  // Official lifecycle mutations publish to Paseo's workspace store. Observe
+  // these specific fields so stop/restart update without per-toolbar polling.
+  const liveWorkspace = bridge.useWorkspaceFields(
+    host.id,
+    pane?.workspaceId ?? "",
+    actionWorkspaceFields,
+  );
+  const workspace =
+    liveWorkspace ??
+    directory?.workspaces.find((value) => value.id === pane?.workspaceId);
   const buttons = useMemo(
     () =>
       entries.filter(
@@ -87,8 +133,11 @@ function Actions({
       ),
     [entries, host.id, pane?.workspaceId],
   );
-  const pinned = wide ? buttons.slice(0, 3) : [];
-  const overflow = wide ? buttons.slice(3) : buttons;
+  const pinnedIds =
+    preferences.pinned ?? buttons.slice(0, 3).map(pluginButtonIdentity);
+  const pinned = buttons
+    .filter((entry) => pinnedIds.includes(pluginButtonIdentity(entry)))
+    .slice(0, pinnedButtonCapacity(width, compact));
   const terminalIds = useMemo(
     () =>
       (directory?.terminals ?? [])
@@ -134,25 +183,29 @@ function Actions({
         : null,
     [pane?.target],
   );
+  const editorProps =
+    workspace && pane
+      ? {
+          serverId: pane.serverId,
+          cwd: workspace.workspaceDirectory ?? workspace.projectRootPath,
+          projectId: workspace.projectId,
+          activeFile,
+          hideLabels: true,
+        }
+      : null;
   return (
     <View
       onPointerDown={() => pane && onFocus(pane.id)}
       style={{ flexDirection: "row", alignItems: "center", gap: 2 }}
     >
-      {scriptProps && (
+      {wide && scriptProps && (
         <ActionBoundary theme={theme}>
           <bridge.WorkspaceScriptsButton {...scriptProps} />
         </ActionBoundary>
       )}
-      {workspace && pane && (
+      {wide && editorProps && (
         <ActionBoundary theme={theme}>
-          <bridge.WorkspaceOpenInEditorButton
-            serverId={pane.serverId}
-            cwd={workspace.workspaceDirectory ?? workspace.projectRootPath}
-            projectId={workspace.projectId}
-            activeFile={activeFile}
-            hideLabels
-          />
+          <bridge.WorkspaceOpenInEditorButton {...editorProps} />
         </ActionBoundary>
       )}
       {pane &&
@@ -184,6 +237,10 @@ function Actions({
         groupId={groupId}
         before={() => (pane ? beforeAction(pane.id) : Promise.resolve())}
         actions={menuActions}
+        settingsButtons={settingsButtons}
+        pinnedIds={pinnedIds}
+        scripts={scriptProps}
+        editor={editorProps}
       />
     </View>
   );
@@ -197,7 +254,7 @@ class ActionBoundary extends Component<
     return { error: error.message };
   }
   componentDidCatch(error: Error) {
-    console.error("[Split workspace action]", error);
+    console.error("[Paseo Deck workspace action]", error);
   }
   render() {
     return this.state.error ? (
@@ -421,6 +478,7 @@ function ExtensionControl({
         testID={testID}
       />
       <bridge.MenuSurface
+        testID={`split-more-extension-${groupId}-${entry.key}`}
         sheetTitle={entry.button.title}
         align="end"
         minWidth={240}
@@ -606,6 +664,10 @@ function MoreActions({
   groupId,
   before,
   actions,
+  settingsButtons,
+  pinnedIds,
+  scripts,
+  editor,
 }: {
   entries: PluginButton[];
   bridge: NativeBridge;
@@ -615,9 +677,23 @@ function MoreActions({
   groupId: string;
   before(): Promise<void>;
   actions: PaneMenuAction[];
+  settingsButtons: PluginButton[];
+  pinnedIds: string[];
+  scripts: ScriptMenuProps | null;
+  editor: EditorMenuProps | null;
 }) {
   const toast = useToast();
   const [open, setOpen] = useState(false);
+  const settingsId = `category/${groupId}/button-settings`;
+  const scriptsId = `official/${groupId}/scripts`;
+  const editorId = `official/${groupId}/external`;
+  const updatePins = (ids: string[] | null) => {
+    try {
+      writeToolbarPreferences(host.id, ids);
+    } catch {
+      toast.error("无法保存按钮设置，请检查当前客户端的本地存储。");
+    }
+  };
   const run = (entry: PluginButton) => async (path: string[]) => {
     try {
       await before();
@@ -633,6 +709,7 @@ function MoreActions({
         accessibilityLabel={action.label}
         aria-checked={action.selected}
         disabled={action.disabled}
+        destructive={action.destructive}
         leading={
           <Icon
             name={action.icon}
@@ -715,29 +792,133 @@ function MoreActions({
       label: "插件",
       icon: "Puzzle",
       id: `category/${groupId}/plugins`,
-      content: pluginRows,
-      enabled: entries.length > 0,
-    },
-    {
-      label: "其它",
-      icon: "MoreHorizontal",
-      id: `category/${groupId}/other`,
-      content: actionRows(
-        actions.filter(
-          (action) => action.category === "其它" || !action.category,
-        ),
+      content: (
+        <>
+          {pluginRows}
+          {entries.length > 0 && <bridge.MenuSeparator />}
+          <bridge.MenuSubTrigger
+            id={settingsId}
+            leading={
+              <Icon
+                name="Settings2"
+                size={14}
+                color={theme.colors.foregroundMuted}
+              />
+            }
+          >
+            按钮显示设置
+          </bridge.MenuSubTrigger>
+        </>
       ),
-      enabled: actions.some(
-        (action) => action.category === "其它" || !action.category,
-      ),
+      enabled: true,
     },
   ];
   const pages = [
+    ...(scripts
+      ? [
+          {
+            id: scriptsId,
+            title: "启动脚本",
+            content: (
+              <ActionBoundary theme={theme}>
+                <ScriptMenu {...scripts} bridge={bridge} theme={theme} />
+              </ActionBoundary>
+            ),
+          },
+        ]
+      : []),
+    ...(editor
+      ? [
+          {
+            id: editorId,
+            title: "外部打开",
+            content: (
+              <ActionBoundary theme={theme}>
+                <ExternalOpenMenu {...editor} bridge={bridge} theme={theme} />
+              </ActionBoundary>
+            ),
+          },
+        ]
+      : []),
     ...categories.map(({ id, label: title, content }) => ({
       id,
       title,
       content,
     })),
+    {
+      id: settingsId,
+      title: "按钮显示设置",
+      content: (
+        <>
+          <Text
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              fontSize: 12,
+              color: theme.colors.foregroundMuted,
+            }}
+          >
+            勾选要在 Tab 栏显示的插件按钮。空间不足时自动收进更多菜单。
+          </Text>
+          {settingsButtons.map((entry) => {
+            const id = pluginButtonIdentity(entry);
+            const selected = pinnedIds.includes(id);
+            return (
+              <ExtensionEnvironment key={id} entry={entry} bridge={bridge}>
+                <bridge.MenuItem
+                  testID={`split-pin-${groupId}-${entry.id}`}
+                  selected={selected}
+                  showSelectedCheck
+                  closeOnSelect={false}
+                  description={
+                    entries.some(
+                      (current) => pluginButtonIdentity(current) === id,
+                    )
+                      ? undefined
+                      : "当前 workspace 未提供此按钮"
+                  }
+                  leading={
+                    <Glyph
+                      bridge={bridge}
+                      icon={entry.button.icon}
+                      props={extensionProps(entry, theme, host, compact)}
+                      color={theme.colors.foregroundMuted}
+                    />
+                  }
+                  onSelect={() =>
+                    updatePins(
+                      selected
+                        ? pinnedIds.filter((value) => value !== id)
+                        : [...pinnedIds, id],
+                    )
+                  }
+                >
+                  {entry.button.title}
+                </bridge.MenuItem>
+              </ExtensionEnvironment>
+            );
+          })}
+          {settingsButtons.length === 0 && (
+            <Text
+              style={{
+                padding: 12,
+                fontSize: 13,
+                color: theme.colors.foregroundMuted,
+              }}
+            >
+              当前没有可配置的插件按钮。
+            </Text>
+          )}
+          <bridge.MenuSeparator />
+          <bridge.MenuItem
+            closeOnSelect={false}
+            onSelect={() => updatePins(null)}
+          >
+            恢复默认
+          </bridge.MenuItem>
+        </>
+      ),
+    },
     ...entries.flatMap((entry) => {
       if (entry.button.behavior.kind === "action") return [];
       const pageId = `overflow/${groupId}/${entry.key}`;
@@ -791,6 +972,7 @@ function MoreActions({
         testID={`split-menu-${groupId}`}
       />
       <bridge.MenuSurface
+        testID={`split-more-${groupId}`}
         sheetTitle="更多操作"
         align="end"
         minWidth={200}
@@ -799,6 +981,36 @@ function MoreActions({
         scrollable
         pages={pages}
       >
+        {scripts && (
+          <bridge.MenuSubTrigger
+            id={scriptsId}
+            disabled={scripts.scripts.length === 0}
+            leading={
+              <Icon
+                name="Play"
+                size={14}
+                color={theme.colors.foregroundMuted}
+              />
+            }
+          >
+            启动脚本
+          </bridge.MenuSubTrigger>
+        )}
+        {editor && (
+          <bridge.MenuSubTrigger
+            id={editorId}
+            leading={
+              <Icon
+                name="ExternalLink"
+                size={14}
+                color={theme.colors.foregroundMuted}
+              />
+            }
+          >
+            外部打开
+          </bridge.MenuSubTrigger>
+        )}
+        {(scripts || editor) && <bridge.MenuSeparator />}
         {categories.map((category) => (
           <bridge.MenuSubTrigger
             key={category.id}
@@ -815,6 +1027,11 @@ function MoreActions({
             {category.label}
           </bridge.MenuSubTrigger>
         ))}
+        {actionRows(
+          actions.filter(
+            (action) => action.category === "其它" || !action.category,
+          ),
+        )}
         <bridge.MenuSeparator />
         {actionRows(actions.filter((action) => action.category === "关闭"))}
       </bridge.MenuSurface>

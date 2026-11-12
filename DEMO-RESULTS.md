@@ -1,6 +1,6 @@
 # 第一版原生分屏 Demo 验收记录
 
-本页保留首版独立标题栏的验证证据。当前原生 Tab、统一添加面板与运行标识的结果见 [TABS-RESULTS.md](TABS-RESULTS.md)。
+本页保留首版独立标题栏的验证证据。插件现已更名为 **Paseo Deck**（ID：`paseo-deck`），最新安装与使用见[中文 README](README.zh-CN.md)。当前原生 Tab、统一添加面板与运行标识的结果见 [TABS-RESULTS.md](TABS-RESULTS.md)。
 
 2026-11-12。插件 `workspace-split-demo` 已安装并启用。**同一界面可以使用来自不同 workspace 的原生 Agent、终端、文件编辑器，完成真实操作。** 无需修改 Paseo 应用安装文件。
 

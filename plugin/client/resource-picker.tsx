@@ -210,12 +210,14 @@ export function ResourcePicker({
       for (const terminal of directory?.terminals ?? []) {
         if (
           (scope === "all" || terminal.workspaceId === scope) &&
-          matches(`${terminal.name ?? ""} ${terminal.cwd}`)
+          matches(
+            `${terminal.title ?? ""} ${terminal.name ?? ""} ${terminal.cwd}`,
+          )
         )
           items.push({
             key: terminal.id,
             kind: "option",
-            title: terminal.name ?? "终端",
+            title: terminal.title || terminal.name || "终端",
             subtitle: terminal.cwd,
             workspaceId: terminal.workspaceId,
             run: () =>

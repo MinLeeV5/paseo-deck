@@ -2,6 +2,8 @@ import type { ComponentType, ReactNode } from "react";
 import type { QueryClient } from "@tanstack/react-query";
 import type { Pane, Target } from "../shared/model";
 import type { WorkspaceBridge } from "./workspace-types";
+import type { TabMenuBridge } from "./tab-menu-types";
+import type { Directory } from "./directory";
 export interface NativePaneInput {
   tab: {
     tabId: string;
@@ -34,7 +36,7 @@ export interface ProjectIconTarget {
   customIconRevision?: string | null;
   iconRevision?: string;
 }
-export interface NativeBridge extends WorkspaceBridge {
+export interface NativeBridge extends WorkspaceBridge, TabMenuBridge {
   projectIconPlaceholderLabelFromDisplayName?(name: string): string;
   useProjectIcons(input: {
     projects: ProjectIconTarget[];
@@ -96,6 +98,9 @@ export interface NativeBridge extends WorkspaceBridge {
     destructive: boolean;
   }): Promise<boolean>;
   getHostRuntimeStore(): {
+    getClient(serverId: string): {
+      listTerminals(): Promise<{ terminals: Directory["terminals"] }>;
+    } | null;
     prepareAgentTimeline(serverId: string, agentId: string): Promise<unknown>;
   };
   useSessionStore(

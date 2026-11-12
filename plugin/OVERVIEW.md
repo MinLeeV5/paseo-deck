@@ -1,13 +1,27 @@
-# 跨 Workspace 分屏
+# Paseo Deck
 
-在同一个界面使用不同 workspace 的原生 Agent、终端和文件。每个分屏有自己的 Tab 栏，Agent 图标来自来源 workspace 的原生项目图标；活动 Tab 使用中性底色，没有整窗选中描边。
+[English](OVERVIEW.md) · [简体中文](OVERVIEW.zh-CN.md)
 
-点击 Tab 栏中的 ＋，在统一面板中搜索已有 Agent、筛选来源 workspace、新建 Agent，或添加终端与文件。运行中的 Agent 单独置顶分栏，显示“运行中 / 启动中”文字，Tab 同步显示运行指示。默认加入当前分屏，也可选择新分屏。··· 中提供移动 Tab、排列、均分和返回原 workspace。
+**Agents, terminals, and files across workspaces, in one Paseo window.**
 
-桌面 Tab 栏 32px，窄屏 36px，使用宿主配色和原生内容交互。切换与移动保留已访问的原生实例，未访问内容延迟创建；关闭只移除展示，未保存文件先询问。旧窗口布局自动迁移，保留本地备份。
+- **Native conversations**: Add existing Agents or create new ones, then use Paseo's conversation UI and composer in each split.
+- **Flexible layouts**: Give each split its own Tabs. Drag to reorder, move, split, or resize; choose two, three, or four columns, or a 2 × 2 grid.
+- **One add panel**: Search Agents and choose a workspace, with running Agents grouped separately and workspace icons on their Tabs.
+- **Workspace actions**: Run the active Tab's scripts, open its files externally, and use registered plugin buttons and panels.
+- **Saved preferences**: Restore the layout and choose which plugin buttons remain in the Tab bar, with overflow access in narrow splits.
 
-要求 Paseo >=0.13.0，实测 0.13.0 / 0.14.0 的同版 Web 构建和 daemon，以及 0.15.4 Web / Electron。iOS / Android 原生客户端显示不支持提示。
+## Workflow
 
-当前总计最多 8 个资源 Tab / 8 个分屏，仅混排同一所选 host 的 workspace；选择器读取最近最多 200 个 Agent / workspace。运行状态使用可释放的元数据订阅，图标观察器不参与拖动渲染，隐藏 Tab 释放可见时间线登记。
+Open Paseo Deck from the sidebar or Command Center, select a host, and use a split's `＋` to add resources. Agent, terminal, and file content uses Paseo's native components. Closing a Tab removes its view; it does not terminate its Agent or terminal. Unsaved content is checked before a batch closes.
 
-插件通过私有 Metro 运行时复用原生组件，不修改应用文件。入口按当前构建动态识别；能力缺失或回退构建不匹配时停止加载。后续版本仍需复测。完整交互、验收和性能数据见源码仓库 README、TABS-RESULTS.md、PERFORMANCE.md。语音、系统拖放、所有 provider / MCP 与长期高负载等尚未逐项覆盖。
+Layouts and button preferences are stored per host on the current client and do not sync between clients. Messages, attachments, and tool results use Paseo's existing host and configured provider connections. Scripts run in their source workspace on the selected host. No separate account or API key is needed for Deck.
+
+## Requirements and scope
+
+Requires **Paseo daemon and client 0.13.0+**. Desktop and Web are supported; native iOS/Android clients are not. Current plugin menus use Simplified Chinese.
+
+A board contains up to **8 resource Tabs / 8 splits** from one selected host. The add panel reads up to 200 Agents and 200 workspaces. External editor targets depend on Paseo's desktop capabilities; third-party panels keep their own requirements.
+
+This experimental plugin uses private Paseo UI components without changing application files. Matching daemon/client builds of 0.13.0, 0.14.0, and 0.15.4 were tested. Future builds may need adaptation, and an unsupported build displays an error. GitLens, conversation bookmarks, and Keep awake were exercised; other integrations may behave differently.
+
+Source, installation, and development: [MinLeeV5/paseo-deck](https://github.com/MinLeeV5/paseo-deck#readme). Report problems in [GitHub Issues](https://github.com/MinLeeV5/paseo-deck/issues).

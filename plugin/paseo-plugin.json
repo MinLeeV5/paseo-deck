@@ -1,6 +1,6 @@
 {
-  "id": "workspace-split-demo",
-  "name": "跨 Workspace 分屏 Demo",
+  "id": "paseo-deck",
+  "name": "Paseo Deck",
   "description": "在同一个工作台中并排使用不同 workspace 的原生 Agent、终端和文件面板。实验版本。",
   "media": [],
   "requirements": {

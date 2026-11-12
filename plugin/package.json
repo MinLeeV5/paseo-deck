@@ -1,7 +1,16 @@
 {
-  "name": "workspace-split-demo",
+  "name": "paseo-deck",
   "private": true,
   "version": "0.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MinLeeV5/paseo-deck.git",
+    "directory": "plugin"
+  },
+  "homepage": "https://github.com/MinLeeV5/paseo-deck#readme",
+  "bugs": {
+    "url": "https://github.com/MinLeeV5/paseo-deck/issues"
+  },
   "files": [
     "paseo-plugin.json",
     "OVERVIEW.md",

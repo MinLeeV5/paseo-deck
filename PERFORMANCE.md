@@ -2,6 +2,19 @@
 
 2026-11-12，Apple M5 / 24GB，使用真实 Paseo 面板与 daemon。桌面仅保留 32px Tab 栏，窄屏 36px。
 
+## 工作区操作与菜单更新后的复测
+
+最终代码在 Web 1600×1000 下再次测量，方法与下文一致。菜单关闭，包含官方按钮、可配置插件入口及新增布局能力；测试资源仍是原生 Agent、终端、文件和草稿。
+
+| 场景 | 面板 model 构建 | 图标 hook 调用 | 布局写入 | 帧间隔 P95 | >50ms 长任务 | 主线程 TaskDuration |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Web · 4 可见资源 | 0 | 0 | 1 | 16.8ms | 0 | 345.83ms/s |
+| Web · 8 可见资源 | 0 | 0 | 1 | 16.8ms | 0 | 426.19ms/s |
+
+位移均实际达到 96px。16 秒空闲期间构建、图标 hook 调用和布局写入均为 0，无长任务。原始数据：[4 资源](artifacts/performance-actions-final-4-panes.json)、[8 资源](artifacts/performance-actions-final-8-panes.json)。
+
+官方操作观察宿主 workspace 的脚本 / 路径字段，菜单按需挂载，编辑器目标查询共享宿主缓存；没有新增每按钮轮询。资源目录拥有一个 Agent 和一个 workspace 元数据观察，离开页面释放。第三方插件原有后台请求仍存在，样本中的 RPC 总量包含这些行为，不代表分屏插件自身的轮询。下方保留早期 Tab 版本的测量作为历史记录。
+
 ## 方法
 
 Web：Paseo 0.15.4 原始构建，独立 Chrome 157，1600×913。Electron：真实 0.15.4 的 paseo://app 页面，内置 Chrome 152，1200×800。独立 Electron profile 不包含主环境的其他插件。

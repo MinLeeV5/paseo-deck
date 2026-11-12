@@ -21,12 +21,14 @@ import {
   addPane,
   moveTab,
   removeTab,
+  relatedTabIds,
   resourceKey,
   targetSchema,
   groupInspector,
   reconcileBoardLayout,
   type Board,
   type Pane,
+  type RelatedTabs,
   type Target,
 } from "../shared/model";
 import { bridgeInfoRpc } from "../shared/bridge";
@@ -39,6 +41,7 @@ import {
   scheduleFrame,
   focusConversation,
   installPluginPanelRouter,
+  installSplitMenuPlacement,
   type TabDropTarget,
 } from "./web";
 import { PaneFrame, TabStrip, type Rect } from "./pane-frame";
@@ -146,7 +149,12 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
     retry: false,
     staleTime: Infinity,
   });
-  const directory = useDirectory(host.id, routeActive, picker !== null),
+  const directory = useDirectory(
+      host.id,
+      routeActive,
+      picker !== null,
+      bridge.data,
+    ),
     directoryRef = useRef(directory.data);
   directoryRef.current = directory.data;
   const pickerRef = useRef(picker);
@@ -509,13 +517,23 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
         );
         const openerTabId =
           source.presentation === "inspector" ? source.openerTabId : source.id;
+        let title = request.panelId;
+        if (panel) {
+          try {
+            title =
+              typeof panel.title === "string"
+                ? panel.title
+                : (installation?.i18n?.resolve(panel.title) ?? title);
+          } catch {
+            // A failing translation must not prevent opening the panel.
+          }
+        }
         const pane: Pane = {
           id: id(),
           serverId: source.serverId,
           workspaceId: source.workspaceId,
           workspaceName: source.workspaceName,
-          title:
-            typeof panel?.title === "string" ? panel.title : request.panelId,
+          title,
           target,
           presentation: request.location === "explorer" ? "inspector" : "tab",
           openerTabId,
@@ -534,7 +552,12 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
               ...next,
               panes: next.panes.map((item) =>
                 item.id === duplicate.id
-                  ? { ...item, presentation: pane.presentation, openerTabId }
+                  ? {
+                      ...item,
+                      title,
+                      presentation: pane.presentation,
+                      openerTabId,
+                    }
                   : item,
               ),
             };
@@ -558,6 +581,10 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
         ? installPluginPanelRouter(bridge.data, openPluginPanel)
         : undefined,
     [bridge.data, openPluginPanel],
+  );
+  useEffect(
+    () => (bridge.data ? installSplitMenuPlacement(bridge.data) : undefined),
+    [bridge.data],
   );
   const openFromPane = useCallback(
     (tabId: string, target: Target, side = false) => {
@@ -657,6 +684,84 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
       );
     });
   }, [closeTab, groupFocus, visibleGroup]);
+  const closeTabAndFocus = useCallback(
+    async (tabId: string) => {
+      const group = groupOf(tabId);
+      if (!group) return;
+      await closeTab(tabId);
+      const remaining = boardRef.current.groups.find(
+        (item) => item.id === group.id,
+      );
+      if (!remaining) return;
+      setFocusedGroup(remaining.id);
+      scheduleFrame(() =>
+        focusControl(
+          remaining.activeTabId
+            ? `split-tab-${remaining.activeTabId}`
+            : `split-add-${remaining.id}`,
+        ),
+      );
+    },
+    [closeTab, groupOf],
+  );
+  const closeRelatedTabs = useCallback(
+    async (tabId: string, scope: RelatedTabs) => {
+      const group = groupOf(tabId);
+      const ids = relatedTabIds(boardRef.current, tabId, scope);
+      if (
+        !group ||
+        !ids.length ||
+        closingAll.current ||
+        ids.some((id) => pendingCloses.current.has(id))
+      )
+        return;
+      const closing = boardRef.current.panes.filter((pane) =>
+        ids.includes(pane.id),
+      );
+      const resumes: (() => void)[] = [];
+      let committed = false;
+      closingAll.current = true;
+      ids.forEach((id) => pendingCloses.current.add(id));
+      try {
+        for (const pane of closing) {
+          const attributes = bridge.data?.getPanelInstanceAttributes({
+            serverId: pane.serverId,
+            workspaceId: pane.workspaceId,
+            tabId: `${instanceId}:${pane.id}`,
+          });
+          if (!attributes?.modified || !bridge.data) continue;
+          const resume = attributes.suspendPendingSave?.();
+          if (resume) resumes.push(resume);
+          const discard = await bridge.data.confirmDialog({
+            title: "文件尚未保存",
+            message: `「${pane.title}」有未保存的更改。放弃这些更改并继续关闭所选 Tab？`,
+            confirmLabel: "放弃更改并继续",
+            cancelLabel: "取消关闭",
+            destructive: true,
+          });
+          if (!discard) return;
+        }
+        setBoard((current) => ids.reduce(removeTab, current));
+        committed = true;
+        setFocusedGroup(group.id);
+        const activeId = boardRef.current.groups.find(
+          (item) => item.id === group.id,
+        )?.activeTabId;
+        scheduleFrame(() =>
+          focusControl(
+            activeId ? `split-tab-${activeId}` : `split-add-${group.id}`,
+          ),
+        );
+      } catch (error) {
+        setNotice(errorMessage(error));
+      } finally {
+        if (!committed) resumes.forEach((resume) => resume());
+        ids.forEach((id) => pendingCloses.current.delete(id));
+        closingAll.current = false;
+      }
+    },
+    [bridge.data, groupOf, instanceId, setBoard],
+  );
   const closeAllTabs = useCallback(async () => {
     if (closingAll.current) return;
     closingAll.current = true;
@@ -776,7 +881,7 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
       try {
         const terminal = await paseo.workspaces
           .ref(workspaceId)
-          .terminals.create({ name: "Split terminal" });
+          .terminals.create({ name: "Deck terminal" });
         openTarget(
           { kind: "terminal", terminalId: terminal.id },
           workspaceId,
@@ -1238,7 +1343,7 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
     return (
       <View style={{ padding: 24 }}>
         <Text style={{ color: colors.foreground }}>
-          此分屏需要 Paseo 0.13.0 以上的桌面版或 Web 版。
+          Paseo Deck 需要 Paseo 0.13.0 以上的桌面版或 Web 版。
         </Text>
       </View>
     );
@@ -1346,11 +1451,13 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
             >
               <TabStrip
                 group={group}
+                instanceId={instanceId}
                 panes={groupPanes.get(group.id)!}
                 agents={directory.data?.agents ?? []}
                 directory={directory.data}
                 host={host}
                 wide={!layout.compact && rect.width >= 560}
+                width={rect.width}
                 menuActions={menuActionsByGroup.get(group.id) ?? []}
                 onFocus={focusTab}
                 beforeAction={beforeWorkspaceAction}
@@ -1361,7 +1468,9 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
                 active={routeActive && !hidden}
                 maximized={maximized === group.id}
                 onSelect={selectTab}
-                onClose={closeTab}
+                onClose={closeTabAndFocus}
+                onCloseRelated={closeRelatedTabs}
+                onResourceChanged={directory.refetch}
                 onAdd={showPicker}
                 onMenu={showMenu}
                 onMaximize={maximize}
