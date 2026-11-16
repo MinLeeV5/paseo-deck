@@ -1,0 +1,155 @@
+plugin/client/workspace-creator.tsx
+  a97ba36e902a22bc 2,5,7-22,24,26-42,44-77,79-88
+  ce1d3f36dd15dc5b 1,3-4,6,23,25,43,78,89-91
+artifacts/workspace-create-experience.json
+  a97ba36e902a22bc 1-32
+plugin/OVERVIEW.md
+  a97ba36e902a22bc 11
+plugin/client/add-dialog-ui.tsx
+  cb4e84f29d633cc2 168
+  a97ba36e902a22bc 1-167,169-248
+plugin/client/board.tsx
+  ce1d3f36dd15dc5b 202,204-208,329-330,332-333,1891-1918,1920-1938
+  cb4e84f29d633cc2 1858,2002
+  fb0d8739888041ab 130
+  a97ba36e902a22bc 17,19-26,49-52,92-95,125-129,131,136-140,143,146-148,154,175-186,212-221,328,334-335,346,372-402,408-435,585-621,1919,1964
+artifacts/native-deck-entry-experience.json
+  a97ba36e902a22bc 1-41
+plugin/index.client.tsx
+  a97ba36e902a22bc 5,28-32
+artifacts/picker-icons-scroll-experience.json
+  a97ba36e902a22bc 1-33
+plugin/client/project-picker.ts
+  a97ba36e902a22bc 1-28
+plugin/OVERVIEW.zh-CN.md
+  a97ba36e902a22bc 11,15
+plugin/client/native-entry-state.ts
+  a97ba36e902a22bc 1-90
+tools/project-picker.test.mjs
+  a97ba36e902a22bc 1-68
+tools/native-entry.test.mjs
+  a97ba36e902a22bc 1-124
+README.md
+  a97ba36e902a22bc 66-70,80-85
+COMPATIBILITY-0.16.md
+  fb0d8739888041ab 25,39-45,49
+  a97ba36e902a22bc 30-38,46-48,50-51,64-65
+  cb4e84f29d633cc2 62-63
+plugin/client/native-entry.tsx
+  a97ba36e902a22bc 1-356
+artifacts/agent-picker-priority-experience.json
+  a97ba36e902a22bc 1-40
+plugin/client/workspace-creation.ts
+  ce1d3f36dd15dc5b 1-37
+plugin/client/directory.ts
+  a97ba36e902a22bc 5,98-103,200
+README.zh-CN.md
+  a97ba36e902a22bc 66-70,80-85
+plugin/client/workspace-icon.tsx
+  a97ba36e902a22bc 17,24,31,36-38,47,49,51-53,65,67,74,76,100,107,109-127,134-135,137,142,145-148,163-187,199,203
+plugin/client/agent-picker.ts
+  cb4e84f29d633cc2 18
+  a97ba36e902a22bc 1-17,19-112
+plugin/client/resource-picker.tsx
+  a97ba36e902a22bc 9-10,22-23,26-34,39,53-54,70-71,77-79,82-88,101,121,130-138,140-149,154-220,222,224,226-227,229,232-271,273-296,298-330,332-350,354,358-360,363-364,367-368,370-406,408-410,415-416,418-419,421-443,448,451-463,466,468-469,471-503,518-528,531-543,559-629,631-635,640-643,645,647-648,650,657-668,670-674,677-707,709-711,713-745,747-751,755-757,760-771,773-776,779,781-784,787-796,800-835,837-864,866-869,871-872,877-881,884-902,905-907,912-913,918-919,923,925-1010,1012-1046,1048-1057,1059-1146,1149-1151,1153-1156,1159,1161-1164,1167-1196,1198,1200-1216,1341-1345,1371-1372,1403,1406,1423-1430,1432-1435,1552,1564,1574,1577,1579-1580,1582
+  ce1d3f36dd15dc5b 504-510,544-558,797-799,1311,1313-1314,1351,1365,1389-1392,1394-1399,1416-1418
+  cb4e84f29d633cc2 1393,1402,1404-1405,1407-1415,1419-1422,1431,1436-1437
+tools/deck-entry.test.mjs
+  a97ba36e902a22bc 1-94
+tools/agent-picker.test.mjs
+  a97ba36e902a22bc 1-167
+plugin/client/web.ts
+  a97ba36e902a22bc 16-19,235-251
+plugin/client/deck-entry.ts
+  a97ba36e902a22bc 1-80
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.8.3",
+  "base_commit_sha": "88c0b3f677569a1cec5867aa4ce64381055d01ec",
+  "prompts": {
+    "a97ba36e902a22bc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e335-fa8b-7590-8b1b-d7bc7689a72b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 43,
+      "total_deletions": 0,
+      "accepted_lines": 2916,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/3e9b78c227903088d81aa5ea51f105c7aaf83eb20793e8385b17a2b1e3ec95a2",
+      "token_usage": {
+        "input_tokens": 837826,
+        "output_tokens": 231222,
+        "cache_read_tokens": 59961856,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    },
+    "cb4e84f29d633cc2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e376-2c92-71a3-8057-e230453a6e0b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 242,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/4103485a5cab5fc14e7d30f4ce91b19b661fa41c58c3f6056aaa9f25f75543ee",
+      "token_usage": {
+        "input_tokens": 121425,
+        "output_tokens": 27611,
+        "cache_read_tokens": 3904000,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    },
+    "ce1d3f36dd15dc5b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e344-ab20-77f1-8a9a-b25734af97cb",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 458,
+      "overriden_lines": 0,
+      "token_usage": {
+        "input_tokens": 167238,
+        "output_tokens": 28544,
+        "cache_read_tokens": 5308672,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    },
+    "fb0d8739888041ab": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e375-1ae1-7e81-89e5-cee8a56d389e",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 142,
+      "total_deletions": 0,
+      "accepted_lines": 244,
+      "overriden_lines": 4,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/07155b74d9a8cfe54eabf00f69a08ba7c366cb94aa146297d256b09a8e18e798",
+      "token_usage": {
+        "input_tokens": 95036,
+        "output_tokens": 31920,
+        "cache_read_tokens": 3408128,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    }
+  }
+}
