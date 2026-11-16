@@ -5,6 +5,7 @@
 <p align="center"><strong>在一个 Paseo 窗口中，并排使用不同工作区的 Agent、终端和文件。</strong></p>
 
 <p align="center">
+  <a href="https://github.com/MinLeeV5/paseo-deck/releases/tag/v1.0.0"><img src="https://img.shields.io/badge/version-v1.0.0-1f6feb" alt="版本 v1.0.0" /></a>
   <a href="plugin/paseo-plugin.json"><img src="https://img.shields.io/badge/Paseo-0.13.0%2B-0078D4" alt="Paseo 0.13.0 及以上" /></a>
   <a href="#支持范围与兼容性"><img src="https://img.shields.io/badge/platform-desktop%20%2F%20Web-2DA44E" alt="桌面与 Web" /></a>
 </p>
@@ -52,6 +53,12 @@ paseo plugin install git:MinLeeV5/paseo-deck:plugin
 ```
 
 末尾的 `:plugin` 指定仓库中的插件目录。Paseo 会自行下载源码，无需手动克隆仓库或安装依赖。
+
+发布版本采用语义化版本号和对应的 Git 标签。首次安装时，可明确选择 **v1.0.0**：
+
+```bash
+paseo plugin install git:MinLeeV5/paseo-deck:plugin --ref v1.0.0
+```
 
 点击侧栏 **Paseo Deck**，或在 Command Center（`⌘K` / `Ctrl+K`）中搜索 **Paseo Deck**。插件 ID 为 `paseo-deck`，当前插件菜单使用简体中文。
 
