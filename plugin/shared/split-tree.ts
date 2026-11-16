@@ -86,12 +86,26 @@ export function resizeSplitTree(
   return { ...node, [side]: resizeSplitTree(node[side], path.slice(1), ratio) };
 }
 
-export function equalizeSplitTree(node: SplitNode): SplitNode {
+// A perpendicular split occupies one track in its parent row or column.
+function splitTrackCount(node: SplitNode, axis: "x" | "y"): number {
+  if (node.type === "group" || node.axis !== axis) return 1;
+  return splitTrackCount(node.first, axis) + splitTrackCount(node.second, axis);
+}
+
+export function equalizeSplitTree(
+  node: SplitNode,
+  axis?: "x" | "y",
+): SplitNode {
   if (node.type === "group") return node;
+  const firstTracks = splitTrackCount(node.first, node.axis),
+    secondTracks = splitTrackCount(node.second, node.axis);
   return {
     ...node,
-    ratio: 0.5,
-    first: equalizeSplitTree(node.first),
-    second: equalizeSplitTree(node.second),
+    ratio:
+      !axis || node.axis === axis
+        ? firstTracks / (firstTracks + secondTracks)
+        : node.ratio,
+    first: equalizeSplitTree(node.first, axis),
+    second: equalizeSplitTree(node.second, axis),
   };
 }

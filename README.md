@@ -92,6 +92,8 @@ Dragging preserves the conversation, terminal, or file view, including unsent dr
 
 For example, start with two columns and at least two Tabs on the left. Drag one of the left Tabs to the bottom edge of the right pane: the left pane remains, and the right pane becomes two stacked panes.
 
+Adding a split automatically equalizes the tracks in that direction. For example, dragging a third column out of a two-column layout gives each column one third of the available width. Divider grips remain available for manual resizing.
+
 ![Three panes after dropping the Tab, with the draft on the left and two README views stacked on the right](assets/tab-drag-three-panes.png)
 
 _After dropping, the draft stays on the left; Backend README and Frontend README sit above and below on the right._

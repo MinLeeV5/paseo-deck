@@ -16,7 +16,11 @@ import {
   splitDropPosition,
   splitTab,
 } from "../plugin/shared/layout.ts";
-import { resizeSplitTree, splitGroupIds } from "../plugin/shared/split-tree.ts";
+import {
+  equalizeSplitTree,
+  resizeSplitTree,
+  splitGroupIds,
+} from "../plugin/shared/split-tree.ts";
 
 const resource = (id) => ({
   id,
@@ -39,7 +43,7 @@ const left = base.groups[0].id,
 const position = ({ left, top, width, height }) => [left, top, width, height];
 
 for (const edge of ["left", "right", "top", "bottom"]) {
-  test(`dragging a Tab to the ${edge} splits only that pane, from two panes to three`, () => {
+  test(`dragging a Tab to the ${edge} creates a pane and equalizes tracks in that direction`, () => {
     const next = splitTab(base, "a", right, edge, "new");
     assert.equal(next.groups.length, 3);
     assert.equal(next.panes, base.panes);
@@ -54,12 +58,17 @@ for (const edge of ["left", "right", "top", "bottom"]) {
     );
     const before = boardGeometry(base, 1200, 800),
       after = boardGeometry(next, 1200, 800);
-    assert.deepEqual(after.rects.get(left), before.rects.get(left));
+    if (edge === "left" || edge === "right")
+      for (const rect of after.rects.values()) {
+        assert.ok(Math.abs(rect.width - 400) < 0.001);
+        assert.equal(rect.height, 800);
+      }
+    else assert.deepEqual(after.rects.get(left), before.rects.get(left));
     assert.deepEqual(
       position(after.rects.get("new")),
       {
-        left: [600, 0, 300, 800],
-        right: [900, 0, 300, 800],
+        left: [400, 0, 400, 800],
+        right: [800, 0, 400, 800],
         top: [600, 0, 600, 400],
         bottom: [600, 400, 600, 400],
       }[edge],
@@ -68,6 +77,116 @@ for (const edge of ["left", "right", "top", "bottom"]) {
     assert.deepEqual(restoreBoard(JSON.parse(JSON.stringify(next))), next);
   });
 }
+
+for (const axis of ["x", "y"]) {
+  test(`new ${axis}-axis splits redistribute resized layouts equally from two through eight panes`, () => {
+    let board = {
+      ...applyLayoutPreset(
+        Array.from({ length: 8 }, (_, index) => `tab-${index}`).reduce(
+          (board, id) => addPane(board, resource(id)),
+          emptyBoard,
+        ),
+        "two",
+      ),
+      direction: axis === "x" ? "row" : "column",
+      layout: "auto",
+      ratio: 0.7,
+      columnWeights: axis === "x" ? [0.7, 0.3] : undefined,
+      rowWeights: axis === "y" ? [0.7, 0.3] : undefined,
+    };
+    for (let count = 3; count <= 8; count++) {
+      const source = board.groups.find((group) => group.tabIds.length > 1);
+      const target = board.groups[count % 2 ? 0 : board.groups.length - 1];
+      const edge =
+        axis === "x"
+          ? count % 2
+            ? "left"
+            : "right"
+          : count % 2
+            ? "top"
+            : "bottom";
+      board = splitTab(
+        board,
+        source.tabIds[0],
+        target.id,
+        edge,
+        `new-${count}`,
+      );
+      assert.equal(board.groups.length, count);
+      assert.equal(boardSchema.safeParse(board).success, true);
+      for (const [width, height] of [
+        [1200, 800],
+        [375, 700],
+      ]) {
+        const rectangles = [
+          ...boardGeometry(board, width, height).rects.values(),
+        ];
+        const size = axis === "x" ? "width" : "height";
+        const start = axis === "x" ? "left" : "top";
+        const trackSize = (axis === "x" ? width : height) / count;
+        rectangles.sort((a, b) => a[start] - b[start]);
+        rectangles.forEach((rect, index) => {
+          assert.ok(Math.abs(rect[size] - trackSize) < 0.001);
+          assert.ok(Math.abs(rect[start] - index * trackSize) < 0.001);
+          assert.equal(
+            rect[axis === "x" ? "height" : "width"],
+            axis === "x" ? height : width,
+          );
+        });
+      }
+      board = {
+        ...board,
+        splitTree: resizeSplitTree(board.splitTree, "", 0.7),
+      };
+    }
+  });
+}
+
+test("adding a column preserves row heights and balances each row independently", () => {
+  const grid = addPane(
+    {
+      ...applyLayoutPreset(base, "grid"),
+      columnWeights: [0.3, 0.7],
+      rowWeights: [0.6, 0.4],
+    },
+    resource("extra"),
+    { groupId: left },
+  );
+  const next = splitTab(grid, "extra", left, "right", "new");
+  const rectangles = [...boardGeometry(next, 1200, 800).rects.values()];
+  const top = rectangles.filter((rect) => rect.top === 0);
+  const bottom = rectangles.filter((rect) => rect.top === 480);
+  assert.equal(top.length, 3);
+  assert.equal(bottom.length, 2);
+  for (const rect of top) {
+    assert.ok(Math.abs(rect.width - 400) < 0.001);
+    assert.equal(rect.height, 480);
+  }
+  for (const rect of bottom) {
+    assert.equal(rect.width, 600);
+    assert.equal(rect.height, 320);
+  }
+  const equalized = boardGeometry(
+    { ...next, splitTree: equalizeSplitTree(next.splitTree) },
+    1200,
+    800,
+  );
+  for (const rect of equalized.rects.values()) assert.equal(rect.height, 400);
+});
+
+test("moving a singleton to another edge preserves custom widths when no pane is added", () => {
+  const three = splitTab(base, "a", right, "right", "single");
+  const resized = {
+    ...three,
+    splitTree: resizeSplitTree(three.splitTree, "", 0.6),
+  };
+  const moved = splitTab(resized, "a", right, "left", "moved");
+  assert.equal(moved.groups.length, resized.groups.length);
+  assert.deepEqual(
+    boardGeometry(moved, 1200, 800).rects.get(left),
+    boardGeometry(resized, 1200, 800).rects.get(left),
+  );
+});
 
 test("a Tab can be split off its own group without closing any other Tab", () => {
   const next = splitTab(base, "a", left, "bottom", "own");

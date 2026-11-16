@@ -1,5 +1,6 @@
 import { MAX_SPLITS, moveTab, type Board, type TabGroup } from "./model.ts";
 import {
+  equalizeSplitTree,
   replaceSplitGroup,
   retainSplitGroups,
   type SplitNode,
@@ -253,11 +254,15 @@ export function splitTab(
     0,
     next.groups.find((group) => group.id === newGroupId)!,
   );
+  const splitTree = replaceSplitGroup(tree, targetGroupId, replacement);
   return {
     ...next,
     groups,
     layout: "auto",
-    splitTree: replaceSplitGroup(tree, targetGroupId, replacement),
+    splitTree:
+      groups.length > board.groups.length
+        ? equalizeSplitTree(splitTree, replacement.axis)
+        : splitTree,
   };
 }
 

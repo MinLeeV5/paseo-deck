@@ -1,0 +1,80 @@
+{
+  "validation": {
+    "tests": 96,
+    "typecheck": "passed",
+    "cleanPluginBuild": "passed",
+    "localPluginStatus": "running"
+  },
+  "checks": [
+    {
+      "viewport": [
+        1600,
+        1000
+      ],
+      "axis": "x",
+      "count": 3,
+      "trackSize": 426.6666666666667,
+      "widths": [
+        426.65625,
+        422.65625,
+        422.65625
+      ],
+      "heights": [
+        964,
+        964,
+        964
+      ]
+    },
+    {
+      "viewport": [
+        1600,
+        1000
+      ],
+      "axis": "x",
+      "count": 4,
+      "trackSize": 320.0,
+      "widths": [
+        320,
+        316,
+        316,
+        316
+      ],
+      "heights": [
+        964,
+        964,
+        964,
+        964
+      ]
+    }
+  ],
+  "composerIdentityPreserved": true,
+  "unsentDraftPreserved": true,
+  "compact": {
+    "viewport": 375,
+    "retainedGroups": 4,
+    "focusedGroupFillsWidth": true,
+    "noPageOverflow": true,
+    "draftPreserved": true
+  },
+  "vertical": {
+    "viewport": [
+      1600,
+      1000
+    ],
+    "axis": "y",
+    "count": 3,
+    "heights": [
+      321.328125,
+      317.328125,
+      317.328125
+    ],
+    "trackSize": 321.3333333333333,
+    "lightThemeChecked": true
+  },
+  "screenshots": [
+    "split-reflow-three-columns.png",
+    "split-reflow-four-columns.png",
+    "split-reflow-light.png",
+    "split-reflow-compact.png"
+  ]
+}
