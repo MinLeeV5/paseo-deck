@@ -1,0 +1,73 @@
+plugin/client/resource-picker.tsx
+  3aa9cf30bd36d6d2 1294-1301,1381,1383,1388-1389,1394-1411,1426
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.8.3",
+  "base_commit_sha": "7a61674fe03053851b7ff76a56d085fbf39476c7",
+  "prompts": {
+    "3aa9cf30bd36d6d2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e398-9058-7c42-9676-6668036bf031",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 249,
+      "total_deletions": 29,
+      "accepted_lines": 233,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/a3adf1db55e46b6ed4997ff3f0d59f98a848d2e167b436c21662743418f1e69d",
+      "token_usage": {
+        "input_tokens": 114540,
+        "output_tokens": 23800,
+        "cache_read_tokens": 4036096,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    },
+    "7540b84a6067e889": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e398-1458-78e3-b46e-3b3d4a3d9e2f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 366,
+      "total_deletions": 12,
+      "accepted_lines": 162,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/12779c0e56be7c26f7e48d535dd7cb965f1a655c6a96751b76bc20b0906e9fca",
+      "token_usage": {
+        "input_tokens": 214012,
+        "output_tokens": 19911,
+        "cache_read_tokens": 4908416,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    },
+    "fb0d8739888041ab": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e375-1ae1-7e81-89e5-cee8a56d389e",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 422,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/90b866bc83ea7202339caa0c4f582fa55e7f95b93029bee3550503f78be6c6f6",
+      "token_usage": {
+        "input_tokens": 215062,
+        "output_tokens": 85525,
+        "cache_read_tokens": 15893120,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    }
+  }
+}
