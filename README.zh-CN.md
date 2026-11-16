@@ -81,7 +81,7 @@ Agent Tab 在工作区图标上叠加 Paseo 原生状态：运行时转圈、新
 
 ## 从原生页面加入 Deck
 
-Paseo **0.16.0+** 的原生 Agent 输入框上方提供 **加入 Deck**，可选择当前分屏或新分屏。已经加入的会话显示 **在 Deck 中打开**，点击后定位已有标签。Command Center 也提供 **将当前 Agent 加入 Deck**。
+Paseo **0.16.0+** 的原生 Agent 输入框上方提供 **加入 Deck**，可选择当前分屏或新分屏。会话已在 Deck 中时自动隐藏该按钮。Command Center 也提供 **将当前 Agent 加入 Deck**。
 
 原生 **新建 workspace** 页面增加 **Deck** 选项，默认不添加；选择目标分屏后，首个 Agent 创建成功时会自动加入当前客户端的 Deck。工作区侧栏的 **Deck 数量** 标识显示已加入该客户端的标签数。布局在 Deck 未打开时也会保存。
 

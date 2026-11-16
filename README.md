@@ -81,7 +81,7 @@ Choose the current split or a new split as the destination. Adding an Agent or t
 
 ## Add from native Paseo pages
 
-On Paseo **0.16.0+**, **加入 Deck** (Add to Deck) above an Agent's native composer offers the current split or a new split. An Agent already on the board shows **在 Deck 中打开** (Open in Deck), which focuses its existing Tab. Command Center also includes **将当前 Agent 加入 Deck** (Add the current Agent to Deck).
+On Paseo **0.16.0+**, **加入 Deck** (Add to Deck) above an Agent's native composer offers the current split or a new split. The button hides while the Agent is already on the board. Command Center also includes **将当前 Agent 加入 Deck** (Add the current Agent to Deck).
 
 The native **New workspace** page has a **Deck** option, off by default. Choose a destination to add its first Agent automatically once creation succeeds. The workspace sidebar's **Deck count** shows how many Tabs belong to this client's board. The layout is saved even before Deck is opened.
 

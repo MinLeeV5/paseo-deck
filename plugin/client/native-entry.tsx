@@ -46,7 +46,6 @@ export function installNativeDeckEntries(client: PluginClientContext) {
     {
       registration: ReturnType<PluginClientContext["addComposerPill"]>;
       workspaceId: string;
-      joined: boolean;
     }
   >();
   let hostId: string | undefined,
@@ -89,63 +88,46 @@ export function installNativeDeckEntries(client: PluginClientContext) {
   );
   const syncPill = (agent: PaseoAgent) => {
     const previous = pills.get(agent.id);
-    if (agent.archivedAt || agent.background || !agent.workspaceId) {
-      previous?.registration.remove();
-      pills.delete(agent.id);
-      return;
-    }
     const joined =
       !!hostId &&
       readBoardSnapshot(hostId).panes.some(
         (pane) =>
           pane.target.kind === "agent" && pane.target.agentId === agent.id,
       );
-    if (
-      previous &&
-      previous.workspaceId === agent.workspaceId &&
-      previous.joined === joined
-    )
-      return;
-    const button = {
-      title: joined ? "在 Deck 中打开" : "加入 Deck",
-      icon: DeckIcon,
-      behavior: joined
-        ? {
-            kind: "action" as const,
-            onPress: () => join(agents.get(agent.id) ?? agent, "current", true),
-          }
-        : {
-            kind: "menu" as const,
-            items: (["current", "new"] as const).map((destination) => ({
-              kind: "item" as const,
-              id: destination,
-              title: destination === "new" ? "添加到新分屏" : "添加到当前分屏",
-              icon: destination === "new" ? "PanelRightOpen" : "PanelsTopLeft",
-              behavior: {
-                kind: "action" as const,
-                onPress: () =>
-                  join(agents.get(agent.id) ?? agent, destination, true),
-              },
-            })),
-          },
-    };
-    if (previous && previous.workspaceId === agent.workspaceId) {
-      previous.registration.update(button);
-      previous.joined = joined;
-    } else {
+    if (agent.archivedAt || agent.background || !agent.workspaceId || joined) {
       previous?.registration.remove();
-      const registration = client.addComposerPill({
-        id: `join-${agent.id}`,
-        workspaceId: agent.workspaceId,
-        agentId: agent.id,
-        button,
-      });
-      pills.set(agent.id, {
-        registration,
-        workspaceId: agent.workspaceId,
-        joined,
-      });
+      pills.delete(agent.id);
+      return;
     }
+    if (previous?.workspaceId === agent.workspaceId) return;
+    previous?.registration.remove();
+    const registration = client.addComposerPill({
+      id: `join-${agent.id}`,
+      workspaceId: agent.workspaceId,
+      agentId: agent.id,
+      button: {
+        title: "加入 Deck",
+        icon: DeckIcon,
+        behavior: {
+          kind: "menu",
+          items: (["current", "new"] as const).map((destination) => ({
+            kind: "item" as const,
+            id: destination,
+            title: destination === "new" ? "添加到新分屏" : "添加到当前分屏",
+            icon: destination === "new" ? "PanelRightOpen" : "PanelsTopLeft",
+            behavior: {
+              kind: "action" as const,
+              onPress: () =>
+                join(agents.get(agent.id) ?? agent, destination, true),
+            },
+          })),
+        },
+      },
+    });
+    pills.set(agent.id, {
+      registration,
+      workspaceId: agent.workspaceId,
+    });
   };
   const ensureHost = (id: string) => {
     if (stopped || hostId) return;
