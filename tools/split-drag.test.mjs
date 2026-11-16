@@ -142,7 +142,7 @@ for (const axis of ["x", "y"]) {
   });
 }
 
-test("adding a column preserves row heights and balances each row independently", () => {
+test("adding a column rebalances row heights and each row's columns", () => {
   const grid = addPane(
     {
       ...applyLayoutPreset(base, "grid"),
@@ -155,16 +155,16 @@ test("adding a column preserves row heights and balances each row independently"
   const next = splitTab(grid, "extra", left, "right", "new");
   const rectangles = [...boardGeometry(next, 1200, 800).rects.values()];
   const top = rectangles.filter((rect) => rect.top === 0);
-  const bottom = rectangles.filter((rect) => rect.top === 480);
+  const bottom = rectangles.filter((rect) => rect.top === 400);
   assert.equal(top.length, 3);
   assert.equal(bottom.length, 2);
   for (const rect of top) {
     assert.ok(Math.abs(rect.width - 400) < 0.001);
-    assert.equal(rect.height, 480);
+    assert.equal(rect.height, 400);
   }
   for (const rect of bottom) {
     assert.equal(rect.width, 600);
-    assert.equal(rect.height, 320);
+    assert.equal(rect.height, 400);
   }
   const equalized = boardGeometry(
     { ...next, splitTree: equalizeSplitTree(next.splitTree) },

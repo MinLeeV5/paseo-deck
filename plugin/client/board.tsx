@@ -34,7 +34,6 @@ import {
   resourceKey,
   targetSchema,
   groupInspector,
-  reconcileBoardLayout,
   MAX_SPLITS,
   SPLIT_LIMIT_MESSAGE,
   type Board,
@@ -175,15 +174,18 @@ function HostBoard({
   const setBoard = useCallback(
     (update: Board | ((value: Board) => Board)) => {
       const current = readBoardSnapshot(host.id);
-      const next = reconcileBoardLayout(
-        typeof update === "function" ? update(current) : update,
-      );
+      const next = typeof update === "function" ? update(current) : update;
       if (next === current) return;
-      boardRef.current = next;
-      publishBoardSnapshot(host.id, next);
+      boardRef.current = publishBoardSnapshot(host.id, next);
     },
     [host.id],
   );
+  useLayoutEffect(() => {
+    cancelFrame.current?.();
+    cancelFrame.current = null;
+    pendingResize.current = null;
+    resizeStart.current = null;
+  }, [board.groups.length]);
   const bridge = useQuery({
     queryKey: ["split-native-bridge"],
     queryFn: () => loadNativeBridge(() => bridgeInfo({})),

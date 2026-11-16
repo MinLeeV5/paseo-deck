@@ -1,0 +1,75 @@
+{
+  "rule": "Rebalance when split count changes; preserve custom sizes otherwise",
+  "validation": {
+    "tests": 109,
+    "typecheck": "passed",
+    "cleanPluginBuild": "passed",
+    "runtime": "running"
+  },
+  "checks": [
+    {
+      "axis": "x",
+      "count": 3,
+      "trackSize": 426.6666666666667,
+      "sizes": [
+        426.65625,
+        422.65625,
+        422.65625
+      ]
+    },
+    {
+      "axis": "x",
+      "count": 2,
+      "trackSize": 640.0,
+      "sizes": [
+        640,
+        636
+      ]
+    },
+    {
+      "axis": "x",
+      "count": 1,
+      "trackSize": 1280.0,
+      "sizes": [
+        1280
+      ]
+    },
+    {
+      "axis": "x",
+      "count": 2,
+      "trackSize": 640.0,
+      "sizes": [
+        640,
+        636
+      ]
+    },
+    {
+      "axis": "y",
+      "count": 2,
+      "trackSize": 482.0,
+      "sizes": [
+        482,
+        478
+      ]
+    },
+    {
+      "compact": 375,
+      "retainedSplits": 2,
+      "focusedSplitFillsWidth": true,
+      "noPaneOverflow": true
+    },
+    {
+      "axis": "y",
+      "count": 2,
+      "trackSize": 366.0,
+      "sizes": [
+        366,
+        362
+      ]
+    }
+  ],
+  "draftPreserved": true,
+  "composerIdentityPreserved": true,
+  "unchangedSplitCountPreservesWidths": true,
+  "lastSplitCannotClose": true
+}

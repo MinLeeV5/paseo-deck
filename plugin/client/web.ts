@@ -245,9 +245,9 @@ export function joinAgentToDeck(entry: DeckAgentEntry) {
     readBoardFocus(entry.serverId),
   );
   // Persist before reporting success, including when Deck has never been opened.
-  saveBoard(entry.serverId, result.board);
   rememberBoardFocus(entry.serverId, result.groupId);
-  publishBoardSnapshot(entry.serverId, result.board);
+  const board = publishBoardSnapshot(entry.serverId, result.board);
+  saveBoard(entry.serverId, board);
   return result.paneId;
 }
 

@@ -1,4 +1,10 @@
-import { MAX_SPLITS, moveTab, type Board, type TabGroup } from "./model.ts";
+import {
+  MAX_SPLITS,
+  moveTab,
+  reconcileBoardLayout,
+  type Board,
+  type TabGroup,
+} from "./model.ts";
 import {
   equalizeSplitTree,
   replaceSplitGroup,
@@ -83,6 +89,22 @@ export function layoutTracks(board: LayoutInput) {
   );
   return { columns, rows, columnWeights, rowWeights };
 }
+
+// Every board update follows the same rule, including native entry points and
+// bulk closes. Keep custom sizes until the number of splits actually changes.
+export function adaptBoardLayout(previous: Board, board: Board): Board {
+  const next = reconcileBoardLayout(board);
+  if (next.groups.length === previous.groups.length) return next;
+  const { columns, rows } = layoutTracks(next);
+  return {
+    ...next,
+    ratio: 0.5,
+    columnWeights: Array.from({ length: columns }, () => 1 / columns),
+    rowWeights: Array.from({ length: rows }, () => 1 / rows),
+    splitTree: next.splitTree ? equalizeSplitTree(next.splitTree) : undefined,
+  };
+}
+
 export function boardGeometry(
   board: LayoutInput,
   width: number,
@@ -254,16 +276,12 @@ export function splitTab(
     0,
     next.groups.find((group) => group.id === newGroupId)!,
   );
-  const splitTree = replaceSplitGroup(tree, targetGroupId, replacement);
-  return {
+  return adaptBoardLayout(board, {
     ...next,
     groups,
     layout: "auto",
-    splitTree:
-      groups.length > board.groups.length
-        ? equalizeSplitTree(splitTree, replacement.axis)
-        : splitTree,
-  };
+    splitTree: replaceSplitGroup(tree, targetGroupId, replacement),
+  });
 }
 
 // Match Paseo's workspace: a central merge zone, outer 15% edge bands, then

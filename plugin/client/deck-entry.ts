@@ -4,6 +4,7 @@ import {
   type Board,
   type Pane,
 } from "../shared/model.ts";
+import { adaptBoardLayout } from "../shared/layout.ts";
 
 export type DeckAgentEntry = {
   serverId: string;
@@ -52,19 +53,23 @@ export function createBoardStore(load: (hostId: string) => Board) {
   const boards = new Map<string, Board>();
   const focus = new Map<string, string>();
   const listeners = new Set<() => void>();
-  return {
-    read(hostId: string) {
-      let board = boards.get(hostId);
-      if (!board) {
-        board = load(hostId);
-        boards.set(hostId, board);
-      }
-      return board;
-    },
-    publish(hostId: string, board: Board) {
-      if (boards.get(hostId) === board) return;
+  const read = (hostId: string) => {
+    let board = boards.get(hostId);
+    if (!board) {
+      board = load(hostId);
       boards.set(hostId, board);
+    }
+    return board;
+  };
+  return {
+    read,
+    publish(hostId: string, board: Board) {
+      const previous = read(hostId);
+      if (previous === board) return previous;
+      const next = adaptBoardLayout(previous, board);
+      boards.set(hostId, next);
       for (const listener of listeners) listener();
+      return next;
     },
     subscribe(listener: () => void) {
       listeners.add(listener);
