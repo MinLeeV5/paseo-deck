@@ -1,0 +1,99 @@
+plugin/client/subagent-track.tsx
+  3aa9cf30bd36d6d2 1-29
+plugin/client/subagent-navigation.ts
+  3aa9cf30bd36d6d2 1-57
+plugin/client/web.ts
+  3aa9cf30bd36d6d2 14-15,127-136,138-140,225-226,229-231
+  7540b84a6067e889 137,227-228
+tools/subagent-navigation.test.mjs
+  7540b84a6067e889 1-143
+plugin/shared/bridge.ts
+  3aa9cf30bd36d6d2 81
+README.md
+  7540b84a6067e889 80-81
+plugin/client/board.tsx
+  3aa9cf30bd36d6d2 47,805-842,1873
+plugin/client/pane-frame.tsx
+  3aa9cf30bd36d6d2 20,547,563-567,590-594,639
+README.zh-CN.md
+  7540b84a6067e889 80-81
+plugin/client/native-types.ts
+  3aa9cf30bd36d6d2 138-154,158-159,163-164
+artifacts/subagent-navigation-experience.json
+  3aa9cf30bd36d6d2 1-74
+plugin/client/native-pane.tsx
+  7540b84a6067e889 22,239-244,270-274
+  3aa9cf30bd36d6d2 9,14-15,21,193,223,230-231,238,245-269,275-278,385-389
+plugin/index.client.tsx
+  3aa9cf30bd36d6d2 5-8,35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.8.3",
+  "base_commit_sha": "f8acb5a0209da4d132a17a1c1e3136cd34540686",
+  "prompts": {
+    "3aa9cf30bd36d6d2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e398-9058-7c42-9676-6668036bf031",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 430,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/329c0b1c6d3e5cd769cc6ff5c0d5c9625976e353430ce5fe3519e871bbb237e8",
+      "token_usage": {
+        "input_tokens": 143792,
+        "output_tokens": 46692,
+        "cache_read_tokens": 9096960,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    },
+    "7540b84a6067e889": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e398-1458-78e3-b46e-3b3d4a3d9e2f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 162,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/d6e69fbe33380f064ce1365c0fd452a661ed4cc2ba62cee537724236501409bb",
+      "token_usage": {
+        "input_tokens": 216001,
+        "output_tokens": 20623,
+        "cache_read_tokens": 5176064,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    },
+    "cc6e3aff13233889": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e3a9-32c4-7210-8d75-89eb4e967ecf",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 27,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/a8980bff3396188d214c2dd66c48968ee919c182b05ff98e2328455bd1cdd461",
+      "token_usage": {
+        "input_tokens": 181537,
+        "output_tokens": 44121,
+        "cache_read_tokens": 9238144,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    }
+  }
+}
