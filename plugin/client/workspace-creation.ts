@@ -1,5 +1,9 @@
 import type { PluginClientContext } from "@getpaseo/plugin/client";
 import type { PaseoProject } from "./paseo-types";
+import {
+  WORKSPACE_AUTO_TITLE,
+  initialWorkspaceAutoTitle,
+} from "./workspace-auto-title.ts";
 
 export type WorkspaceCreation = {
   project: PaseoProject;
@@ -20,7 +24,9 @@ export function workspaceCreationOptions({
     throw new Error("此 project 不支持创建 worktree，请使用原目录。");
   return {
     idempotencyKey,
-    ...(title.trim() ? { title: title.trim() } : {}),
+    ...(title.trim()
+      ? { title: title.trim() }
+      : { metadata: { [WORKSPACE_AUTO_TITLE]: initialWorkspaceAutoTitle } }),
     source:
       isolation === "worktree"
         ? {

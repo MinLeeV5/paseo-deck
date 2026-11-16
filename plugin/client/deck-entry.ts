@@ -15,6 +15,24 @@ export type DeckAgentEntry = {
   destination: "current" | "new";
 };
 
+export function workspaceDeckGroups(
+  board: Board,
+  serverId: string,
+  workspaceId: string,
+): number[] {
+  const tabs = new Set(
+    board.panes
+      .filter(
+        (pane) =>
+          pane.serverId === serverId && pane.workspaceId === workspaceId,
+      )
+      .map((pane) => pane.id),
+  );
+  return board.groups.flatMap((group, index) =>
+    group.tabIds.some((id) => tabs.has(id)) ? [index + 1] : [],
+  );
+}
+
 export function addDeckAgent(
   board: Board,
   entry: DeckAgentEntry,

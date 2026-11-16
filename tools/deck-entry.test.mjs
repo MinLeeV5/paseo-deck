@@ -1,7 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { addDeckAgent, createBoardStore } from "../plugin/client/deck-entry.ts";
-import { emptyBoard } from "../plugin/shared/model.ts";
+import {
+  addDeckAgent,
+  createBoardStore,
+  workspaceDeckGroups,
+} from "../plugin/client/deck-entry.ts";
+import { emptyBoard, moveTab, removeTab } from "../plugin/shared/model.ts";
 
 const entry = {
   serverId: "host",
@@ -91,4 +95,55 @@ test("native additions before screen mount and later Deck edits share the same h
   remove();
   store.publish("host", empty());
   assert.equal(updates, 2);
+});
+
+test("workspace badges follow the dragged Tab's split instead of its tab count", () => {
+  let board = empty();
+  for (const [agentId, workspaceId, destination] of [
+    ["moving", "workspace", "current"],
+    ["stay", "other", "current"],
+    ["middle", "other", "new"],
+    ["right", "other", "new"],
+  ])
+    board = addDeckAgent(board, {
+      ...entry,
+      agentId,
+      workspaceId,
+      destination,
+    }).board;
+  const moving = board.panes.find((pane) => pane.target.agentId === "moving");
+  const store = createBoardStore(() => board);
+  const seen = [];
+  store.subscribe(() =>
+    seen.push(workspaceDeckGroups(store.read("host"), "host", "workspace")),
+  );
+  assert.deepEqual(workspaceDeckGroups(board, "host", "workspace"), [1]);
+  store.publish("host", moveTab(board, moving.id, board.groups[2].id));
+  board = store.read("host");
+  assert.deepEqual(seen, [[3]]);
+  assert.deepEqual(workspaceDeckGroups(board, "host", "other"), [1, 2, 3]);
+  assert.deepEqual(
+    workspaceDeckGroups(board, "different-host", "workspace"),
+    [],
+  );
+  board = removeTab(board, moving.id);
+  assert.deepEqual(workspaceDeckGroups(board, "host", "workspace"), []);
+});
+
+test("workspace split locations stay unique and renumber when an empty source split closes", () => {
+  let board = addDeckAgent(empty(), entry).board;
+  board = addDeckAgent(board, {
+    ...entry,
+    agentId: "second",
+    destination: "new",
+  }).board;
+  board = addDeckAgent(
+    board,
+    { ...entry, agentId: "third" },
+    board.groups[1].id,
+  ).board;
+  assert.deepEqual(workspaceDeckGroups(board, "host", "workspace"), [1, 2]);
+  board = moveTab(board, board.groups[0].tabIds[0], board.groups[1].id);
+  assert.equal(board.groups.length, 1);
+  assert.deepEqual(workspaceDeckGroups(board, "host", "workspace"), [1]);
 });

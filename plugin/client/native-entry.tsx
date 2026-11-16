@@ -14,6 +14,8 @@ import { useEffect, useSyncExternalStore } from "react";
 import { Platform } from "react-native";
 import { MAX_SPLITS } from "../shared/model";
 import { DeckIcon } from "./deck-icon";
+import { workspaceDeckGroups } from "./deck-entry";
+import { createWorkspaceAutoTitles } from "./workspace-auto-title";
 import type { PaseoAgent, PaseoWorkspace } from "./paseo-types";
 import {
   joinAgentToDeck,
@@ -86,6 +88,16 @@ export function installNativeDeckEntries(client: PluginClientContext) {
         ),
       ),
   );
+  const automaticTitles = createWorkspaceAutoTitles(
+    (id) => client.paseo.workspaces.ref(id),
+    (id) =>
+      !!hostId &&
+      readBoardSnapshot(hostId).panes.some(
+        (pane) => pane.serverId === hostId && pane.workspaceId === id,
+      ),
+    (error) => console.error("[Paseo Deck workspace title]", error),
+  );
+  cleanups.push(() => automaticTitles.dispose());
   const syncPill = (agent: PaseoAgent) => {
     const previous = pills.get(agent.id);
     const joined =
@@ -139,11 +151,13 @@ export function installNativeDeckEntries(client: PluginClientContext) {
       agents.set(agent.id, agent);
       syncPill(agent);
       automatic.agent(agent);
+      automaticTitles.agent(agent);
     };
     const applyWorkspace = (workspace: PaseoWorkspace) => {
       if (stopped) return;
       workspaces.set(workspace.id, workspace);
       automatic.workspace(workspace);
+      automaticTitles.workspace(workspace);
     };
     cleanups.push(
       client.paseo.agents.subscribe((update) => {
@@ -151,6 +165,7 @@ export function installNativeDeckEntries(client: PluginClientContext) {
         else if (update.kind === "remove") {
           agents.delete(update.agentId);
           automatic.removeAgent(update.agentId);
+          automaticTitles.removeAgent(update.agentId);
           pills.get(update.agentId)?.registration.remove();
           pills.delete(update.agentId);
         }
@@ -162,12 +177,14 @@ export function installNativeDeckEntries(client: PluginClientContext) {
         else if (update.kind === "remove") {
           workspaces.delete(update.id);
           automatic.removeWorkspace(update.id);
+          automaticTitles.removeWorkspace(update.id);
         }
       }),
     );
     cleanups.push(
       subscribeBoardSnapshot(() => {
         for (const agent of agents.values()) syncPill(agent);
+        automaticTitles.board();
       }),
     );
     void client.paseo.agents
@@ -205,6 +222,7 @@ export function installNativeDeckEntries(client: PluginClientContext) {
           result.subscription.subscribe({
             snapshot: ({ entries }) => {
               for (const workspace of entries) applyWorkspace(workspace);
+              automaticTitles.retry();
             },
             update: () => {},
           }),
@@ -260,19 +278,18 @@ export function installNativeDeckEntries(client: PluginClientContext) {
     );
   }
   function DeckBadge({ host, workspaceId }: PluginWorkspaceRowBadgeItemProps) {
+    useEffect(() => ensureHost(host.id), [host.id]);
     const board = useSyncExternalStore(
       subscribeBoardSnapshot,
       () => readBoardSnapshot(host.id),
       () => readBoardSnapshot(host.id),
     );
-    const count = board.panes.filter(
-      (pane) => pane.workspaceId === workspaceId,
-    ).length;
-    return count ? (
+    const groups = workspaceDeckGroups(board, host.id, workspaceId);
+    return groups.length ? (
       <WorkspaceRowBadge
         icon={DeckIcon}
-        label={`Deck ${count}`}
-        accessibilityLabel={`已加入 Deck，${count} 个标签页`}
+        label={`Deck ${groups.join(", ")}`}
+        accessibilityLabel={`已加入 Deck，位于分屏 ${groups.join("、")}`}
       />
     ) : null;
   }
@@ -307,7 +324,7 @@ export function installNativeDeckEntries(client: PluginClientContext) {
     cleanups.push(
       client.addWorkspaceRowBadgeItem({
         id: "deck-membership",
-        title: "Deck 标签页",
+        title: "Deck 分屏位置",
         icon: DeckIcon,
         Component: DeckBadge,
       }),

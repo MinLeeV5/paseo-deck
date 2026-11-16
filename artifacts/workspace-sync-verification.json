@@ -1,0 +1,16 @@
+{
+  "date": "2026-11-16",
+  "runtime": "Installed Paseo 0.16.0 Web UI in an isolated headless Chrome profile",
+  "fixtures": "Two temporary workspaces; no Agent was created and no prompt was sent. Synthetic Agent directory updates exercised the real SDK workspace title and metadata writes.",
+  "checks": {
+    "dragTabFromSplit1ToSplit3ImmediatelyUpdatesWorkspaceBadge": true,
+    "workspaceAcrossThreeSplitsShowsDeck1Comma2Comma3": true,
+    "firstAgentTitleReplacesDefaultWorkspaceName": true,
+    "generatedAgentTitleUpdatesWorkspaceWithoutReload": true,
+    "manualWorkspaceNameSurvivesLaterAgentTitleUpdates": true,
+    "typecheck": true,
+    "regressionTestsPassed": 127,
+    "cleanPluginInstallCompilesWithInstalledPaseo": true
+  },
+  "screenshot": "workspace-sync-drag-verified.png"
+}

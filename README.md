@@ -83,7 +83,9 @@ Choose the current split or a new split as the destination. Adding an Agent or t
 
 On Paseo **0.16.0+**, **加入 Deck** (Add to Deck) above an Agent's native composer offers the current split or a new split. The button hides while the Agent is already on the board. Command Center also includes **将当前 Agent 加入 Deck** (Add the current Agent to Deck).
 
-The native **New workspace** page has a **Deck** option, off by default. Choose a destination to add its first Agent automatically once creation succeeds. The workspace sidebar's **Deck count** shows how many Tabs belong to this client's board. The layout is saved even before Deck is opened.
+The native **New workspace** page has a **Deck** option, off by default. Choose a destination to add its first Agent automatically once creation succeeds. The workspace sidebar's **Deck badge** shows its split numbers (for example, `Deck 3` or `Deck 1, 3`) and follows dragged Tabs immediately. The layout is saved even before Deck is opened.
+
+Leave a new workspace's name empty to use its first Agent's conversation title once the first message is sent. Existing unnamed workspaces in Deck also recover automatically. Generated title changes stay in sync until you rename the workspace yourself.
 
 ## Drag Tabs
 
