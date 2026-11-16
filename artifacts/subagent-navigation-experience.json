@@ -1,0 +1,74 @@
+{
+  "date": "2026-11-16",
+  "version": "0.16.0",
+  "platform": "Packaged Paseo Web UI in isolated Chrome profile",
+  "fixture": "Injected browser-local managed child snapshots and a parent timeline; mocked the provider child list and empty projected timeline. Native subagent menus, pane components, Deck state and routing exercised; no model prompts sent.",
+  "checks": [
+    {
+      "check": "Managed child fixture opens inside its source split",
+      "passed": true
+    },
+    {
+      "check": "Managed child fixture preserves parent and other split",
+      "passed": true
+    },
+    {
+      "check": "Managed child keeps source workspace",
+      "passed": true
+    },
+    {
+      "check": "Cross workspace child fixture opens inside its source split",
+      "passed": true
+    },
+    {
+      "check": "Cross workspace child fixture preserves parent and other split",
+      "passed": true
+    },
+    {
+      "check": "Cross workspace child uses its own workspace",
+      "passed": true
+    },
+    {
+      "check": "Provider subagent acceptance opens inside its source split",
+      "passed": true
+    },
+    {
+      "check": "Provider subagent acceptance preserves parent and other split",
+      "passed": true
+    },
+    {
+      "check": "Provider child keeps both provider identities",
+      "passed": true
+    },
+    {
+      "check": "Provider opens its native read-only pane",
+      "passed": true
+    },
+    {
+      "check": "An existing child moves into the clicked split without duplication",
+      "passed": true
+    },
+    {
+      "check": "Repeated clicks reuse the same child tab",
+      "passed": true
+    },
+    {
+      "check": "Compact view reuses the child in the source split",
+      "passed": true
+    },
+    {
+      "check": "Hot reload reinstalls pane-scoped subagent navigation",
+      "passed": true
+    },
+    {
+      "check": "Native workspace subagent navigation leaves the Deck layout unchanged",
+      "passed": true
+    }
+  ],
+  "validation": {
+    "tests": 127,
+    "passed": 127,
+    "typecheck": true,
+    "format": true
+  }
+}

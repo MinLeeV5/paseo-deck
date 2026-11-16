@@ -44,6 +44,7 @@ import {
 import { bridgeInfoRpc } from "../shared/bridge";
 import { DeckIcon } from "./deck-icon";
 import type { ForkTabRequest } from "./fork-navigation";
+import { openSubagentTab, type SubagentTarget } from "./subagent-navigation";
 import {
   focusControl,
   readBoardSnapshot,
@@ -800,6 +801,44 @@ function HostBoard({
       return true;
     },
     [host.id, openInPlace],
+  );
+  const openSubagent = useCallback(
+    (tabId: string, target: SubagentTarget, workspaceId?: string) => {
+      if (!routeActiveRef.current) return;
+      const source = boardRef.current.panes.find((pane) => pane.id === tabId);
+      if (!source) return;
+      try {
+        if (!bridge.data?.hasPanel(target.kind))
+          throw new Error(`当前 Paseo 尚未注册 ${target.kind} 面板。`);
+        const destination = workspaceId ?? source.workspaceId;
+        const workspace = directoryRef.current?.workspaces.find(
+          (item) => item.id === destination,
+        );
+        const pane: Pane = {
+          id: id(),
+          serverId: source.serverId,
+          workspaceId: destination,
+          workspaceName:
+            destination === source.workspaceId
+              ? source.workspaceName
+              : workspace
+                ? workspaceLabel(workspace)
+                : destination,
+          title: titleFor(target),
+          target,
+        };
+        const opened = openSubagentTab(boardRef.current, tabId, pane);
+        if (!opened) return;
+        setBoard(opened.board);
+        setFocusedGroup(opened.groupId);
+        setMaximized((current) => (current ? opened.groupId : null));
+        actionOwner.current = opened.tabId;
+        setPicker(null);
+      } catch (error) {
+        toast.error(errorMessage(error));
+      }
+    },
+    [bridge.data, setBoard, titleFor, toast],
   );
   useEffect(
     () =>
@@ -1831,6 +1870,7 @@ function HostBoard({
               onImport={importFromPane}
               onOpen={openInPlace}
               onOpenSide={openToSide}
+              onOpenSubagent={openSubagent}
               onRetarget={retarget}
               onState={setPaneState}
             />

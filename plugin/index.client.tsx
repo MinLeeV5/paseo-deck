@@ -2,7 +2,10 @@ import type { PluginClientContext } from "@getpaseo/plugin/client";
 import { SplitBoard } from "./client/board";
 import { DeckSidebarItem } from "./client/sidebar-item";
 import { DeckIcon } from "./client/deck-icon";
-import { disposeNativeComposerSync } from "./client/web";
+import {
+  disposeNativeComposerSync,
+  disposeNativeSubagentNavigation,
+} from "./client/web";
 import { installNativeDeckEntries } from "./client/native-entry";
 
 export default function contribute(client: PluginClientContext) {
@@ -29,6 +32,7 @@ export default function contribute(client: PluginClientContext) {
   const removeNativeEntries = installNativeDeckEntries(client);
   return () => {
     removeNativeEntries();
+    disposeNativeSubagentNavigation();
     disposeNativeComposerSync();
   };
 }

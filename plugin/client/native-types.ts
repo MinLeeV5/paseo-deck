@@ -135,19 +135,33 @@ export interface NativeBridge
     } | null;
     prepareAgentTimeline(serverId: string, agentId: string): Promise<unknown>;
   };
-  useSessionStore(
-    selector: (state: {
+  useSessionStore: {
+    (
+      selector: (state: {
+        sessions: Record<
+          string,
+          | {
+              viewedTimelineSync?: {
+                replaceVisibleAgentIds(owner: string, ids: string[]): void;
+              };
+            }
+          | undefined
+        >;
+      }) => {
+        replaceVisibleAgentIds(owner: string, ids: string[]): void;
+      } | null,
+    ): { replaceVisibleAgentIds(owner: string, ids: string[]): void } | null;
+    getState(): {
       sessions: Record<
         string,
         | {
-            viewedTimelineSync?: {
-              replaceVisibleAgentIds(owner: string, ids: string[]): void;
-            };
+            agents: Map<string, { workspaceId?: string | null }>;
+            agentDetails: Map<string, { workspaceId?: string | null }>;
           }
         | undefined
       >;
-    }) => { replaceVisibleAgentIds(owner: string, ids: string[]): void } | null,
-  ): { replaceVisibleAgentIds(owner: string, ids: string[]): void } | null;
+    };
+  };
   useIsFocused(): boolean;
   RetainedPanelActivity: ComponentType<{
     active: boolean;

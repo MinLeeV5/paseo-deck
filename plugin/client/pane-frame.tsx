@@ -17,6 +17,7 @@ import type { Directory } from "./directory";
 import { IconButton, targetIcons } from "./compact-ui";
 import { WorkspaceIcon } from "./workspace-icon";
 import { NativePane } from "./native-pane";
+import type { SubagentTarget } from "./subagent-navigation";
 import { WorkspaceActions } from "./workspace-actions";
 import { TabContextMenu, TabMenuTrigger } from "./tab-context-menu";
 import type { PaneMenuAction } from "./resource-picker";
@@ -543,6 +544,7 @@ export const PaneFrame = memo(function PaneFrame({
   onClose,
   onImport,
   onOpen,
+  onOpenSubagent,
   onOpenSide,
   onRetarget,
   onState,
@@ -558,6 +560,11 @@ export const PaneFrame = memo(function PaneFrame({
   onClose(id: string): void;
   onImport(id: string): void;
   onOpen(id: string, target: Target, workspaceId?: string): void;
+  onOpenSubagent(
+    id: string,
+    target: SubagentTarget,
+    workspaceId?: string,
+  ): void;
   onOpenSide(id: string, target: Target): void;
   onRetarget(id: string, target: Target): void;
   onState(id: string, state: Pane["state"]): void;
@@ -579,6 +586,11 @@ export const PaneFrame = memo(function PaneFrame({
   const side = useCallback(
     (target: Target) => onOpenSide(pane.id, target),
     [onOpenSide, pane.id],
+  );
+  const openSubagent = useCallback(
+    (target: SubagentTarget, workspaceId?: string) =>
+      onOpenSubagent(pane.id, target, workspaceId),
+    [onOpenSubagent, pane.id],
   );
   const retarget = useCallback(
     (target: Target) => onRetarget(pane.id, target),
@@ -624,6 +636,7 @@ export const PaneFrame = memo(function PaneFrame({
           onClose={close}
           onImport={importAgent}
           onOpen={open}
+          onOpenSubagent={openSubagent}
           onOpenSide={side}
           onRetarget={retarget}
           onState={state}

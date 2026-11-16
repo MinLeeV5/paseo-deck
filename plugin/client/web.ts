@@ -11,6 +11,8 @@ import {
   type NativeComposerProps,
 } from "./composer-draft-sync";
 import type { ComponentType } from "react";
+import { scopeNativeSubagentTrack } from "./subagent-track";
+import type { SubagentTrackProps } from "./subagent-navigation";
 import type { PluginPanelRequest } from "./workspace-types";
 import {
   addDeckAgent,
@@ -122,6 +124,20 @@ let composerPatch:
       dispose(): void;
     }
   | undefined;
+let subagentTrackPatch:
+  | {
+      module: Record<string, unknown>;
+      original: ComponentType<SubagentTrackProps>;
+      wrapped: ComponentType<SubagentTrackProps>;
+    }
+  | undefined;
+
+export function disposeNativeSubagentNavigation(): void {
+  const patch = subagentTrackPatch;
+  if (patch && patch.module.SubagentsTrack === patch.wrapped)
+    patch.module.SubagentsTrack = patch.original;
+  subagentTrackPatch = undefined;
+}
 
 export function disposeNativeComposerSync(): void {
   const patch = composerPatch;
@@ -205,6 +221,14 @@ export async function loadNativeBridge(
       const { Component: wrapped, dispose } = syncNativeComposer(original);
       module.Composer = wrapped;
       composerPatch = { module, original, wrapped, dispose };
+    }
+    if (!subagentTrackPatch && info.moduleIds.SubagentsTrack !== undefined) {
+      const module = window.__r(info.moduleIds.SubagentsTrack);
+      const original =
+        module.SubagentsTrack as ComponentType<SubagentTrackProps>;
+      const wrapped = scopeNativeSubagentTrack(original);
+      module.SubagentsTrack = wrapped;
+      subagentTrackPatch = { module, original, wrapped };
     }
     return {
       ...info,

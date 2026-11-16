@@ -6,16 +6,20 @@ import {
   useEffect,
   useLayoutEffect,
   useMemo,
+  useRef,
   type ReactNode,
 } from "react";
 import { Pressable, Text, View } from "react-native";
 import { QueryClientProvider } from "@tanstack/react-query";
-import type { PluginScreenProps } from "@getpaseo/plugin/client";
+import { usePaseo, type PluginScreenProps } from "@getpaseo/plugin/client";
+import { useToast } from "@getpaseo/plugin/client/ui";
 import type { Pane, Target } from "../shared/model";
 import { shortcutDigit, type ShortcutEvent } from "../shared/shortcuts";
 import type { NativeBridge, NativePaneInput } from "./native-types";
 import { onNativeActionShortcut } from "./web";
 import { SplitPluginContext, SplitPluginPanel } from "./plugin-pane";
+import { SplitSubagentNavigation } from "./subagent-track";
+import type { SubagentNavigation, SubagentTarget } from "./subagent-navigation";
 
 type NativeKeyboardProps = {
   bridge: NativeBridge;
@@ -186,6 +190,7 @@ type NativePaneProps = {
   compact?: boolean;
   onFocus(): void;
   onOpen(target: Target, workspaceId?: string): void;
+  onOpenSubagent(target: SubagentTarget, workspaceId?: string): void;
   onOpenSide(target: Target): void;
   onRetarget(target: Target): void;
   onState(state: Pane["state"]): void;
@@ -215,18 +220,62 @@ function NativePaneContent({
   compact = false,
   onFocus,
   onOpen,
+  onOpenSubagent,
   onOpenSide,
   onRetarget,
   onClose,
   onState,
   onImport,
 }: NativePaneProps) {
+  const paseo = usePaseo();
+  const toast = useToast();
   const client = bridge.useHostRuntimeClient(pane.serverId);
   const workspaceRoot =
     bridge.useWorkspaceDirectory(pane.serverId, pane.workspaceId) ?? undefined;
   const workspaceKey = `paseo-deck:${pane.serverId}:${pane.workspaceId}:${tabId}`;
   const routeFocused = bridge.useIsFocused();
   const active = routeFocused && visible;
+  const activeRef = useRef(active);
+  useLayoutEffect(() => {
+    activeRef.current = active;
+    return () => {
+      activeRef.current = false;
+    };
+  }, [active]);
+  const subagentNavigation = useMemo<SubagentNavigation>(
+    () => ({
+      serverId: pane.serverId,
+      openAgent(agentId) {
+        void (async () => {
+          const session =
+            bridge.useSessionStore.getState().sessions[pane.serverId];
+          const cached =
+            session?.agents.get(agentId) ?? session?.agentDetails.get(agentId);
+          let workspaceId = cached?.workspaceId;
+          if (!workspaceId) {
+            const agent = paseo.agents.ref(agentId);
+            if (!agent.current()?.workspaceId) await agent.refresh();
+            workspaceId = agent.current()?.workspaceId;
+          }
+          if (!workspaceId) throw new Error("子 Agent 的 workspace 不可用。");
+          if (activeRef.current)
+            onOpenSubagent({ kind: "agent", agentId }, workspaceId);
+        })().catch((error) => {
+          if (activeRef.current)
+            toast.error(error instanceof Error ? error.message : String(error));
+        });
+      },
+      openProviderSubagent(parentAgentId, subagentId) {
+        if (activeRef.current)
+          onOpenSubagent({
+            kind: "provider_subagent",
+            parentAgentId,
+            subagentId,
+          });
+      },
+    }),
+    [bridge, pane.serverId, paseo, toast, onOpenSubagent],
+  );
   const timelineSync = bridge.useSessionStore(
     (state) => state.sessions[pane.serverId]?.viewedTimelineSync ?? null,
   );
@@ -333,6 +382,11 @@ function NativePaneContent({
       { value: pluginContext },
       child,
     );
+  child = createElement(
+    SplitSubagentNavigation.Provider,
+    { value: active ? subagentNavigation : null },
+    child,
+  );
   child = createElement(
     bridge.AssistantFileLinkResolverProvider,
     {

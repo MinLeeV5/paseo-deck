@@ -78,6 +78,7 @@ export const optionalNativeExports = [
   "navigateToWorkspace",
   "buildDraftWorkspaceAttachmentScopeKey",
   "useWorkspaceAttachmentsStore",
+  "SubagentsTrack",
 ] as const;
 // 0.16 shares the overlay registry across web and hardware keyboards. Keep
 // Deck's bridge key stable while reading the export supplied by each build.

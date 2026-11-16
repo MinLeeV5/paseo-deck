@@ -77,6 +77,8 @@ Agent Tab 在工作区图标上叠加 Paseo 原生状态：运行时转圈、新
 
 选择加入当前分屏或新分屏。重复添加已在工作台中的 Agent 或终端时，会切换到已有 Tab。
 
+在 Deck 会话中点击 subagent，会在该会话所在分屏中打开子 Agent Tab，并保留父会话；支持 provider subagent 和同一主机下其它工作区的子 Agent。子 Agent 已在其它分屏打开时，会将原 Tab 移入当前分屏。
+
 ![统一添加面板、来源工作区与已有 Agent](assets/add-tab.png)
 
 ## 从原生页面加入 Deck

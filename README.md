@@ -77,6 +77,8 @@ The Paseo Deck sidebar entry summarizes Tabs added to the board, with an icon an
 
 Choose the current split or a new split as the destination. Adding an Agent or terminal that is already on the board focuses its existing Tab.
 
+Clicking a subagent in a Deck conversation opens it as a Tab in that conversation's split, including provider subagents and children in another workspace on the same host. The parent stays open. If the child is already in another split, its Tab moves into the source split.
+
 ![Unified add panel with workspace selection and existing Agents](assets/add-tab.png)
 
 ## Add from native Paseo pages
