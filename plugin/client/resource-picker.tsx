@@ -73,7 +73,6 @@ type Row =
       badge?: string;
       badgeIcon?: string;
       running?: boolean;
-      spinner?: boolean;
       status?: NativeStatusBucket | null;
       backgroundCount?: number;
       select?(): void;
@@ -342,7 +341,6 @@ export function ResourcePicker({
                 ? "CircleStop"
                 : undefined,
           running: activity.running,
-          spinner: activity.status === "running" && a.status === "running",
           status: activity.status,
           backgroundCount:
             section.key === "background" ? 0 : activity.backgroundCount,
@@ -1293,6 +1291,14 @@ function ResultRow({
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const colors = theme.colors;
+  const statusColor =
+    row.status === "needs_input"
+      ? colors.statusWarning
+      : row.status === "failed"
+        ? colors.statusDanger
+        : row.status === "attention" || row.status === "running"
+          ? colors.statusSuccess
+          : colors.foregroundMuted;
   return (
     <View
       style={{
@@ -1372,26 +1378,38 @@ function ResultRow({
               flexShrink: 0,
             }}
           >
-            {row.spinner ? (
+            {row.status ? (
               <View
-                testID={`split-agent-running-indicator-${row.agentId}`}
+                testID={`split-agent-status-indicator-${row.agentId}`}
                 pointerEvents="none"
                 aria-hidden
                 style={{
                   width: 14,
-                  height: 14,
+                  height: 16,
+                  flexShrink: 0,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <bridge.StatusRing />
+                {row.status === "running" ? (
+                  <View testID={`split-agent-running-indicator-${row.agentId}`}>
+                    <bridge.StatusRing />
+                  </View>
+                ) : row.status === "needs_input" ? (
+                  <Icon name="CircleAlert" size={12} color={statusColor} />
+                ) : (
+                  // StatusIcon places its dot at an icon's bottom-right corner.
+                  // A text badge needs a centered inline dot instead.
+                  <View
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: 3,
+                      backgroundColor: statusColor,
+                    }}
+                  />
+                )}
               </View>
-            ) : row.status ? (
-              <bridge.StatusIcon
-                statusBucket={row.status}
-                size={13}
-                backdrop="surface0"
-              />
             ) : row.badgeIcon ? (
               <Icon
                 name={row.badgeIcon}
@@ -1405,14 +1423,7 @@ function ResultRow({
                 fontSize: 11,
                 lineHeight: 16,
                 fontWeight: row.status ? "500" : "400",
-                color:
-                  row.status === "needs_input"
-                    ? colors.statusWarning
-                    : row.status === "failed"
-                      ? colors.statusDanger
-                      : row.status === "attention" || row.status === "running"
-                        ? colors.statusSuccess
-                        : colors.foregroundMuted,
+                color: statusColor,
               }}
             >
               {row.badge}
