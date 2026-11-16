@@ -1,0 +1,35 @@
+plugin/client/native-entry.tsx
+  fb0d8739888041ab 97,99-100,102-130
+README.md
+  fb0d8739888041ab 84
+README.zh-CN.md
+  fb0d8739888041ab 84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.8.3",
+  "base_commit_sha": "dd331e1e5d2de215e98259c1042458730b1ffc24",
+  "prompts": {
+    "fb0d8739888041ab": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e375-1ae1-7e81-89e5-cee8a56d389e",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 34,
+      "total_deletions": 52,
+      "accepted_lines": 456,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/3ea386465d7590d04f8ed47a294ce85715d176450e9a8fbb0a9b8f229eb8c048",
+      "token_usage": {
+        "input_tokens": 202537,
+        "output_tokens": 80212,
+        "cache_read_tokens": 14159744,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    }
+  }
+}
