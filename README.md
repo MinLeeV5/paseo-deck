@@ -143,6 +143,7 @@ Shortcuts act on the focused split and follow Paseo's configured bindings. These
 | ----------------------------- | -------------------------------------------------- |
 | `⌘T` / `⌘W`                   | Add / close a Tab                                  |
 | `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous Tab                                |
+| `⌘⇧]` / `⌘⇧[` (Paseo 0.16+) | Next / previous Tab using native desktop bindings |
 | `⌘⌥1` … `⌘⌥8`                 | Select a Tab by its position                       |
 | `⌘⇧A` / `⌘⇧T`                 | New Agent / terminal in the current workspace      |
 | `⌘\` / `⌘⇧\`                  | Add a split with horizontal / vertical arrangement |
@@ -156,6 +157,7 @@ On Windows/Linux, creation, closing, and composer focus use Paseo's `Ctrl` bindi
 
 - One selected host, up to **8 splits**, with no limit on resource Tabs. The add panel reads up to 200 Agents and 200 workspaces.
 - Tested with matching daemon/client builds of **0.13.0, 0.14.0, and 0.15.4**, including the 0.15.4 Electron app on macOS. Native iOS/Android clients are not supported.
+- **0.16.0**: full bridge resolution, plugin compilation, Web native Agent panels, and menu shortcut blocking verified. See the [compatibility review](COMPATIBILITY-0.16.md) for changes, proposed additions, and test boundaries.
 - This experimental plugin reuses **private Paseo UI components** without modifying application files. Future app builds may require a compatibility update; an unsupported build displays an error.
 - Third-party panels keep their own behavior and requirements. GitLens, conversation bookmarks, and Keep awake were exercised; this does not establish compatibility with every plugin.
 

@@ -1,0 +1,17 @@
+{
+  "nativeInput": true,
+  "paneError": false,
+  "overlay": false,
+  "tabs": 1,
+  "version": "0.16.0",
+  "client": "packaged Web UI in isolated Chrome profile",
+  "viewport": {
+    "width": 1440,
+    "height": 960
+  },
+  "menuOverlayDetected": true,
+  "cmdTBlockedWhileMenuOpen": true,
+  "escapeDismissesOverlay": true,
+  "cmdTRestoredAfterDismissal": true,
+  "providerMessagesSent": 0
+}

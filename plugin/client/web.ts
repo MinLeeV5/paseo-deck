@@ -31,6 +31,7 @@ import { matchesShortcutStroke, type ShortcutEvent } from "../shared/shortcuts";
 import {
   nativeExports,
   optionalNativeExports,
+  readNativeExport,
   resolveNativeModules,
 } from "../shared/bridge";
 
@@ -160,7 +161,7 @@ export async function loadNativeBridge(
           (name) => info.moduleIds[name] !== undefined,
         ),
       ].map((name) => {
-        const value = window.__r!(info.moduleIds[name])[name];
+        const value = readNativeExport(window.__r!(info.moduleIds[name]), name);
         if (
           typeof value !== "function" &&
           !(value && typeof value === "object" && "$$typeof" in value)
