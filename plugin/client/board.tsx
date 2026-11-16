@@ -42,6 +42,7 @@ import {
   type Target,
 } from "../shared/model";
 import { bridgeInfoRpc } from "../shared/bridge";
+import { DeckIcon } from "./deck-icon";
 import type { ForkTabRequest } from "./fork-navigation";
 import {
   focusControl,
@@ -1780,7 +1781,7 @@ function HostBoard({
                   }}
                 >
                   <Icon
-                    name="PanelsTopLeft"
+                    icon={DeckIcon}
                     size={22}
                     color={colors.foregroundMuted}
                   />

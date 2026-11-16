@@ -1,6 +1,7 @@
 import type { PluginClientContext } from "@getpaseo/plugin/client";
 import { SplitBoard } from "./client/board";
 import { DeckSidebarItem } from "./client/sidebar-item";
+import { DeckIcon } from "./client/deck-icon";
 import { disposeNativeComposerSync } from "./client/web";
 import { installNativeDeckEntries } from "./client/native-entry";
 
@@ -19,7 +20,7 @@ export default function contribute(client: PluginClientContext) {
   client.addCommandCenterItem({
     id: "open-deck",
     title: "打开 Paseo Deck",
-    icon: "PanelsTopLeft",
+    icon: DeckIcon,
     context: "global",
     onSelect({ openScreen }) {
       openScreen({ screenId: "main" });

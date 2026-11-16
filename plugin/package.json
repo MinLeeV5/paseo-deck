@@ -13,6 +13,7 @@
   },
   "files": [
     "paseo-plugin.json",
+    "assets/",
     "OVERVIEW.md",
     "OVERVIEW.*.md",
     "index.client.ts",

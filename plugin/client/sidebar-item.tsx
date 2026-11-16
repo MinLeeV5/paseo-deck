@@ -12,6 +12,7 @@ import {
 } from "react";
 import { Platform, Text, View } from "react-native";
 import { bridgeInfoRpc } from "../shared/bridge";
+import { DeckIcon } from "./deck-icon";
 import type { Pane } from "../shared/model";
 import type { NativeBridge, NativeStatusBucket } from "./native-types";
 import {
@@ -44,7 +45,7 @@ export function DeckSidebarItem(props: PluginSidebarItemProps) {
   );
   return (
     <SidebarRow
-      icon="PanelsTopLeft"
+      icon={DeckIcon}
       label="Paseo Deck"
       active={props.currentScreen?.screenId === "main"}
       trailing={

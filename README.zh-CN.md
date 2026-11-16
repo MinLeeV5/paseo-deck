@@ -1,3 +1,5 @@
+<p align="center"><img src="plugin/assets/icon.png" width="96" height="96" alt="Paseo Deck 图标" /></p>
+
 <h1 align="center">Paseo Deck</h1>
 
 <p align="center"><strong>在一个 Paseo 窗口中，并排使用不同工作区的 Agent、终端和文件。</strong></p>

@@ -13,6 +13,7 @@ import {
 import { useEffect, useSyncExternalStore } from "react";
 import { Platform } from "react-native";
 import { MAX_SPLITS } from "../shared/model";
+import { DeckIcon } from "./deck-icon";
 import type { PaseoAgent, PaseoWorkspace } from "./paseo-types";
 import {
   joinAgentToDeck,
@@ -107,7 +108,7 @@ export function installNativeDeckEntries(client: PluginClientContext) {
       return;
     const button = {
       title: joined ? "在 Deck 中打开" : "加入 Deck",
-      icon: "PanelsTopLeft",
+      icon: DeckIcon,
       behavior: joined
         ? {
             kind: "action" as const,
@@ -253,7 +254,7 @@ export function installNativeDeckEntries(client: PluginClientContext) {
     return (
       <Select
         title="Deck"
-        icon="PanelsTopLeft"
+        icon={DeckIcon}
         value={marker?.clientId === clientId ? marker.destination : "none"}
         options={[
           { value: "none", label: "不添加" },
@@ -287,7 +288,7 @@ export function installNativeDeckEntries(client: PluginClientContext) {
     ).length;
     return count ? (
       <WorkspaceRowBadge
-        icon="PanelsTopLeft"
+        icon={DeckIcon}
         label={`Deck ${count}`}
         accessibilityLabel={`已加入 Deck，${count} 个标签页`}
       />
@@ -325,7 +326,7 @@ export function installNativeDeckEntries(client: PluginClientContext) {
       client.addWorkspaceRowBadgeItem({
         id: "deck-membership",
         title: "Deck 标签页",
-        icon: "PanelsTopLeft",
+        icon: DeckIcon,
         Component: DeckBadge,
       }),
     );
@@ -334,7 +335,7 @@ export function installNativeDeckEntries(client: PluginClientContext) {
     client.addCommandCenterItem({
       id: "add-agent-to-deck",
       title: "将当前 Agent 加入 Deck",
-      icon: "PanelsTopLeft",
+      icon: DeckIcon,
       context: "agent",
       onSelect({ agent }) {
         ensureHost(agent.hostId);

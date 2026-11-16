@@ -1,6 +1,7 @@
 {
   "id": "paseo-deck",
   "name": "Paseo Deck",
+  "icon": "assets/icon.png",
   "description": "Use native agents, terminals, and files from multiple workspaces side by side in one Paseo window.",
   "translations": {
     "zh-CN": {

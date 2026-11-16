@@ -1,3 +1,5 @@
+<p align="center"><img src="plugin/assets/icon.png" width="96" height="96" alt="Paseo Deck icon" /></p>
+
 <h1 align="center">Paseo Deck</h1>
 
 <p align="center"><strong>Agents, terminals, and files across workspaces, in one Paseo window.</strong></p>
