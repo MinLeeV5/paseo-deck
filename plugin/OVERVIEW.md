@@ -12,7 +12,8 @@ Open Paseo Deck from the sidebar or Command Center, select a host, and use a spl
 
 - **Native conversations**: Use Paseo's conversation UI, composer, and file panels inside each split.
 - **Shared drafts**: Unsent text stays in sync between Deck and the Agent's original workspace on the same client.
-- **Native entry points (0.16+)**: Add an Agent to the current or a new split from its native page, or choose a Deck destination on New workspace to add its first Agent automatically. Existing Tabs can be located directly, and workspace sidebar badges show this client's Deck Tab count.
+- **Native entry points (0.16+)**: Add an Agent to the current or a new split from its native page, or choose a Deck destination on New workspace to add its first Agent automatically. Workspace sidebar badges show which Deck splits contain its Tabs and update when you move them. An unnamed workspace follows its first Agent's generated title until you rename the workspace yourself.
+- **Subagents in the current split**: Open managed and provider subagents as Tabs beside their parent, including children in another workspace on the same host. A child already open in another split moves into the current split.
 - **Agent status at a glance**: Tabs show running, unread, input or approval requests, and failures using Paseo's native indicators and read behavior. The sidebar entry keeps live counts for each state and hides zero counts.
 
 Closing a Tab removes its view without terminating its Agent or terminal. Unsaved content is checked before a batch closes.
@@ -49,6 +50,6 @@ A board contains up to **8 splits** from one selected host, with no limit on res
 
 Layouts and preferences do not sync between clients. Messages, attachments, and tool results use Paseo's existing host and configured provider connections. Scripts run in their source workspace on the selected host. No separate account or API key is needed for Deck.
 
-This experimental plugin uses private Paseo UI components. Its daemon-side component reads the installed Paseo web bundle to locate native views, and its client component wraps the host composer to synchronize drafts. It does not change application files. Matching daemon/client builds of 0.13.0, 0.14.0, and 0.15.4 were tested. Future builds may need adaptation, and an unsupported build displays an error. GitLens, conversation bookmarks, and Keep awake were exercised; other integrations may behave differently.
+This experimental plugin uses private Paseo UI components. Its daemon-side component reads the installed Paseo web bundle to locate native views, and its client component wraps the host composer to synchronize drafts. It does not change application files. Matching daemon/client builds of 0.13.0, 0.14.0, 0.15.4, and 0.16.0 were tested. Future builds may need adaptation, and an unsupported build displays an error. GitLens, conversation bookmarks, and Keep awake were exercised; other integrations may behave differently.
 
 Source, installation, and development: [MinLeeV5/paseo-deck](https://github.com/MinLeeV5/paseo-deck#readme). Report problems in [GitHub Issues](https://github.com/MinLeeV5/paseo-deck/issues).
