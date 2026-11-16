@@ -13,6 +13,11 @@ import {
 import type { ComponentType } from "react";
 import type { PluginPanelRequest } from "./workspace-types";
 import {
+  addDeckAgent,
+  createBoardStore,
+  type DeckAgentEntry,
+} from "./deck-entry";
+import {
   installForkTabNavigation,
   type ForkTabRequest,
 } from "./fork-navigation";
@@ -227,26 +232,23 @@ export function loadBoard(serverId: string): Board {
 
 // The sidebar outlives the Deck screen. Publish layout edits at commit time,
 // before the debounced disk save, so it only observes Tabs still in this Deck.
-const boardSnapshots = new Map<string, Board>();
-const boardListeners = new Set<() => void>();
-export function readBoardSnapshot(serverId: string): Board {
-  let board = boardSnapshots.get(serverId);
-  if (!board) {
-    board = loadBoard(serverId);
-    boardSnapshots.set(serverId, board);
-  }
-  return board;
-}
-export function publishBoardSnapshot(serverId: string, board: Board): void {
-  if (boardSnapshots.get(serverId) === board) return;
-  boardSnapshots.set(serverId, board);
-  for (const listener of boardListeners) listener();
-}
-export function subscribeBoardSnapshot(listener: () => void): () => void {
-  boardListeners.add(listener);
-  return () => {
-    boardListeners.delete(listener);
-  };
+const boardStore = createBoardStore(loadBoard);
+export const readBoardSnapshot = boardStore.read;
+export const publishBoardSnapshot = boardStore.publish;
+export const subscribeBoardSnapshot = boardStore.subscribe;
+export const readBoardFocus = boardStore.readFocus;
+export const rememberBoardFocus = boardStore.rememberFocus;
+export function joinAgentToDeck(entry: DeckAgentEntry) {
+  const result = addDeckAgent(
+    readBoardSnapshot(entry.serverId),
+    entry,
+    readBoardFocus(entry.serverId),
+  );
+  // Persist before reporting success, including when Deck has never been opened.
+  saveBoard(entry.serverId, result.board);
+  rememberBoardFocus(entry.serverId, result.groupId);
+  publishBoardSnapshot(entry.serverId, result.board);
+  return result.paneId;
 }
 
 export function saveBoard(serverId: string, board: Board): void {

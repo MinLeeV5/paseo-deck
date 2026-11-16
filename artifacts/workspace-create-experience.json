@@ -1,0 +1,32 @@
+{
+  "paseoVersion": "0.16.0",
+  "platform": "Packaged Paseo Web UI, isolated daemon and Chrome",
+  "unitTests": 66,
+  "typecheck": "passed",
+  "messagesSubmitted": 0,
+  "checks": [
+    "统一居中弹窗默认选中新建 Agent",
+    "新建 workspace 在同一弹窗右侧展示表单，保留 project 列表与底部去向",
+    "420px 窄屏使用同一弹窗并完整保留确认按钮",
+    "同一表单可输入名称并切换原目录",
+    "创建后自动在 Deck 打开对应 Agent 输入页",
+    "浅色主题中弹窗、列表与表单使用对应主题颜色",
+    "已有 Agent 在同一弹窗中选择，原生会话状态正常展示",
+    "终端创建在统一弹窗内选择 workspace",
+    "文件路径和来源 workspace 均在统一弹窗中选择",
+    "Git project 默认选择 worktree，添加位置在同一弹窗中可切换",
+    "worktree 创建后自动把新 Agent 加入所选新分屏",
+    "每次打开 ＋ 都默认回到新建 Agent",
+    "Shift Tab 在弹窗内循环至确认按钮",
+    "Esc 关闭弹窗并恢复添加按钮焦点",
+    "创建失败时在同一弹窗展示错误并保留已输入名称",
+    "失败恢复后在同一弹窗重试成功并打开对应 Agent",
+    "重复点击创建确认后，daemon 中仅存在一个同名 workspace"
+  ],
+  "screenshots": [
+    "workspace-create-dialog-dark.png",
+    "workspace-create-dialog-light.png",
+    "workspace-create-dialog-compact.png"
+  ],
+  "interactionUpdatedIn": "agent-picker-priority-experience.json"
+}

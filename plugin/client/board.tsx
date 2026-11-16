@@ -14,8 +14,16 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
-import { Platform, Pressable, ScrollView, Text, View } from "react-native";
+import {
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import {
   activateTab,
   addPane,
@@ -38,7 +46,10 @@ import { bridgeInfoRpc } from "../shared/bridge";
 import type { ForkTabRequest } from "./fork-navigation";
 import {
   focusControl,
-  loadBoard,
+  readBoardSnapshot,
+  readBoardFocus,
+  rememberBoardFocus,
+  subscribeBoardSnapshot,
   publishBoardSnapshot,
   loadNativeBridge,
   onPageExit,
@@ -78,6 +89,10 @@ import { WorkspaceIcons } from "./workspace-icon";
 import { isRunning, useDirectory, workspaceLabel } from "./directory";
 import type { NativeBridge } from "./native-types";
 import type { PluginPanelRequest } from "./workspace-types";
+import {
+  workspaceCreationOptions,
+  type WorkspaceCreation,
+} from "./workspace-creation";
 
 const id = () =>
   `split-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
@@ -107,23 +122,36 @@ const RouteActivity = memo(function RouteActivity({
 export function SplitBoard(props: PluginScreenProps) {
   return <HostBoard key={props.host.id} {...props} />;
 }
-function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
+function HostBoard({
+  theme,
+  host,
+  layout,
+  navigation,
+  params = {},
+}: PluginScreenProps) {
   const instanceId = useId(),
     paseo = usePaseo(),
     toast = useToast(),
     bridgeInfo = useRpc(bridgeInfoRpc);
-  const [board, setBoardState] = useState<Board>(() => loadBoard(host.id));
+  const board = useSyncExternalStore(
+    subscribeBoardSnapshot,
+    () => readBoardSnapshot(host.id),
+    () => readBoardSnapshot(host.id),
+  );
   const boardRef = useRef(board),
     savedBoard = useRef(board);
-  useLayoutEffect(() => publishBoardSnapshot(host.id, board), [host.id, board]);
+  boardRef.current = board;
   const actionOwner = useRef<string | null>(null);
   const routeActiveRef = useRef(true);
-  const [focusedGroup, setFocusedGroup] = useState(board.groups[0].id);
+  const [focusedGroup, setFocusedGroup] = useState(
+    () => readBoardFocus(host.id) ?? board.groups[0].id,
+  );
   const [maximized, setMaximized] = useState<string | null>(null);
   const [routeActive, setRouteActive] = useState(true);
   const [picker, setPicker] = useState<Picker | null>(null);
   const [busy, setBusy] = useState(false);
   const archivingAgent = useRef(false);
+  const workspaceCreation = useRef(false);
   const [viewport, setViewport] = useState({ width: 1000, height: 700 });
   const root = useRef<View>(null),
     workarea = useRef<View>(null),
@@ -144,14 +172,18 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
       treePath?: string;
       tree?: SplitNode;
     } | null>(null);
-  const setBoard = useCallback((update: Board | ((value: Board) => Board)) => {
-    const next = reconcileBoardLayout(
-      typeof update === "function" ? update(boardRef.current) : update,
-    );
-    if (next === boardRef.current) return;
-    boardRef.current = next;
-    setBoardState(next);
-  }, []);
+  const setBoard = useCallback(
+    (update: Board | ((value: Board) => Board)) => {
+      const current = readBoardSnapshot(host.id);
+      const next = reconcileBoardLayout(
+        typeof update === "function" ? update(current) : update,
+      );
+      if (next === current) return;
+      boardRef.current = next;
+      publishBoardSnapshot(host.id, next);
+    },
+    [host.id],
+  );
   const bridge = useQuery({
     queryKey: ["split-native-bridge"],
     queryFn: () => loadNativeBridge(() => bridgeInfo({})),
@@ -167,10 +199,26 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
     directoryRef = useRef(directory.data);
   directoryRef.current = directory.data;
   const pickerRef = useRef(picker);
+  const restorePickerFocus = useRef<string | null>(null);
   pickerRef.current = picker;
+  const afterPickerDismiss = useCallback(() => {
+    const trigger = restorePickerFocus.current;
+    restorePickerFocus.current = null;
+    if (trigger) scheduleFrame(() => focusControl(trigger));
+  }, []);
   const groupFocus = board.groups.some((group) => group.id === focusedGroup)
     ? focusedGroup
     : board.groups[0].id;
+  useLayoutEffect(() => {
+    rememberBoardFocus(host.id, groupFocus);
+  }, [host.id, groupFocus]);
+  useLayoutEffect(() => {
+    const requested = readBoardFocus(host.id);
+    if (requested && board.groups.some((group) => group.id === requested)) {
+      setFocusedGroup(requested);
+      setMaximized((current) => (current ? requested : null));
+    }
+  }, [host.id, board]);
   routeActiveRef.current = routeActive;
   const visibleGroup = maximized ?? (layout.compact ? groupFocus : null);
   const barHeight = layout.compact ? 36 : 32;
@@ -277,32 +325,14 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
     else anchors.current.delete(groupId);
   }, []);
   const dismiss = useCallback(() => {
-    const trigger = pickerRef.current?.trigger;
+    if (workspaceCreation.current) return;
+    restorePickerFocus.current = pickerRef.current?.trigger ?? null;
+    const menu = pickerRef.current?.mode === "menu";
     setPicker(null);
-    if (trigger) scheduleFrame(() => focusControl(trigger));
-  }, []);
-  const showPicker = useCallback(
-    (
-      groupId: string,
-      anchor: View | null = null,
-      mode: PickerMode = "agent",
-      newSplit = false,
-      splitDirection?: Board["direction"],
-    ) => {
-      const key = id();
-      setFocusedGroup(groupId);
-      focusControl(`split-${mode === "menu" ? "menu" : "add"}-${groupId}`);
-      const estimated = mode === "menu" ? 360 : 500;
-      setPicker({
-        key,
-        groupId,
-        mode,
-        newSplit,
-        splitDirection,
-        trigger: `split-${mode === "menu" ? "menu" : "add"}-${groupId}`,
-        rect: { left: 8, top: 8, width: 360, height: estimated },
-      });
-      void directory.refetch();
+    if (menu) afterPickerDismiss();
+  }, [afterPickerDismiss]);
+  const positionPicker = useCallback(
+    (key: string, groupId: string, anchor: View | null = null) => {
       root.current?.measureInWindow((rx, ry, rw, rh) => {
         const position = (ax: number, ay: number, aw: number, ah: number) => {
           const width = Math.min(
@@ -313,6 +343,7 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
             above = ay - ry - 8;
           setPicker((current) => {
             if (current?.key !== key) return current;
+            if (current.mode !== "menu") return current;
             const height = Math.min(
               current.rect.height,
               Math.max(180, rh - 16),
@@ -338,12 +369,70 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
         else position(rx + 8, ry + 4, 24, barHeight);
       });
     },
-    [directory.refetch, barHeight, layout.compact],
+    [barHeight, layout.compact],
+  );
+  useEffect(() => {
+    const current = pickerRef.current;
+    if (current) positionPicker(current.key, current.groupId);
+  }, [positionPicker, viewport.width, viewport.height]);
+  const showPicker = useCallback(
+    (
+      groupId: string,
+      anchor: View | null = null,
+      mode: PickerMode = "agent",
+      newSplit = false,
+      splitDirection?: Board["direction"],
+    ) => {
+      const key = id();
+      setFocusedGroup(groupId);
+      focusControl(`split-${mode === "menu" ? "menu" : "add"}-${groupId}`);
+      const estimated = mode === "menu" ? 360 : 500;
+      setPicker({
+        key,
+        groupId,
+        mode,
+        newSplit,
+        splitDirection,
+        trigger: `split-${mode === "menu" ? "menu" : "add"}-${groupId}`,
+        rect: { left: 8, top: 8, width: 360, height: estimated },
+      });
+      void directory.refetch();
+      positionPicker(key, groupId, anchor);
+    },
+    [directory.refetch, positionPicker],
   );
   const openNewTab = useCallback(
     () => showPicker(visibleGroup ?? groupFocus),
     [showPicker, visibleGroup, groupFocus],
   );
+  const handledEntry = useRef("");
+  useEffect(() => {
+    const entry = params.tabId
+      ? `tab:${params.tabId}:${params.request ?? ""}`
+      : "";
+    if (
+      !entry ||
+      !bridge.data ||
+      !routeActive ||
+      handledEntry.current === entry
+    )
+      return;
+    if (params.tabId && groupOf(params.tabId)) {
+      handledEntry.current = entry;
+      selectTab(params.tabId);
+      scheduleFrame(() => focusControl(`split-tab-${params.tabId}`));
+    }
+  }, [
+    params.tabId,
+    params.request,
+    bridge.data,
+    routeActive,
+    showPicker,
+    groupFocus,
+    visibleGroup,
+    groupOf,
+    selectTab,
+  ]);
   const openSplit = useCallback(
     (direction: Board["direction"]) =>
       showPicker(visibleGroup ?? groupFocus, null, "agent", true, direction),
@@ -492,6 +581,43 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
       );
     else showPicker(groupId, null, "new");
   }, [visibleGroup, groupFocus, openTarget, showPicker]);
+
+  const createWorkspace = useCallback(
+    async (input: WorkspaceCreation) => {
+      const selected = pickerRef.current;
+      if (!selected || workspaceCreation.current) return;
+      if (selected.newSplit && boardRef.current.groups.length >= MAX_SPLITS)
+        throw new Error(SPLIT_LIMIT_MESSAGE);
+      workspaceCreation.current = true;
+      setBusy(true);
+      try {
+        const workspace = await paseo.workspaces.create(
+          workspaceCreationOptions(input),
+        );
+        const snapshot = workspace.current();
+        const groupId = boardRef.current.groups.some(
+          (group) => group.id === selected.groupId,
+        )
+          ? selected.groupId
+          : boardRef.current.groups[0].id;
+        openTarget(
+          { kind: "draft", draftId: `draft-${id()}` },
+          workspace.id,
+          groupId,
+          selected.newSplit && boardRef.current.groups.length < MAX_SPLITS,
+          snapshot
+            ? workspaceLabel(snapshot)
+            : `${input.project.projectCustomName ?? input.project.projectDisplayName} / ${input.title.trim() || workspace.name || "新 workspace"}`,
+          selected.splitDirection,
+        );
+        void directory.refetch();
+      } finally {
+        workspaceCreation.current = false;
+        setBusy(false);
+      }
+    },
+    [paseo, openTarget, directory.refetch],
+  );
 
   const archiveAgent = useCallback(
     async (agentId: string) => {
@@ -1473,7 +1599,7 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
   const resizePicker = useCallback(
     (requested: number) =>
       setPicker((current) => {
-        if (!current) return current;
+        if (!current || current.mode !== "menu") return current;
         const bounds = current.bounds;
         const height = Math.min(
           requested,
@@ -1729,7 +1855,7 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
           theme={theme}
         />
       </View>
-      {picker && (
+      {picker?.mode === "menu" && (
         <View style={{ position: "absolute", inset: 0, zIndex: 100 }}>
           <Pressable
             accessibilityLabel="关闭资源选择器"
@@ -1762,6 +1888,54 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
           </View>
         </View>
       )}
+      <Modal
+        visible={Boolean(picker && picker.mode !== "menu")}
+        transparent
+        animationType="none"
+        onRequestClose={dismiss}
+        onDismiss={afterPickerDismiss}
+      >
+        <View
+          style={{
+            flex: 1,
+            padding: layout.compact ? 12 : 32,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Pressable
+            accessibilityLabel="关闭资源选择器"
+            onPress={dismiss}
+            style={{
+              position: "absolute",
+              inset: 0,
+              backgroundColor: colors.surface0,
+              opacity: 0.82,
+            }}
+          />
+          <View
+            testID="split-add-dialog"
+            role="dialog"
+            accessibilityLabel="添加到 Deck"
+            aria-modal
+            style={{
+              width: "100%",
+              maxWidth: 780,
+              height: 640,
+              maxHeight: "100%",
+              flexShrink: 1,
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderRadius: 14,
+              backgroundColor: colors.surface0,
+              overflow: "hidden",
+              boxShadow: "0px 24px 80px rgba(0, 0, 0, 0.22)",
+            }}
+          >
+            {picker && picker.mode !== "menu" && pickerContent()}
+          </View>
+        </View>
+      </Modal>
     </>
   ) : (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
@@ -1787,6 +1961,7 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
         onDestination={updateDestination}
         onOpen={chooseTarget}
         onTerminal={createTerminal}
+        onCreateWorkspace={createWorkspace}
         onArchive={archiveAgent}
         onClose={dismiss}
         onRefresh={() => void directory.refetch()}
@@ -1824,6 +1999,7 @@ function HostBoard({ theme, host, layout, navigation }: PluginScreenProps) {
           hostId={host.id}
           directory={directory.data}
           workspaceIds={iconWorkspaceIds}
+          allProjects={Boolean(picker && picker.mode !== "menu")}
         >
           {content}
         </WorkspaceIcons>

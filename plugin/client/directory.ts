@@ -2,6 +2,7 @@ import { usePaseo } from "@getpaseo/plugin/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import type { NativeBridge } from "./native-types";
+import { sameAgentDirectoryEntry } from "./agent-picker";
 import type {
   PaseoAgent,
   PaseoProject,
@@ -94,6 +95,12 @@ export function useDirectory(
             old.projectCustomName === workspace.projectCustomName &&
             old.projectCustomIconRevision ===
               workspace.projectCustomIconRevision &&
+            old.activityAt === workspace.activityAt &&
+            old.lastUserMessageAt === workspace.lastUserMessageAt &&
+            old.createdAt === workspace.createdAt &&
+            old.internal === workspace.internal &&
+            old.background === workspace.background &&
+            old.archivingAt === workspace.archivingAt &&
             JSON.stringify(old.scripts) === JSON.stringify(workspace.scripts)
           )
             return current;
@@ -190,13 +197,7 @@ export function useDirectory(
           const previous = current.agents.find((item) => item.id === agent.id);
           // Streaming metadata does not rebuild every Tab. Only visible directory
           // fields and lifecycle changes need to update this lightweight cache.
-          if (
-            previous &&
-            previous.title === agent.title &&
-            previous.status === agent.status &&
-            previous.workspaceId === agent.workspaceId &&
-            previous.cwd === agent.cwd
-          )
+          if (previous && sameAgentDirectoryEntry(previous, agent))
             return current;
           return {
             ...current,

@@ -1,0 +1,41 @@
+{
+  "paseoVersion": "0.16.0",
+  "features": [
+    "原生 Agent 页面加入当前或新分屏、定位已有标签",
+    "原生新建 workspace 的 Deck 选项与首个 Agent 自动加入",
+    "workspace 侧栏 Deck 标签数与命令中心加入入口"
+  ],
+  "removed": [
+    "待处理收件箱入口、界面和专属逻辑"
+  ],
+  "validation": {
+    "typecheck": "passed",
+    "tests": {
+      "passed": 92
+    },
+    "format": "passed",
+    "diffCheck": "passed",
+    "browserChecks": [
+      "移除后侧栏仅保留 Deck 入口",
+      "原生新建页提供当前分屏加入选项",
+      "带原生选项的真实 workspace 首个 Agent 自动加入 Deck",
+      "自动加入保存布局且当前分屏不增加分屏数",
+      "返回 Deck 能看到自动加入的 Agent",
+      "刷新后自动加入的会话仍然保留",
+      "原生已加入会话提供定位入口",
+      "命令中心可定位已加入的 Agent 且不重复创建",
+      "原有添加弹窗仍显示未读和运行中筛选，并从顶部打开",
+      "窄屏原生会话仍可使用 Deck 定位按钮",
+      "原生会话可加入新分屏并直接定位 Deck",
+      "原生 workspace 显示 Deck 归属徽标",
+      "再次从原生打开只定位已有 Tab，不重复创建分屏"
+    ]
+  },
+  "fixture": "隔离 0.16 daemon 与独立浏览器。原生 UI 选择 Deck 目标，再用同一页面的公开 API 携带该 metadata 创建真实 workspace 和无 prompt 的 Agent，验证自动加入与持久化；未发送模型消息。",
+  "screenshots": [
+    "artifacts/native-create-deck-option.png",
+    "artifacts/native-agent-deck-entry.png",
+    "artifacts/native-agent-entry-compact.png",
+    "artifacts/native-added-deck.png"
+  ]
+}

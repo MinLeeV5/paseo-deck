@@ -14,22 +14,28 @@ import type { Directory } from "./directory";
 
 type WorkspaceVisual = { key: string; name: string; uri: string | null };
 const Visuals = createContext<Map<string, WorkspaceVisual>>(new Map());
+const ProjectVisuals = createContext<Map<string, WorkspaceVisual>>(new Map());
 export function WorkspaceIcons({
   bridge,
   hostId,
   directory,
   children,
   workspaceIds,
+  allProjects = false,
 }: {
   bridge: NativeBridge;
   hostId: string;
   directory?: Directory;
   children: ReactNode;
   workspaceIds: Set<string>;
+  allProjects?: boolean;
 }) {
   const [values, setValues] = useState<Map<string, WorkspaceVisual>>(
     () => new Map(),
   );
+  const [projectValues, setProjectValues] = useState<
+    Map<string, WorkspaceVisual>
+  >(() => new Map());
   return (
     <QueryClientProvider client={bridge.queryClient}>
       <IconCatalog
@@ -38,9 +44,13 @@ export function WorkspaceIcons({
         projects={directory?.projects}
         workspaces={directory?.workspaces}
         workspaceIds={workspaceIds}
+        allProjects={allProjects}
         onChange={setValues}
+        onProjectsChange={setProjectValues}
       />
-      <Visuals.Provider value={values}>{children}</Visuals.Provider>
+      <ProjectVisuals.Provider value={projectValues}>
+        <Visuals.Provider value={values}>{children}</Visuals.Provider>
+      </ProjectVisuals.Provider>
     </QueryClientProvider>
   );
 }
@@ -52,14 +62,18 @@ const IconCatalog = memo(function IconCatalog({
   projects,
   workspaces,
   workspaceIds,
+  allProjects,
   onChange,
+  onProjectsChange,
 }: {
   bridge: NativeBridge;
   hostId: string;
   projects?: Directory["projects"];
   workspaces?: Directory["workspaces"];
   workspaceIds: Set<string>;
+  allProjects: boolean;
   onChange(value: Map<string, WorkspaceVisual>): void;
+  onProjectsChange(value: Map<string, WorkspaceVisual>): void;
 }) {
   const allTargets = useMemo<ProjectIconTarget[]>(() => {
     const catalog = projects ?? [];
@@ -83,36 +97,55 @@ const IconCatalog = memo(function IconCatalog({
     }));
   }, [projects, hostId]);
   const targets = useMemo(() => {
+    if (allProjects) return allTargets;
     const ids = new Set(
       (workspaces ?? [])
         .filter((workspace) => workspaceIds.has(workspace.id))
         .map((workspace) => workspace.projectId),
     );
     return allTargets.filter((target) => ids.has(target.projectId));
-  }, [allTargets, workspaces, workspaceIds]);
+  }, [allTargets, workspaces, workspaceIds, allProjects]);
   const icons = bridge.useProjectIcons({ projects: targets });
-  const values = useMemo(
+  const projectValues = useMemo(
     () =>
       new Map(
-        (workspaces ?? []).map((workspace) => {
+        (projects ?? []).map((project) => {
           const target = allTargets.find(
-            (target) => target.projectId === workspace.projectId,
-          );
+            (target) => target.projectId === project.projectId,
+          )!;
           return [
-            workspace.id,
+            project.projectId,
             {
-              key:
-                target?.projectViewKey ??
-                JSON.stringify([hostId, workspace.projectId]),
-              name: workspace.projectCustomName ?? workspace.projectDisplayName,
-              uri: target ? (icons.get(target.projectViewKey) ?? null) : null,
+              key: target.projectViewKey,
+              name: project.projectCustomName ?? project.projectDisplayName,
+              uri: icons.get(target.projectViewKey) ?? null,
             },
           ];
         }),
       ),
-    [workspaces, allTargets, icons, hostId],
+    [projects, allTargets, icons],
+  );
+  const values = useMemo(
+    () =>
+      new Map(
+        (workspaces ?? []).map((workspace) => {
+          return [
+            workspace.id,
+            projectValues.get(workspace.projectId) ?? {
+              key: JSON.stringify([hostId, workspace.projectId]),
+              name: workspace.projectCustomName ?? workspace.projectDisplayName,
+              uri: null,
+            },
+          ];
+        }),
+      ),
+    [workspaces, projectValues, hostId],
   );
   useLayoutEffect(() => onChange(values), [values, onChange]);
+  useLayoutEffect(
+    () => onProjectsChange(projectValues),
+    [projectValues, onProjectsChange],
+  );
   return null;
 });
 export const WorkspaceIcon = memo(function WorkspaceIcon({
@@ -127,6 +160,31 @@ export const WorkspaceIcon = memo(function WorkspaceIcon({
   size?: number;
 }) {
   const visual = useContext(Visuals).get(workspaceId);
+  return projectIconView(bridge, visual, label, workspaceId, size);
+});
+
+export const ProjectIcon = memo(function ProjectIcon({
+  bridge,
+  projectId,
+  label,
+  size = 20,
+}: {
+  bridge: NativeBridge;
+  projectId: string;
+  label: string;
+  size?: number;
+}) {
+  const visual = useContext(ProjectVisuals).get(projectId);
+  return projectIconView(bridge, visual, label, projectId, size);
+});
+
+function projectIconView(
+  bridge: NativeBridge,
+  visual: WorkspaceVisual | undefined,
+  label: string,
+  fallbackKey: string,
+  size: number,
+) {
   const name = visual?.name ?? label.split(" / ")[0];
   return createElement(bridge.ProjectIconView, {
     iconDataUri: visual?.uri ?? null,
@@ -138,8 +196,8 @@ export const WorkspaceIcon = memo(function WorkspaceIcon({
       )
         .charAt(0)
         .toUpperCase() || "?",
-    projectViewKey: visual?.key ?? workspaceId,
+    projectViewKey: visual?.key ?? fallbackKey,
     size,
     textStyle: { fontSize: Math.max(7, size * 0.65), fontWeight: "600" },
   });
-});
+}

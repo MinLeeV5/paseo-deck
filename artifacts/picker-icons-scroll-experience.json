@@ -1,0 +1,33 @@
+{
+  "paseoVersion": "0.16.0",
+  "changes": [
+    "左侧使用项目原生图标，包括没有活跃 workspace 的项目",
+    "首次打开、切换资源类型、项目或筛选条件时置顶；仅显式键盘导航滚动到选中项",
+    "未读等状态文字保持单行"
+  ],
+  "validation": {
+    "typecheck": "passed",
+    "tests": {
+      "passed": 74
+    },
+    "format": "passed",
+    "diffCheck": "passed",
+    "browserChecks": [
+      "首次打开已有 Agent 列表置顶且标题完整",
+      "异步出现未读分组后仍置顶，未读标题不裁切",
+      "未读状态文字保持单行且完整位于可视区",
+      "左侧每个 project 使用带项目标识的原生图标",
+      "上下键选择仍能滚动到列表下方",
+      "键盘循环回第一项时保留顶部未读标题",
+      "新建 Agent 的默认 workspace 在长列表末尾时仍从顶部展示",
+      "workspace 长列表支持正常手动滚动",
+      "重新进入新建 Agent 时重置到列表顶部",
+      "窄屏新建列表仍置顶且弹窗位于视口内"
+    ]
+  },
+  "fixture": "隔离 daemon；长列表和未读状态仅修改浏览器端测试数据，未向 Agent 发送消息",
+  "screenshots": [
+    "artifacts/picker-icons-scroll-fixed.png",
+    "artifacts/picker-icons-scroll-compact.png"
+  ]
+}

@@ -6,8 +6,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { FlatList, Icon, TextInput } from "@getpaseo/plugin/client/ui";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { FlatList, Icon } from "@getpaseo/plugin/client/ui";
+import { QueryClientProvider, useMutation } from "@tanstack/react-query";
 import {
   Pressable,
   ScrollView,
@@ -19,14 +19,24 @@ import {
 import type { PluginScreenProps } from "@getpaseo/plugin/client";
 import type { Target } from "../shared/model";
 import type { NativeBridge, NativeStatusBucket } from "./native-types";
-import { WorkspaceIcon } from "./workspace-icon";
-import { isRunning, workspaceLabel, type Directory } from "./directory";
+import { ProjectIcon, WorkspaceIcon } from "./workspace-icon";
+import { workspaceLabel, type Directory } from "./directory";
 import { keyboardFocusVisible, onPickerKeys } from "./web";
 import { IconButton } from "./compact-ui";
+import { WorkspaceFields } from "./workspace-creator";
+import { DialogButton, DialogChoice, DialogInput } from "./add-dialog-ui";
+import type { WorkspaceCreation } from "./workspace-creation";
+import { sortPickerProjects } from "./project-picker";
+import {
+  groupPickerAgents,
+  pickerAgentActivity,
+  type AgentFilter,
+} from "./agent-picker";
 
 export type PickerMode =
   | "agent"
   | "new"
+  | "new-workspace"
   | "terminal"
   | "new-terminal"
   | "file"
@@ -40,9 +50,8 @@ export type PaneMenuAction = {
   selected?: boolean;
   destructive?: boolean;
 };
-const RESULT_HEIGHT = 56;
-const HEADING_HEIGHT = 30;
-
+const RESULT_HEIGHT = 58,
+  HEADING_HEIGHT = 32;
 type Row =
   | {
       key: string;
@@ -58,13 +67,25 @@ type Row =
       title: string;
       subtitle: string;
       workspaceId: string;
+      icon?: string;
+      action?: string;
       agentId?: string;
       badge?: string;
       badgeIcon?: string;
       running?: boolean;
       spinner?: boolean;
+      status?: NativeStatusBucket | null;
+      backgroundCount?: number;
+      select?(): void;
       run(): void;
     };
+const tabs = [
+  { mode: "agent", label: "已有 Agent", icon: "MessagesSquare" },
+  { mode: "terminal", label: "终端", icon: "Terminal" },
+  { mode: "file", label: "文件", icon: "FileCode2" },
+  { mode: "new", label: "新建 Agent", icon: "Plus" },
+] as const;
+
 export function ResourcePicker({
   bridge,
   serverId,
@@ -77,6 +98,7 @@ export function ResourcePicker({
   onDestination,
   onOpen,
   onTerminal,
+  onCreateWorkspace,
   onArchive,
   onClose,
   onRefresh,
@@ -96,6 +118,7 @@ export function ResourcePicker({
   onDestination(next: boolean): void;
   onOpen(target: Target, workspaceId: string): void;
   onTerminal(workspaceId: string): void;
+  onCreateWorkspace(input: WorkspaceCreation): Promise<void>;
   onArchive(agentId: string): Promise<void>;
   onClose(): void;
   onRefresh(): void;
@@ -104,318 +127,387 @@ export function ResourcePicker({
   menuActions: PaneMenuAction[];
   onHeightChange(height: number): void;
 }) {
-  const [mode, setMode] = useState<PickerMode | "scope">(initialMode);
-  const [returnMode, setReturnMode] = useState<PickerMode>("agent");
-  const [scope, setScope] = useState("all");
+  const c = theme.colors;
+  const [mode, setMode] = useState<PickerMode>(
+    initialMode === "new-workspace" ? "new" : initialMode,
+  );
+  const [compact, setCompact] = useState(false);
+  const [projectId, setProjectId] = useState(
+    initialMode === "new" || initialMode === "new-terminal" ? "default" : "all",
+  );
+  const [projectQuery, setProjectQuery] = useState("");
   const [query, setQuery] = useState("");
-  const [path, setPath] = useState("README.md");
+  const [agentFilter, setAgentFilter] = useState<AgentFilter>("all");
+  const [workspaceChoice, setWorkspaceChoice] = useState<string | null>(
+    initialMode === "new-workspace" ? "create" : null,
+  );
+  const [title, setTitle] = useState("");
+  const [isolationChoice, setIsolationChoice] = useState<
+    WorkspaceCreation["isolation"] | null
+  >(null);
+  const [path, setPath] = useState("README.md"),
+    [browseFiles, setBrowseFiles] = useState(false);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  const [searchFocused, setSearchFocused] = useState(false);
   const [agentStatuses, setAgentStatuses] = useState<
     Record<string, NativeStatusBucket | null>
   >({});
-  const list = useRef<NativeFlatList<Row>>(null),
-    search = useRef<NativeTextInput>(null);
-  const colors = theme.colors;
-  const workspaces = directory?.workspaces ?? [];
-  const source = workspaces.find((workspace) => workspace.id === scope);
-  const matches = (value: string) =>
-    value.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase());
-  const reportAgentStatus = useCallback(
-    (agentId: string, status: NativeStatusBucket | null) => {
-      setAgentStatuses((previous) => {
-        if ((previous[agentId] ?? null) === status) return previous;
-        const next = { ...previous };
-        if (status) next[agentId] = status;
-        else delete next[agentId];
-        return next;
+  const projectSearch = useRef<NativeTextInput>(null),
+    search = useRef<NativeTextInput>(null),
+    list = useRef<NativeFlatList<Row>>(null);
+  const attempt = useRef({ input: "", key: "" });
+  const defaultProjectId = directory?.workspaces.find(
+    (w) => w.id === defaultWorkspaceId,
+  )?.projectId;
+  const needsWorkspace =
+    mode === "new" || mode === "new-terminal" || mode === "file";
+  const effectiveProjectId =
+    projectId === "default" || (projectId === "all" && mode === "new")
+      ? (defaultProjectId ?? directory?.projects[0]?.projectId)
+      : projectId;
+  const project = directory?.projects.find(
+    (p) => p.projectId === effectiveProjectId,
+  );
+  const projects = useMemo(
+    () =>
+      sortPickerProjects(
+        directory?.projects ?? [],
+        directory?.workspaces ?? [],
+      ).filter((p) =>
+        `${p.projectCustomName ?? p.projectDisplayName} ${p.projectRootPath}`
+          .toLocaleLowerCase()
+          .includes(projectQuery.trim().toLocaleLowerCase()),
+      ),
+    [directory?.projects, directory?.workspaces, projectQuery],
+  );
+  const workspaces = (directory?.workspaces ?? []).filter(
+    (w) => effectiveProjectId === "all" || w.projectId === effectiveProjectId,
+  );
+  const workspace =
+    workspaces.find((w) => w.id === workspaceChoice) ??
+    workspaces.find((w) => w.id === defaultWorkspaceId) ??
+    workspaces[0];
+  const creating =
+    mode === "new" &&
+    Boolean(project) &&
+    (workspaceChoice === "create" || !workspaces.length);
+  const isolation =
+    isolationChoice ??
+    (project?.projectKind === "git" ? "worktree" : "directory");
+  const creation = useMutation({
+    retry: false,
+    mutationFn: async () => {
+      if (!project) throw new Error("请先选择 project。");
+      const input = JSON.stringify([
+        project.projectId,
+        title.trim(),
+        isolation,
+      ]);
+      if (attempt.current.input !== input)
+        attempt.current = {
+          input,
+          key: `deck-workspace-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`,
+        };
+      await onCreateWorkspace({
+        project,
+        title,
+        isolation,
+        idempotencyKey: attempt.current.key,
       });
     },
+  });
+  const pending = busy || creation.isPending;
+  const matches = (text: string) =>
+    text.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase());
+  const reportAgentStatus = useCallback(
+    (id: string, status: NativeStatusBucket | null) =>
+      setAgentStatuses((previous) => {
+        if ((previous[id] ?? null) === status) return previous;
+        const next = { ...previous };
+        if (status) next[id] = status;
+        else delete next[id];
+        return next;
+      }),
     [],
   );
-  const rows = useMemo<Row[]>(() => {
-    const items: Row[] = [];
-    if (mode === "new" || mode === "scope" || mode === "new-terminal") {
-      if (mode === "scope" && returnMode !== "file")
-        items.push({
-          key: "all",
-          kind: "option",
-          title: "所有 workspace",
-          subtitle: "跨 workspace 搜索",
-          workspaceId: "",
-          run: () => {
-            setScope("all");
-            setMode(returnMode);
-            setQuery("");
-            setSelectedKey(null);
-          },
-        });
-      const sorted = [...workspaces].sort(
-        (a, b) =>
-          Number(b.id === defaultWorkspaceId) -
-          Number(a.id === defaultWorkspaceId),
-      );
-      for (const workspace of sorted.filter((workspace) =>
-        matches(workspaceLabel(workspace)),
-      ))
-        items.push({
-          key: workspace.id,
-          kind: "option",
-          title: workspace.projectCustomName ?? workspace.projectDisplayName,
-          subtitle: workspace.title ?? workspace.name,
-          workspaceId: workspace.id,
-          badge: workspace.id === defaultWorkspaceId ? "当前来源" : undefined,
-          run: () => {
-            if (mode === "new")
-              onOpen(
-                {
-                  kind: "draft",
-                  draftId: `draft-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
-                },
-                workspace.id,
-              );
-            else if (mode === "new-terminal") onTerminal(workspace.id);
-            else {
-              setScope(workspace.id);
-              setMode(returnMode);
-              setQuery("");
-              setSelectedKey(null);
-            }
-          },
-        });
-    } else if (mode === "agent") {
-      const agents = (directory?.agents ?? []).filter(
-        (agent) =>
-          !agent.archivedAt &&
-          agent.workspaceId &&
-          (scope === "all" || agent.workspaceId === scope) &&
-          matches(
-            `${agent.title ?? ""} ${agent.cwd} ${workspaces.find((workspace) => workspace.id === agent.workspaceId) ? workspaceLabel(workspaces.find((workspace) => workspace.id === agent.workspaceId)!) : ""}`,
-          ),
-      );
-      const running = agents.filter(isRunning),
-        unread = agents.filter(
-          (agent) =>
-            !isRunning(agent) && agentStatuses[agent.id] === "attention",
-        ),
-        recent = agents.filter(
-          (agent) =>
-            !isRunning(agent) && agentStatuses[agent.id] !== "attention",
+  const matchingAgents = useMemo(
+    () =>
+      (directory?.agents ?? []).filter((agent) => {
+        const source = workspaces.find((w) => w.id === agent.workspaceId);
+        return (
+          source &&
+          matches(`${agent.title ?? ""} ${agent.cwd} ${workspaceLabel(source)}`)
         );
-      const append = (
-        agents: typeof running,
-        title: string,
-        active: boolean,
-        unreadGroup = false,
-      ) => {
-        if (!agents.length) return;
-        items.push({
-          key: `heading-${title}`,
-          kind: "heading",
-          title,
-          count: agents.length,
-          running: active,
-          unread: unreadGroup,
-        });
-        for (const agent of agents) {
-          const workspace = workspaces.find(
-            (workspace) => workspace.id === agent.workspaceId,
-          );
-          const badge =
-            agent.status === "running"
-              ? "运行中"
-              : agent.status === "initializing"
-                ? "启动中"
-                : agentStatuses[agent.id] === "attention"
-                  ? "未读"
-                  : openedAgentIds.has(agent.id)
-                    ? "已打开"
-                    : agent.status === "closed"
-                      ? "已关闭"
-                      : agent.status === "error"
-                        ? "出错"
-                        : undefined;
-          items.push({
-            key: agent.id,
-            kind: "option",
-            title: agent.title ?? "未命名 Agent",
-            subtitle: workspace ? workspaceLabel(workspace) : agent.cwd,
-            workspaceId: agent.workspaceId!,
-            agentId: agent.id,
-            badge,
-            badgeIcon:
-              badge === "已打开"
-                ? "Check"
-                : badge === "已关闭"
-                  ? "CircleStop"
-                  : undefined,
-            running: isRunning(agent),
-            spinner: agent.status === "running",
-            run: () =>
-              onOpen({ kind: "agent", agentId: agent.id }, agent.workspaceId!),
-          });
-        }
-      };
-      append(running, "正在运行", true);
-      append(unread, "未读", false, true);
-      append(recent, "最近会话", false);
-    } else if (mode === "terminal") {
-      for (const terminal of directory?.terminals ?? []) {
-        if (
-          (scope === "all" || terminal.workspaceId === scope) &&
-          matches(
-            `${terminal.title ?? ""} ${terminal.name ?? ""} ${terminal.cwd}`,
-          )
+      }),
+    [directory, effectiveProjectId, query],
+  );
+  const agentSections = useMemo(
+    () => groupPickerAgents(matchingAgents, agentStatuses),
+    [matchingAgents, agentStatuses],
+  );
+  const agentCounts = Object.fromEntries(
+    agentSections.map((section) => [section.key, section.agents.length]),
+  );
+  const agentFilters: { key: AgentFilter; label: string; count: number }[] = [
+    {
+      key: "all",
+      label: "全部",
+      count: agentSections.reduce(
+        (sum, section) => sum + section.agents.length,
+        0,
+      ),
+    },
+    { key: "attention", label: "未读", count: agentCounts.attention },
+    { key: "running", label: "运行中", count: agentCounts.running },
+    { key: "needs_input", label: "待处理", count: agentCounts.needs_input },
+    ...(agentCounts.background
+      ? [
+          {
+            key: "background" as const,
+            label: "后台",
+            count: agentCounts.background,
+          },
+        ]
+      : []),
+  ];
+  const rows = useMemo<Row[]>(() => {
+    if (needsWorkspace)
+      return workspaces.map((w) => ({
+        key: w.id,
+        kind: "option",
+        title: w.title ?? w.name,
+        subtitle:
+          effectiveProjectId === "all"
+            ? (w.projectCustomName ?? w.projectDisplayName)
+            : w.workspaceKind === "worktree"
+              ? "独立 worktree"
+              : "项目原目录",
+        workspaceId: w.id,
+        badge: w.id === defaultWorkspaceId ? "当前来源" : undefined,
+        run: () => setWorkspaceChoice(w.id),
+      }));
+    if (mode === "terminal")
+      return (directory?.terminals ?? [])
+        .filter(
+          (t) =>
+            workspaces.some((w) => w.id === t.workspaceId) &&
+            matches(`${t.title ?? t.name ?? ""} ${t.cwd}`),
         )
-          items.push({
-            key: terminal.id,
-            kind: "option",
-            title: terminal.title || terminal.name || "终端",
-            subtitle: terminal.cwd,
-            workspaceId: terminal.workspaceId,
-            run: () =>
-              onOpen(
-                { kind: "terminal", terminalId: terminal.id },
-                terminal.workspaceId,
-              ),
-          });
+        .map((t) => ({
+          key: t.id,
+          kind: "option",
+          title: t.title || t.name || "终端",
+          subtitle: t.cwd,
+          workspaceId: t.workspaceId,
+          run: () => setSelectedKey(t.id),
+        }));
+    if (mode !== "agent") return [];
+    const result: Row[] = [];
+    for (const section of agentSections) {
+      if (
+        !section.agents.length ||
+        (agentFilter !== "all" && section.key !== agentFilter)
+      )
+        continue;
+      result.push({
+        key: `heading-${section.key}`,
+        kind: "heading",
+        title: section.label,
+        count: section.agents.length,
+        running: section.key === "running",
+        unread: section.key === "attention",
+      });
+      for (const a of section.agents) {
+        const w = workspaces.find((w) => w.id === a.workspaceId);
+        const activity = pickerAgentActivity(a, agentStatuses[a.id]);
+        const badge =
+          activity.badge ??
+          (openedAgentIds.has(a.id)
+            ? "已打开"
+            : a.status === "closed"
+              ? "已关闭"
+              : undefined);
+        result.push({
+          key: a.id,
+          kind: "option",
+          title: a.title ?? "未命名 Agent",
+          subtitle: w ? workspaceLabel(w) : a.cwd,
+          workspaceId: a.workspaceId!,
+          agentId: a.id,
+          action: "添加",
+          badge,
+          badgeIcon:
+            badge === "已打开"
+              ? "Check"
+              : badge === "已关闭"
+                ? "CircleStop"
+                : undefined,
+          running: activity.running,
+          spinner: activity.status === "running" && a.status === "running",
+          status: activity.status,
+          backgroundCount:
+            section.key === "background" ? 0 : activity.backgroundCount,
+          select: () => setSelectedKey(a.id),
+          run: () => onOpen({ kind: "agent", agentId: a.id }, a.workspaceId!),
+        });
       }
     }
-    return items;
+    return result;
   }, [
     mode,
-    scope,
-    query,
     directory,
+    effectiveProjectId,
+    query,
+    defaultWorkspaceId,
     agentStatuses,
     openedAgentIds,
-    defaultWorkspaceId,
-    returnMode,
+    agentFilter,
+    agentSections,
     onOpen,
-    onTerminal,
   ]);
-  const options = useMemo(
-    () =>
-      rows.filter(
-        (row): row is Extract<Row, { kind: "option" }> => row.kind === "option",
-      ),
-    [rows],
+  const options = rows.filter(
+    (row): row is Extract<Row, { kind: "option" }> => row.kind === "option",
   );
-  const selected = Math.max(
-    0,
-    options.findIndex((option) => option.key === selectedKey),
-  );
-  const activeOption = options[selected];
-  const layouts = useMemo(() => {
-    let offset = 4;
-    return rows.map((row, index) => {
-      const length = row.kind === "heading" ? HEADING_HEIGHT : RESULT_HEIGHT;
-      const value = { length, offset, index };
-      offset += length;
-      return value;
-    });
-  }, [rows]);
-  const keyboard = useRef({ options, selected, busy });
-  keyboard.current = { options, selected, busy };
+  const selected = needsWorkspace
+    ? Math.max(
+        0,
+        options.findIndex((o) => o.key === workspace?.id),
+      )
+    : Math.max(
+        0,
+        options.findIndex((o) => o.key === selectedKey),
+      );
+  const active = options[selected];
+  const confirm = () => {
+    if (pending) return;
+    if (creating) {
+      creation.mutate();
+      return;
+    }
+    if (mode === "new" && workspace)
+      onOpen(
+        {
+          kind: "draft",
+          draftId: `draft-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`,
+        },
+        workspace.id,
+      );
+    else if (mode === "new-terminal" && workspace) onTerminal(workspace.id);
+    else if (mode === "file" && workspace && (browseFiles || path.trim()))
+      onOpen(
+        browseFiles ? { kind: "files" } : { kind: "file", path: path.trim() },
+        workspace.id,
+      );
+    else if (mode === "agent" && active?.agentId)
+      onOpen({ kind: "agent", agentId: active.agentId }, active.workspaceId);
+    else if (mode === "terminal" && active)
+      onOpen({ kind: "terminal", terminalId: active.key }, active.workspaceId);
+  };
+  const keyboard = useRef({ options, rows, selected, confirm, pending });
+  keyboard.current = { options, rows, selected, confirm, pending };
   useEffect(() => {
-    if (mode !== "menu") search.current?.focus();
+    if (mode === "new" || mode === "new-terminal" || mode === "file")
+      projectSearch.current?.focus();
+    else search.current?.focus();
   }, [mode]);
   useEffect(
     () =>
       onPickerKeys((key) => {
-        const { options, selected, busy } = keyboard.current;
-        if (busy) return true;
+        const state = keyboard.current;
+        if (state.pending) return true;
         if (key === "Enter") {
-          if (options.length)
-            options[Math.min(selected, options.length - 1)]?.run();
-          return mode !== "file";
+          state.confirm();
+          return true;
         }
-        if ((key === "ArrowDown" || key === "ArrowUp") && options.length) {
-          setSelectedKey(
-            options[
-              (selected + (key === "ArrowDown" ? 1 : -1) + options.length) %
-                options.length
-            ].key,
-          );
+        if (
+          (key === "ArrowDown" || key === "ArrowUp") &&
+          state.options.length
+        ) {
+          const index =
+            (state.selected +
+              (key === "ArrowDown" ? 1 : -1) +
+              state.options.length) %
+            state.options.length;
+          (state.options[index].select ?? state.options[index].run)();
+          if (index === 0)
+            list.current?.scrollToOffset({ offset: 0, animated: false });
+          else {
+            const rowIndex = state.rows.findIndex(
+              (row) => row.key === state.options[index].key,
+            );
+            if (rowIndex >= 0)
+              list.current?.scrollToIndex({
+                index: rowIndex,
+                animated: false,
+                viewPosition: 0.5,
+              });
+          }
           return true;
         }
         return false;
       }, onClose),
-    [onClose, mode],
+    [onClose],
   );
   useEffect(() => {
-    const index = rows.findIndex((row) => row.key === activeOption?.key);
-    if (index < 0) return;
-    if (selected === 0)
-      list.current?.scrollToOffset({ offset: 0, animated: false });
-    else
-      list.current?.scrollToIndex({
-        index,
-        animated: false,
-        viewPosition: 0.5,
-      });
-  }, [selected, query, mode, scope]);
-  useLayoutEffect(() => {
-    const count =
-      mode === "new" || mode === "scope" || mode === "new-terminal"
-        ? workspaces.length
-        : mode === "terminal"
-          ? (directory?.terminals.length ?? 0)
-          : (directory?.agents.length ?? 0);
-    const height =
-      mode === "menu"
-        ? Math.min(350, menuActions.length * 36 + 10)
-        : mode === "file"
-          ? 290
-          : Math.max(
-              280,
-              Math.min(
-                520,
-                60 +
-                  40 +
-                  48 +
-                  8 +
-                  count * RESULT_HEIGHT +
-                  (mode === "agent" ? 104 : mode === "terminal" ? 44 : 0),
-              ),
-            );
-    onHeightChange(height);
-  }, [
-    mode,
-    workspaces.length,
-    directory?.agents.length,
-    directory?.terminals.length,
-    menuActions.length,
-    onHeightChange,
-  ]);
-  const changeMode = (next: PickerMode) => {
+    // A selected/default row is not a scroll request. In particular, centering
+    // before FlatList has measured its viewport hides the first group heading.
+    list.current?.scrollToOffset({ offset: 0, animated: false });
+  }, [mode, effectiveProjectId, query, agentFilter]);
+  useLayoutEffect(
+    () =>
+      onHeightChange(
+        mode === "menu" ? Math.min(350, menuActions.length * 36 + 10) : 640,
+      ),
+    [mode, menuActions.length, onHeightChange],
+  );
+  const switchMode = (next: PickerMode) => {
+    if (pending) return;
     setMode(next);
     setQuery("");
+    setAgentFilter("all");
     setSelectedKey(null);
-    if (next === "file" && scope === "all" && defaultWorkspaceId)
-      setScope(defaultWorkspaceId);
+    setWorkspaceChoice(null);
+    creation.reset();
   };
-  const choosingWorkspace =
-    mode === "new" || mode === "scope" || mode === "new-terminal";
-  const searchLabel = choosingWorkspace
-    ? "搜索 workspace"
-    : mode === "file"
-      ? "输入相对文件路径"
-      : mode === "terminal"
-        ? "搜索终端或 workspace"
-        : "搜索 Agent 或 workspace";
-  const inputValue = mode === "file" ? path : query;
-  const menuButton = (action: PaneMenuAction, index: number) => (
-    <PickerRow
-      key={action.label}
-      theme={theme}
-      disabled={action.disabled || busy}
-      label={action.label}
-      icon={action.icon}
-      onPress={action.run}
-      testID={`split-menu-action-${index}`}
-    />
-  );
+  const chooseProject = (id: string) => {
+    if (pending) return;
+    setProjectId(id);
+    setWorkspaceChoice(null);
+    setTitle("");
+    setIsolationChoice(null);
+    setQuery("");
+    setSelectedKey(null);
+    creation.reset();
+  };
+  const errorText = creation.error
+    ? creation.error instanceof Error
+      ? creation.error.message
+      : String(creation.error)
+    : error;
+  const canConfirm =
+    !pending &&
+    Boolean(
+      creating
+        ? project
+        : needsWorkspace
+          ? workspace && (mode !== "file" || browseFiles || path.trim())
+          : active,
+    );
+  const actionLabel =
+    pending && creating
+      ? "正在创建…"
+      : creating
+        ? "创建并添加 Agent"
+        : mode === "new"
+          ? "新建 Agent"
+          : mode === "agent"
+            ? "添加 Agent"
+            : mode === "new-terminal"
+              ? "新建终端"
+              : mode === "terminal"
+                ? "添加终端"
+                : browseFiles
+                  ? "浏览文件"
+                  : "打开文件";
   if (mode === "menu")
     return (
       <ScrollView
@@ -423,416 +515,705 @@ export function ResourcePicker({
         style={{ maxHeight: 350 }}
         contentContainerStyle={{ padding: 5, gap: 2 }}
       >
-        {menuActions.map(menuButton)}
+        {menuActions.map((action, index) => (
+          <PickerRow
+            key={action.label}
+            theme={theme}
+            disabled={action.disabled || busy}
+            label={action.label}
+            icon={action.icon}
+            onPress={action.run}
+            testID={`split-menu-action-${index}`}
+          />
+        ))}
       </ScrollView>
     );
+
+  const listContent = (
+    <FlatList<Row>
+      ref={list}
+      testID="split-resource-results"
+      data={rows}
+      keyExtractor={(row) => row.key}
+      style={{ flex: 1, minHeight: 0 }}
+      contentContainerStyle={{ paddingVertical: 4 }}
+      initialNumToRender={12}
+      maxToRenderPerBatch={12}
+      windowSize={5}
+      keyboardShouldPersistTaps="handled"
+      getItemLayout={(_data, index) => ({
+        index,
+        length:
+          rows[index]?.kind === "heading" ? HEADING_HEIGHT : RESULT_HEIGHT,
+        offset:
+          4 +
+          rows
+            .slice(0, index)
+            .reduce(
+              (total, row) =>
+                total +
+                (row.kind === "heading" ? HEADING_HEIGHT : RESULT_HEIGHT),
+              0,
+            ),
+      })}
+      onScrollToIndexFailed={() => {}}
+      ListEmptyComponent={
+        <View style={{ padding: 24, gap: 8, alignItems: "center" }}>
+          <Icon
+            name={mode === "agent" ? "MessagesSquare" : "Layers"}
+            size={24}
+            color={c.foregroundMuted}
+          />
+          <Text
+            style={{
+              fontSize: 13,
+              color: c.foregroundMuted,
+              textAlign: "center",
+            }}
+          >
+            {!directory
+              ? "正在读取资源…"
+              : query.trim()
+                ? "没有匹配的资源"
+                : mode === "agent"
+                  ? "此 project 暂无 Agent"
+                  : mode === "terminal"
+                    ? "此 project 暂无终端"
+                    : "此 project 暂无 workspace"}
+          </Text>
+        </View>
+      }
+      renderItem={({ item }) =>
+        item.kind === "heading" ? (
+          <View
+            style={{
+              height: HEADING_HEIGHT,
+              paddingHorizontal: 10,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <Text
+              testID={
+                item.unread
+                  ? "split-unread-heading"
+                  : item.running
+                    ? "split-running-heading"
+                    : undefined
+              }
+              style={{
+                color: c.foregroundMuted,
+                fontSize: 12,
+                fontWeight: "500",
+              }}
+            >
+              {item.title}
+            </Text>
+            <Text style={{ color: c.foregroundMuted, fontSize: 11 }}>
+              {item.count}
+            </Text>
+          </View>
+        ) : (
+          <ResultRow
+            bridge={bridge}
+            row={item}
+            selected={item.key === active?.key}
+            theme={theme}
+            busy={pending}
+            onArchive={onArchive}
+          />
+        )
+      }
+    />
+  );
   return (
-    <View testID="split-resource-picker" style={{ flex: 1, minHeight: 0 }}>
+    <View
+      testID="split-resource-picker"
+      style={{ flex: 1, minHeight: 0 }}
+      onLayout={(event) => setCompact(event.nativeEvent.layout.width < 620)}
+    >
       {mode === "agent" && directory && (
         <QueryClientProvider client={bridge.queryClient}>
           {directory.agents
             .filter(
-              (agent) =>
-                !agent.archivedAt &&
-                agent.workspaceId &&
-                (scope === "all" || agent.workspaceId === scope) &&
-                matches(
-                  `${agent.title ?? ""} ${agent.cwd} ${workspaces.find((workspace) => workspace.id === agent.workspaceId) ? workspaceLabel(workspaces.find((workspace) => workspace.id === agent.workspaceId)!) : ""}`,
-                ),
+              (a) =>
+                !a.archivedAt &&
+                a.workspaceId &&
+                workspaces.some((w) => w.id === a.workspaceId),
             )
-            .map((agent) => (
+            .map((a) => (
               <ObservePickerAgent
-                key={agent.id}
-                agentId={agent.id}
+                key={a.id}
+                agentId={a.id}
                 serverId={serverId}
-                workspaceId={agent.workspaceId!}
+                workspaceId={a.workspaceId!}
                 bridge={bridge}
                 report={reportAgentStatus}
               />
             ))}
         </QueryClientProvider>
       )}
-      <View style={{ padding: 10, paddingBottom: 6 }}>
-        <View
-          testID="split-search-field"
+      <View
+        style={{
+          paddingHorizontal: compact ? 20 : 24,
+          paddingTop: 16,
+          paddingBottom: 8,
+          flexDirection: "row",
+          gap: 16,
+          alignItems: "center",
+        }}
+      >
+        <Text
+          accessibilityRole="header"
           style={{
-            height: 40,
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 8,
-            paddingHorizontal: 10,
-            borderWidth: 1,
-            borderRadius: 8,
-            borderColor: searchFocused ? colors.foregroundMuted : colors.border,
-            backgroundColor: colors.surface0,
+            flex: 1,
+            color: c.foreground,
+            fontSize: 20,
+            fontWeight: "600",
+            letterSpacing: -0.4,
           }}
         >
-          {choosingWorkspace ? (
-            <IconButton
-              theme={theme}
-              label="返回资源列表"
-              icon="ArrowLeft"
-              size={24}
-              tooltip={false}
-              onPress={() =>
-                changeMode(mode === "scope" ? returnMode : "agent")
-              }
-            />
-          ) : (
-            <Icon
-              name={mode === "file" ? "FileCode2" : "Search"}
-              size={15}
-              color={colors.foregroundMuted}
-            />
-          )}
-          <TextInput
-            ref={search}
-            testID="split-resource-search"
-            accessibilityLabel={mode === "file" ? "文件路径" : searchLabel}
-            accessibilityHint={
-              mode === "file"
-                ? "Enter 打开文件，Esc 关闭"
-                : "使用上下方向键选择，Enter 打开，Esc 关闭"
+          添加到 Deck
+        </Text>
+        <IconButton
+          theme={theme}
+          label="关闭添加面板"
+          icon="X"
+          size={32}
+          tooltip={false}
+          disabled={pending}
+          onPress={onClose}
+        />
+      </View>
+      <View
+        accessibilityRole="tablist"
+        accessibilityLabel="资源类型"
+        style={{
+          flexDirection: "row",
+          paddingHorizontal: compact ? 12 : 24,
+          gap: compact ? 0 : 20,
+          borderBottomWidth: 1,
+          borderColor: c.border,
+        }}
+      >
+        {tabs.map((tab) => (
+          <Pressable
+            key={tab.mode}
+            accessibilityRole="tab"
+            accessibilityLabel={tab.label}
+            aria-selected={
+              mode === tab.mode ||
+              (tab.mode === "terminal" && mode === "new-terminal")
             }
-            placeholder={searchLabel}
-            placeholderTextColor={colors.foregroundMuted}
-            value={inputValue}
-            autoCapitalize="none"
-            autoCorrect={false}
-            spellCheck={false}
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
-            onSubmitEditing={() => {
-              if (mode === "file" && scope !== "all" && path.trim())
-                onOpen({ kind: "file", path: path.trim() }, scope);
+            accessibilityState={{
+              selected: mode === tab.mode,
+              disabled: pending,
             }}
-            onChangeText={(value) => {
-              if (mode === "file") setPath(value);
-              else setQuery(value);
-              setSelectedKey(null);
-            }}
-            style={{
-              flex: 1,
-              minWidth: 0,
-              color: colors.foreground,
-              fontSize: 14,
-              height: "100%",
-              padding: 0,
-              borderWidth: 0,
-              backgroundColor: "transparent",
-              // The surrounding field owns focus, including the icon and keycap.
-              outlineWidth: 0,
-            }}
-          />
-          {inputValue.length > 0 && (
-            <IconButton
-              theme={theme}
-              icon="X"
-              label="清空输入"
-              testID="split-search-clear"
-              size={24}
-              tooltip={false}
-              onPress={() => {
-                if (mode === "file") setPath("");
-                else setQuery("");
-                setSelectedKey(null);
-                search.current?.focus();
+            disabled={pending}
+            onPress={() => switchMode(tab.mode)}
+            style={({ pressed }) => ({
+              minHeight: 44,
+              paddingHorizontal: compact ? 8 : 3,
+              flex: compact ? 1 : undefined,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 7,
+              marginLeft: tab.mode === "new" && !compact ? "auto" : undefined,
+              borderBottomWidth: 2,
+              borderColor:
+                mode === tab.mode ||
+                (tab.mode === "terminal" && mode === "new-terminal")
+                  ? c.foreground
+                  : "transparent",
+              opacity: pressed ? 0.65 : 1,
+            })}
+          >
+            {!compact && (
+              <Icon
+                name={tab.icon}
+                size={15}
+                color={mode === tab.mode ? c.foreground : c.foregroundMuted}
+              />
+            )}
+            <Text
+              numberOfLines={1}
+              style={{
+                fontSize: 13,
+                fontWeight: mode === tab.mode ? "500" : "400",
+                color: mode === tab.mode ? c.foreground : c.foregroundMuted,
               }}
-            />
-          )}
-          <PickerChip
-            theme={theme}
-            label="关闭添加面板"
-            text="esc"
-            keycap
-            onPress={onClose}
-          />
-        </View>
+            >
+              {tab.label}
+            </Text>
+          </Pressable>
+        ))}
       </View>
       <View
         style={{
-          height: 44,
-          paddingHorizontal: 10,
-          paddingBottom: 6,
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 8,
+          flex: 1,
+          minHeight: 0,
+          flexDirection: compact ? "column" : "row",
         }}
       >
-        {choosingWorkspace ? (
-          <Text
+        <View
+          style={{
+            width: compact ? undefined : 208,
+            height: compact ? 104 : undefined,
+            paddingTop: 14,
+            backgroundColor: c.surface1,
+            borderRightWidth: compact ? 0 : 1,
+            borderBottomWidth: compact ? 1 : 0,
+            borderColor: c.border,
+          }}
+        >
+          <View
             style={{
-              paddingHorizontal: 2,
-              fontSize: 11,
-              color: colors.foregroundMuted,
+              paddingHorizontal: 12,
+              gap: 10,
+              flexDirection: compact ? "row" : "column",
+              alignItems: compact ? "center" : undefined,
             }}
           >
-            {mode === "new"
-              ? "选择新 Agent 的 workspace"
-              : mode === "new-terminal"
-                ? "选择终端的 workspace"
-                : "选择来源 workspace"}
-          </Text>
-        ) : (
-          <>
-            <PickerChip
-              theme={theme}
-              label={`来源：${source ? workspaceLabel(source) : "所有 workspace"}`}
-              text={source ? (source.title ?? source.name) : "所有 workspace"}
-              icon="Layers"
-              trailingIcon="ChevronDown"
-              grow
-              onPress={() => {
-                setReturnMode(mode as PickerMode);
-                setMode("scope");
-                setQuery("");
-                setSelectedKey(null);
-              }}
-            />
-            <View
-              accessibilityRole="tablist"
-              accessibilityLabel="资源类型"
+            <Text
               style={{
-                flexDirection: "row",
-                padding: 3,
-                gap: 2,
-                borderRadius: 7,
-                backgroundColor: colors.surface0,
+                color: c.foregroundMuted,
+                fontSize: 11,
+                fontWeight: "500",
+                letterSpacing: 0.3,
               }}
             >
-              {(["agent", "terminal", "file"] as const).map((value) => (
-                <PickerChip
-                  key={value}
-                  theme={theme}
-                  role="tab"
-                  text={
-                    value === "agent"
-                      ? "Agent"
-                      : value === "terminal"
-                        ? "终端"
-                        : "文件"
-                  }
-                  active={mode === value}
-                  onPress={() => changeMode(value)}
-                />
-              ))}
-            </View>
-          </>
-        )}
-      </View>
-      {error && (
-        <Text
-          accessibilityLiveRegion="polite"
-          style={{ color: colors.statusDanger, fontSize: 12, padding: 10 }}
-        >
-          {error}
-        </Text>
-      )}
-      {mode === "agent" && (
-        <View
-          style={{
-            paddingHorizontal: 10,
-            paddingBottom: 8,
-            borderBottomWidth: 1,
-            borderColor: colors.border,
-          }}
-        >
-          <PickerRow
-            theme={theme}
-            label="新建 Agent"
-            hint="选择 workspace"
-            icon="SquarePen"
-            featured
-            onPress={() => changeMode("new")}
-            disabled={busy}
-          />
-        </View>
-      )}
-      {mode === "terminal" && (
-        <View
-          style={{
-            paddingHorizontal: 10,
-            paddingBottom: 8,
-            borderBottomWidth: 1,
-            borderColor: colors.border,
-          }}
-        >
-          <PickerRow
-            theme={theme}
-            label="新建终端"
-            icon="Plus"
-            hint="选择 workspace"
-            featured
-            onPress={() => {
-              setMode("new-terminal");
-              setQuery("");
-              setSelectedKey(null);
-            }}
-            disabled={busy}
-          />
-        </View>
-      )}
-      {mode === "file" ? (
-        <View style={{ flex: 1, padding: 12, gap: 12 }}>
-          <Text style={{ fontSize: 12, color: colors.foregroundMuted }}>
-            相对来源 workspace 的文件路径
-          </Text>
-          <PickerRow
-            theme={theme}
-            label="打开文件"
-            icon="FileCode2"
-            onPress={() => onOpen({ kind: "file", path: path.trim() }, scope)}
-            disabled={busy || scope === "all" || !path.trim()}
-          />
-          <PickerRow
-            theme={theme}
-            label="浏览 workspace 文件"
-            icon="FolderTree"
-            onPress={() => onOpen({ kind: "files" }, scope)}
-            disabled={busy || scope === "all"}
-          />
-          {scope === "all" && (
-            <Text style={{ fontSize: 12, color: colors.foregroundMuted }}>
-              请先在上方选择来源 workspace。
+              PROJECT
             </Text>
-          )}
-        </View>
-      ) : (
-        <FlatList<Row>
-          ref={list}
-          data={rows}
-          keyExtractor={(row) => row.key}
-          style={{ flex: 1, minHeight: 0 }}
-          contentContainerStyle={{ paddingVertical: 4 }}
-          initialNumToRender={12}
-          maxToRenderPerBatch={12}
-          windowSize={5}
-          getItemLayout={(_data, index) =>
-            layouts[index] ?? {
-              length: RESULT_HEIGHT,
-              offset: index * RESULT_HEIGHT,
-              index,
-            }
-          }
-          keyboardShouldPersistTaps="handled"
-          onScrollToIndexFailed={() => {}}
-          ListEmptyComponent={
-            <View style={{ padding: 22, gap: 10 }}>
-              <Text style={{ fontSize: 12, color: colors.foregroundMuted }}>
-                {directory
-                  ? "没有匹配结果，可换个关键词或来源。"
-                  : "正在读取资源…"}
-              </Text>
+            <View style={{ flex: compact ? 1 : undefined }}>
+              <DialogInput
+                ref={projectSearch}
+                theme={theme}
+                icon="Search"
+                label="搜索 project"
+                value={projectQuery}
+                onChangeText={setProjectQuery}
+                onSubmit={() => {
+                  if (projects[0]) chooseProject(projects[0].projectId);
+                }}
+                disabled={pending}
+                testID="split-project-search"
+              />
             </View>
-          }
-          renderItem={({ item }) =>
-            item.kind === "heading" ? (
-              <View
+          </View>
+          <FlatList
+            data={[
+              ...(mode !== "new"
+                ? [
+                    {
+                      projectId: "all",
+                      projectDisplayName: "所有 project",
+                      projectKind: "directory" as const,
+                      projectRootPath: "",
+                    },
+                  ]
+                : []),
+              ...projects,
+            ]}
+            horizontal={compact}
+            keyExtractor={(p) => p.projectId}
+            style={{ flex: 1, minHeight: 0 }}
+            contentContainerStyle={{ padding: 8, gap: 3 }}
+            initialNumToRender={12}
+            windowSize={5}
+            keyboardShouldPersistTaps="handled"
+            ListEmptyComponent={
+              <Text
+                style={{ padding: 12, fontSize: 12, color: c.foregroundMuted }}
+              >
+                {directory ? "没有匹配的 project" : "正在读取…"}
+              </Text>
+            }
+            renderItem={({ item: p }) => (
+              <View style={{ width: compact ? 174 : undefined }}>
+                <DialogChoice
+                  theme={theme}
+                  compact
+                  title={p.projectCustomName ?? p.projectDisplayName}
+                  leadingIcon={
+                    <View
+                      aria-hidden
+                      pointerEvents="none"
+                      style={{
+                        width: 20,
+                        height: 20,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {p.projectId === "all" ? (
+                        <Icon
+                          name="Layers"
+                          size={18}
+                          color={c.foregroundMuted}
+                        />
+                      ) : (
+                        <ProjectIcon
+                          bridge={bridge}
+                          projectId={p.projectId}
+                          label={p.projectCustomName ?? p.projectDisplayName}
+                          size={20}
+                        />
+                      )}
+                    </View>
+                  }
+                  selected={p.projectId === effectiveProjectId}
+                  onPress={() => chooseProject(p.projectId)}
+                  disabled={pending}
+                  testID={`split-project-${p.projectId}`}
+                />
+              </View>
+            )}
+          />
+        </View>
+        <View
+          style={{
+            flex: 1,
+            minWidth: 0,
+            minHeight: 0,
+            padding: compact ? 16 : 20,
+            gap: 16,
+          }}
+        >
+          {mode !== "agent" && (
+            <View style={{ gap: 5 }}>
+              <Text
+                numberOfLines={1}
+                style={{ color: c.foreground, fontSize: 14, fontWeight: "500" }}
+              >
+                {project
+                  ? (project.projectCustomName ?? project.projectDisplayName)
+                  : "所有 project"}
+              </Text>
+              <Text
+                numberOfLines={1}
                 style={{
-                  height: HEADING_HEIGHT,
-                  paddingHorizontal: 16,
-                  justifyContent: "flex-start",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 6,
+                  color: c.foregroundMuted,
+                  fontSize: 11,
+                  fontFamily: "monospace",
                 }}
               >
-                {item.running && (
-                  <Icon
-                    name="Activity"
-                    size={11}
-                    color={colors.statusSuccess}
-                  />
-                )}
+                {project?.projectRootPath ?? "跨 project 选择已有资源"}
+              </Text>
+            </View>
+          )}
+          {mode === "new" ? (
+            <>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 8,
+                }}
+              >
                 <Text
-                  testID={
-                    item.unread
-                      ? "split-unread-heading"
-                      : item.running
-                        ? "split-running-heading"
-                        : undefined
-                  }
-                  accessibilityRole="header"
                   style={{
-                    fontSize: 11,
-                    color: colors.foregroundMuted,
+                    color: c.foreground,
+                    fontSize: 12,
                     fontWeight: "500",
                   }}
                 >
-                  {item.title}
+                  {creating ? "新建 workspace" : "选择 workspace"}
                 </Text>
-                <Text style={{ fontSize: 10, color: colors.foregroundMuted }}>
-                  {item.count}
-                </Text>
+                {project && (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      creating ? "选择已有 workspace" : "新建 workspace"
+                    }
+                    disabled={pending || (creating && !workspaces.length)}
+                    onPress={() => {
+                      setWorkspaceChoice(creating ? null : "create");
+                      creation.reset();
+                    }}
+                    style={{
+                      paddingVertical: 6,
+                      paddingHorizontal: 2,
+                      opacity: creating && !workspaces.length ? 0 : 1,
+                    }}
+                  >
+                    <Text style={{ color: c.foregroundMuted, fontSize: 12 }}>
+                      {creating ? "选择已有 workspace" : "＋ 新建 workspace"}
+                    </Text>
+                  </Pressable>
+                )}
               </View>
-            ) : (
-              <ResultRow
-                bridge={bridge}
-                row={item}
-                selected={activeOption?.key === item.key}
-                theme={theme}
-                busy={busy}
-                onArchive={async (agentId) => {
-                  await onArchive(agentId);
-                  search.current?.focus();
+              {creating && project ? (
+                <ScrollView
+                  style={{ flex: 1, minHeight: 0 }}
+                  contentContainerStyle={{ paddingBottom: 8 }}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  <WorkspaceFields
+                    theme={theme}
+                    project={project}
+                    title={title}
+                    isolation={isolation}
+                    busy={pending}
+                    onTitle={(value) => {
+                      setTitle(value);
+                      creation.reset();
+                    }}
+                    onIsolation={(value) => {
+                      setIsolationChoice(value);
+                      creation.reset();
+                    }}
+                  />
+                </ScrollView>
+              ) : (
+                listContent
+              )}
+            </>
+          ) : mode === "file" ? (
+            <ScrollView
+              style={{ flex: 1, minHeight: 0 }}
+              contentContainerStyle={{ gap: 14 }}
+              keyboardShouldPersistTaps="handled"
+            >
+              <Text
+                style={{ color: c.foreground, fontSize: 12, fontWeight: "500" }}
+              >
+                选择 workspace
+              </Text>
+              <View
+                accessibilityRole="radiogroup"
+                accessibilityLabel="Workspace"
+              >
+                {workspaces.map((w) => (
+                  <DialogChoice
+                    key={w.id}
+                    theme={theme}
+                    title={w.title ?? w.name}
+                    icon="Layers"
+                    selected={w.id === workspace?.id}
+                    onPress={() => setWorkspaceChoice(w.id)}
+                    disabled={pending}
+                    compact
+                  />
+                ))}
+              </View>
+              <View style={{ gap: 8 }}>
+                <Text
+                  style={{
+                    color: c.foreground,
+                    fontSize: 12,
+                    fontWeight: "500",
+                  }}
+                >
+                  文件路径
+                </Text>
+                <DialogInput
+                  theme={theme}
+                  label="文件路径"
+                  placeholder="相对 workspace 的文件路径"
+                  value={path}
+                  onChangeText={(value) => {
+                    setPath(value);
+                    setBrowseFiles(false);
+                  }}
+                  onSubmit={confirm}
+                  disabled={pending}
+                  testID="split-file-path"
+                />
+                <Pressable
+                  accessibilityRole="checkbox"
+                  accessibilityLabel="浏览 workspace 文件"
+                  accessibilityState={{ checked: browseFiles }}
+                  aria-checked={browseFiles}
+                  onPress={() => setBrowseFiles((v) => !v)}
+                  style={{
+                    paddingVertical: 6,
+                    flexDirection: "row",
+                    gap: 7,
+                    alignItems: "center",
+                  }}
+                >
+                  <Icon
+                    name={browseFiles ? "SquareCheck" : "Square"}
+                    size={14}
+                    color={c.foregroundMuted}
+                  />
+                  <Text style={{ color: c.foregroundMuted, fontSize: 12 }}>
+                    浏览 workspace 文件
+                  </Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          ) : (
+            <>
+              <View
+                testID={mode === "agent" ? "split-agent-toolbar" : undefined}
+                style={{
+                  flexDirection: "row",
+                  gap: 8,
+                  alignItems: "center",
+                  minHeight: 38,
                 }}
-              />
-            )
-          }
-        />
-      )}
+              >
+                <View
+                  style={
+                    mode === "agent"
+                      ? { width: compact ? 130 : 180, flexShrink: 0 }
+                      : { flex: 1 }
+                  }
+                >
+                  <DialogInput
+                    ref={search}
+                    theme={theme}
+                    icon="Search"
+                    label={
+                      mode === "agent"
+                        ? "搜索 Agent、workspace 或 project"
+                        : mode === "terminal"
+                          ? "搜索终端"
+                          : "选择 workspace"
+                    }
+                    placeholder={mode === "agent" ? "搜索 Agent…" : undefined}
+                    value={query}
+                    onChangeText={(value) => {
+                      setQuery(value);
+                      setSelectedKey(null);
+                    }}
+                    disabled={pending}
+                    testID="split-resource-search"
+                  />
+                </View>
+                {mode === "agent" && (
+                  <ScrollView
+                    testID="split-agent-filters"
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={{ flex: 1, minWidth: 0, maxHeight: 38 }}
+                    contentContainerStyle={{ alignItems: "center", gap: 5 }}
+                    keyboardShouldPersistTaps="handled"
+                  >
+                    <View
+                      accessibilityRole="radiogroup"
+                      accessibilityLabel="Agent 状态"
+                      style={{ flexDirection: "row", gap: 5 }}
+                    >
+                      {agentFilters.map((filter) => (
+                        <PickerChip
+                          key={filter.key}
+                          theme={theme}
+                          role="radio"
+                          text={`${filter.label} ${filter.count}`}
+                          label={`${filter.label} Agent ${filter.count}`}
+                          active={agentFilter === filter.key}
+                          disabled={pending}
+                          onPress={() => {
+                            setAgentFilter(filter.key);
+                            setSelectedKey(null);
+                          }}
+                        />
+                      ))}
+                    </View>
+                  </ScrollView>
+                )}
+                {mode !== "agent" && (
+                  <DialogButton
+                    theme={theme}
+                    label={mode === "new-terminal" ? "已有终端" : "新建终端"}
+                    onPress={() =>
+                      switchMode(
+                        mode === "new-terminal" ? "terminal" : "new-terminal",
+                      )
+                    }
+                    disabled={pending}
+                  />
+                )}
+              </View>
+              {listContent}
+            </>
+          )}
+          {errorText && (
+            <Text
+              accessibilityRole="alert"
+              accessibilityLiveRegion="polite"
+              style={{ color: c.statusDanger, fontSize: 12, lineHeight: 18 }}
+            >
+              {errorText}
+            </Text>
+          )}
+        </View>
+      </View>
       <View
         style={{
-          height: 48,
+          paddingHorizontal: compact ? 16 : 24,
+          paddingVertical: 14,
+          gap: 12,
           borderTopWidth: 1,
-          borderColor: colors.border,
-          flexDirection: "row",
-          alignItems: "center",
-          paddingHorizontal: 10,
-          gap: 6,
-          backgroundColor: colors.surface0,
+          borderColor: c.border,
+          flexDirection: compact ? "column" : "row",
+          alignItems: compact ? "stretch" : "center",
+          backgroundColor: c.surface1,
         }}
       >
-        <IconButton
-          label="刷新资源"
-          icon="RefreshCw"
-          size={24}
-          theme={theme}
-          onPress={onRefresh}
-          disabled={busy}
-          tooltip={false}
-        />
-        <Text
-          numberOfLines={1}
-          style={{ fontSize: 11, color: colors.foregroundMuted, flexShrink: 1 }}
-        >
-          {mode === "file" ? "↵ 打开文件" : "↑↓ 选择 · ↵ 打开"}
-        </Text>
-        <View style={{ flex: 1 }} />
-        <Text
+        <View
           style={{
-            fontSize: 10,
-            color: colors.foregroundMuted,
-            marginRight: 3,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+            flex: compact ? undefined : 1,
           }}
         >
-          添加到
-        </Text>
+          <Text style={{ color: c.foregroundMuted, fontSize: 12 }}>添加到</Text>
+          <View
+            accessibilityRole="radiogroup"
+            accessibilityLabel="添加到"
+            style={{ flexDirection: "row", gap: 3 }}
+          >
+            {[false, true].map((value) => (
+              <PickerChip
+                key={String(value)}
+                theme={theme}
+                text={value ? "新分屏" : "当前分屏"}
+                role="radio"
+                active={newSplit === value}
+                disabled={pending}
+                onPress={() => {
+                  if (!pending) onDestination(value);
+                }}
+              />
+            ))}
+          </View>
+          <IconButton
+            theme={theme}
+            label="刷新资源"
+            icon="RefreshCw"
+            size={28}
+            tooltip={false}
+            disabled={pending}
+            onPress={onRefresh}
+          />
+        </View>
         <View
-          accessibilityRole="radiogroup"
-          accessibilityLabel="添加到"
-          style={{ flexDirection: "row", gap: 2 }}
+          style={{ flexDirection: "row", gap: 8, justifyContent: "flex-end" }}
         >
-          {([false, true] as const).map((value) => (
-            <PickerChip
-              key={String(value)}
-              theme={theme}
-              role="radio"
-              text={value ? "新分屏" : "当前分屏"}
-              active={newSplit === value}
-              onPress={() => onDestination(value)}
-            />
-          ))}
+          <DialogButton
+            theme={theme}
+            label="取消"
+            onPress={onClose}
+            disabled={pending}
+          />
+          <DialogButton
+            theme={theme}
+            label={actionLabel}
+            primary
+            onPress={confirm}
+            disabled={!canConfirm}
+            busy={pending}
+            testID={
+              creating ? "split-create-workspace" : "split-confirm-resource"
+            }
+          />
         </View>
       </View>
     </View>
@@ -927,9 +1308,10 @@ function ResultRow({
     >
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`打开 ${row.title} · ${row.subtitle}${row.badge ? " · " + row.badge : ""}`}
+        accessibilityLabel={`${row.action ?? "选择"} ${row.title} · ${row.subtitle}${row.badge ? " · " + row.badge : ""}`}
         disabled={busy}
-        accessibilityState={{ disabled: busy }}
+        accessibilityState={{ disabled: busy, selected }}
+        aria-pressed={selected}
         onPress={row.run}
         onHoverIn={() => setHovered(true)}
         onHoverOut={() => setHovered(false)}
@@ -956,13 +1338,17 @@ function ResultRow({
             size={22}
           />
         ) : (
-          <Icon name="Layers" size={16} color={colors.foregroundMuted} />
+          <Icon
+            name={row.icon ?? "Layers"}
+            size={16}
+            color={colors.foregroundMuted}
+          />
         )}
         <View style={{ flex: 1, minWidth: 0, gap: 5 }}>
           <Text
             numberOfLines={1}
             style={{
-              fontSize: 12,
+              fontSize: 13,
               color: colors.foreground,
               fontWeight: selected || row.running ? "500" : "400",
             }}
@@ -976,12 +1362,14 @@ function ResultRow({
             {row.subtitle}
           </Text>
         </View>
+        {selected && <Icon name="Check" size={14} color={colors.accent} />}
         {row.badge && (
           <View
             style={{
               flexDirection: "row",
               alignItems: "center",
-              gap: 4,
+              gap: 5,
+              flexShrink: 0,
             }}
           >
             {row.spinner ? (
@@ -998,42 +1386,55 @@ function ResultRow({
               >
                 <bridge.StatusRing />
               </View>
-            ) : row.running ? (
-              <View
-                style={{
-                  width: 5,
-                  height: 5,
-                  borderRadius: 3,
-                  backgroundColor: colors.statusSuccess,
-                }}
+            ) : row.status ? (
+              <bridge.StatusIcon
+                statusBucket={row.status}
+                size={13}
+                backdrop="surface0"
+              />
+            ) : row.badgeIcon ? (
+              <Icon
+                name={row.badgeIcon}
+                size={13}
+                color={colors.foregroundMuted}
               />
             ) : null}
-            {!row.spinner && row.badgeIcon ? (
-              <View
-                testID={`split-agent-opened-indicator-${row.agentId}`}
-                pointerEvents="none"
-                aria-hidden
-                style={{ alignItems: "center", justifyContent: "center" }}
-              >
-                <Icon
-                  name={row.badgeIcon}
-                  size={13}
-                  color={colors.foregroundMuted}
-                />
-              </View>
-            ) : !row.spinner ? (
-              <Text
-                style={{
-                  fontSize: 10,
-                  fontWeight: row.running ? "600" : "400",
-                  color: row.running
-                    ? colors.statusSuccess
-                    : colors.foregroundMuted,
-                }}
-              >
-                {row.badge}
-              </Text>
-            ) : null}
+            <Text
+              numberOfLines={1}
+              style={{
+                fontSize: 11,
+                lineHeight: 16,
+                fontWeight: row.status ? "500" : "400",
+                color:
+                  row.status === "needs_input"
+                    ? colors.statusWarning
+                    : row.status === "failed"
+                      ? colors.statusDanger
+                      : row.status === "attention" || row.status === "running"
+                        ? colors.statusSuccess
+                        : colors.foregroundMuted,
+              }}
+            >
+              {row.badge}
+            </Text>
+          </View>
+        )}
+        {Boolean(row.backgroundCount) && (
+          <View
+            style={{
+              flexDirection: "row",
+              gap: 4,
+              alignItems: "center",
+              flexShrink: 0,
+            }}
+          >
+            <Icon name="Layers" size={12} color={colors.foregroundMuted} />
+            <Text
+              numberOfLines={1}
+              style={{ color: colors.foregroundMuted, fontSize: 11 }}
+            >
+              后台 {row.backgroundCount}
+            </Text>
           </View>
         )}
       </Pressable>
@@ -1148,6 +1549,7 @@ function PickerChip({
   keycap = false,
   icon,
   trailingIcon,
+  disabled = false,
   onPress,
 }: {
   theme: PluginScreenProps["theme"];
@@ -1159,6 +1561,7 @@ function PickerChip({
   keycap?: boolean;
   icon?: string;
   trailingIcon?: string;
+  disabled?: boolean;
   onPress(): void;
 }) {
   const [hovered, setHovered] = useState(false);
@@ -1168,13 +1571,15 @@ function PickerChip({
     <Pressable
       accessibilityRole={role}
       accessibilityLabel={label}
+      disabled={disabled}
       accessibilityState={
         role === "tab"
-          ? { selected: active }
+          ? { selected: active, disabled }
           : role === "radio"
-            ? { checked: active }
-            : undefined
+            ? { checked: active, disabled }
+            : { disabled }
       }
+      aria-disabled={disabled}
       aria-selected={role === "tab" ? active : undefined}
       aria-checked={role === "radio" ? active : undefined}
       onPress={onPress}

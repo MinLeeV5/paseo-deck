@@ -1,0 +1,40 @@
+{
+  "paseoVersion": "0.16.0",
+  "unitTests": 74,
+  "typecheck": "passed",
+  "defaultMode": "existing-agent",
+  "priority": [
+    "needs_input",
+    "unread",
+    "running",
+    "background-work",
+    "recent"
+  ],
+  "source": "Isolated packaged Web UI. Status cases use synthetic client snapshots; direct add uses an existing real fixture Agent. No model prompts, approvals or background jobs submitted.",
+  "checks": [
+    "＋ 默认打开已有 Agent，并跨 project 展示",
+    "默认焦点在 Agent 搜索框",
+    "待处理、未读、运行、后台和最近会话按优先级排列",
+    "0.16 后台任务数独立显示，后台 Agent 仍不展示",
+    "未读筛选只保留未读 Agent",
+    "运行筛选只保留前台正在运行的 Agent",
+    "桌面首屏完整显示待处理、未读和正在运行的 Agent",
+    "后台筛选独立显示 0.16 后台任务数",
+    "后台任务数变化时列表即时刷新",
+    "按 project 筛选会排除其他 project 的待处理 Agent",
+    "窄屏保留已有优先、状态筛选与完整弹窗边界",
+    "搜索框与状态筛选保持同一行且搜索不占满宽度",
+    "移除所有 Agent 下的说明，为滚动列表留出空间",
+    "浅色主题保留同排搜索筛选和状态优先级",
+    "窄屏搜索筛选仍处于同一行且弹窗不横向溢出",
+    "点击已有 Agent 直接添加并关闭弹窗",
+    "重新打开仍以已有 Agent 为默认页",
+    "重复添加切换到原有 Agent Tab，不创建重复标签",
+    "次级新建入口仍可在同一弹窗创建 workspace"
+  ],
+  "screenshots": [
+    "agent-picker-priority-dark.png",
+    "agent-picker-priority-light.png",
+    "agent-picker-priority-compact.png"
+  ]
+}

@@ -63,7 +63,11 @@ Paseo shows the latest revision from the repository's default branch and asks fo
 
 ## Add Agents and resources
 
-Click a split's **`＋`** to open the unified add panel. Search existing Agents, filter by workspace, or create an Agent, terminal, or file view. Running and initializing Agents have a separate section; Agent Tabs use their source workspace's icon.
+Click a split's **`＋`** to find **已有 Agent** (Existing Agents) across all projects by default. Search and click an Agent to add it directly. Agents needing attention, unread conversations, and running Agents come first, with status filters for quick access. On Paseo 0.16, background task counts appear in a separate group.
+
+For a fresh conversation, select **新建 Agent** (New Agent) on the right. Choose a project, then an existing workspace, or select **新建 workspace** (New workspace) and optionally name it. Git projects default to an isolated worktree and also support the original directory. Choose the current split or a new split in the footer. The new Agent Tab is added to Deck automatically; send the first message to start the conversation.
+
+Switch to **已有 Agent** (Existing Agents), **终端** (Terminals), or **文件** (Files) at the top of the same dialog to find and add those resources. Running and initializing Agents have a separate section; Agent Tabs use their source workspace's icon.
 
 Agent Tabs overlay Paseo's native status on the workspace icon: a running spinner, a green unread dot, a yellow input / approval alert, or a red failure dot. Background Tabs update before their conversation is opened, and tooltips include the status. Read behavior comes from the native conversation; focusing a pending question or approval does not dismiss its alert.
 
@@ -72,6 +76,12 @@ The Paseo Deck sidebar entry summarizes Tabs added to the board, with an icon an
 Choose the current split or a new split as the destination. Adding an Agent or terminal that is already on the board focuses its existing Tab.
 
 ![Unified add panel with workspace selection and existing Agents](assets/add-tab.png)
+
+## Add from native Paseo pages
+
+On Paseo **0.16.0+**, **加入 Deck** (Add to Deck) above an Agent's native composer offers the current split or a new split. An Agent already on the board shows **在 Deck 中打开** (Open in Deck), which focuses its existing Tab. Command Center also includes **将当前 Agent 加入 Deck** (Add the current Agent to Deck).
+
+The native **New workspace** page has a **Deck** option, off by default. Choose a destination to add its first Agent automatically once creation succeeds. The workspace sidebar's **Deck count** shows how many Tabs belong to this client's board. The layout is saved even before Deck is opened.
 
 ## Drag Tabs
 

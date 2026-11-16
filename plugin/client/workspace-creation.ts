@@ -1,0 +1,37 @@
+import type { PluginClientContext } from "@getpaseo/plugin/client";
+import type { PaseoProject } from "./paseo-types";
+
+export type WorkspaceCreation = {
+  project: PaseoProject;
+  title: string;
+  isolation: "directory" | "worktree";
+  idempotencyKey: string;
+};
+
+export function workspaceCreationOptions({
+  project,
+  title,
+  isolation,
+  idempotencyKey,
+}: WorkspaceCreation): Parameters<
+  PluginClientContext["paseo"]["workspaces"]["create"]
+>[0] {
+  if (isolation === "worktree" && project.projectKind !== "git")
+    throw new Error("此 project 不支持创建 worktree，请使用原目录。");
+  return {
+    idempotencyKey,
+    ...(title.trim() ? { title: title.trim() } : {}),
+    source:
+      isolation === "worktree"
+        ? {
+            kind: "worktree",
+            projectId: project.projectId,
+            cwd: project.projectRootPath,
+          }
+        : {
+            kind: "directory",
+            projectId: project.projectId,
+            path: project.projectRootPath,
+          },
+  };
+}
