@@ -10,7 +10,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { Platform, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { bridgeInfoRpc } from "../shared/bridge";
 import { DeckIcon } from "./deck-icon";
 import type { Pane } from "../shared/model";
@@ -31,6 +31,11 @@ const labels = {
 };
 
 export function DeckSidebarItem(props: PluginSidebarItemProps) {
+  if (props.layout.platform !== "web") return null;
+  return <WebDeckSidebarItem {...props} />;
+}
+
+function WebDeckSidebarItem(props: PluginSidebarItemProps) {
   const board = useSyncExternalStore(
     subscribeBoardSnapshot,
     () => readBoardSnapshot(props.host.id),
@@ -49,7 +54,7 @@ export function DeckSidebarItem(props: PluginSidebarItemProps) {
       label="Paseo Deck"
       active={props.currentScreen?.screenId === "main"}
       trailing={
-        panes.length > 0 && Platform.OS === "web" ? (
+        panes.length > 0 ? (
           <DeckCounts key={props.host.id} panes={panes} theme={props.theme} />
         ) : undefined
       }

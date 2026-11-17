@@ -38,7 +38,7 @@
 
 ## 原生页面加入 Deck
 
-- 0.16+ 原生 Agent 页提供「加入 Deck」菜单，可选当前或新分屏；已加入时显示「在 Deck 中打开」，定位现有 Tab。Command Center 也可加入当前 Agent。
+- 0.16+ 可通过 Command Center 的「将当前 Agent 加入 Deck」将当前会话添加到当前分屏；已加入时定位现有 Tab。
 - 原生 New workspace 页增加 Deck 选项，默认不添加。选择目标后，以客户端唯一标记和创建请求 ID 识别本次 workspace 的首个 Agent，避免其它客户端响应，以及重连和重复目录事件导致的重复添加。
 - workspace 侧栏显示当前客户端的 Deck 标签数。共享布局快照使原生页面在 Deck 未打开时也能保存加入结果，并保留后续 Deck 编辑。
 - 原生新入口按客户端能力启用；0.13–0.15 的原有 Deck 入口保留。新建页使用 metadata 的自动加入需要 0.16+ daemon 和客户端。

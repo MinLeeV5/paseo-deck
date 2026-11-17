@@ -90,7 +90,7 @@ Clicking a subagent in a Deck conversation opens it as a Tab in that conversatio
 
 ## Add from native Paseo pages
 
-On Paseo **0.16.0+**, **加入 Deck** (Add to Deck) above an Agent's native composer offers the current split or a new split. The button hides while the Agent is already on the board. Command Center also includes **将当前 Agent 加入 Deck** (Add the current Agent to Deck).
+On Paseo **0.16.0+**, use **将当前 Agent 加入 Deck** (Add the current Agent to Deck) in Command Center to add the active Agent to the current split.
 
 The native **New workspace** page has a **Deck** option, off by default. Choose a destination to add its first Agent automatically once creation succeeds. The workspace sidebar's **Deck badge** shows its split numbers (for example, `Deck 3` or `Deck 1, 3`) and follows dragged Tabs immediately. The layout is saved even before Deck is opened.
 
@@ -181,7 +181,7 @@ On Windows/Linux, creation, closing, and composer focus use Paseo's `Ctrl` bindi
 ## Scope and compatibility
 
 - One selected host, up to **8 splits**, with no limit on resource Tabs. The add panel reads up to 200 Agents and 200 workspaces.
-- Tested with matching daemon/client builds of **0.13.0, 0.14.0, and 0.15.4**, including the 0.15.4 Electron app on macOS. Native iOS/Android clients are not supported.
+- Tested with matching daemon/client builds of **0.13.0, 0.14.0, and 0.15.4**, including the 0.15.4 Electron app on macOS. Native iOS/Android clients are not supported and do not show the Deck sidebar entry.
 - **0.16.0**: full bridge resolution, plugin compilation, Web native Agent panels, and menu shortcut blocking verified. See the [compatibility review](COMPATIBILITY-0.16.md) for changes, proposed additions, and test boundaries.
 - This experimental plugin reuses **private Paseo UI components** without modifying application files. Future app builds may require a compatibility update; an unsupported build displays an error.
 - Third-party panels keep their own behavior and requirements. GitLens, conversation bookmarks, and Keep awake were exercised; this does not establish compatibility with every plugin.

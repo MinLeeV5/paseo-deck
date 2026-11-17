@@ -43,13 +43,6 @@ export function installNativeDeckEntries(client: PluginClientContext) {
   const releases: (() => Promise<void>)[] = [];
   const agents = new Map<string, PaseoAgent>();
   const workspaces = new Map<string, PaseoWorkspace>();
-  const pills = new Map<
-    string,
-    {
-      registration: ReturnType<PluginClientContext["addComposerPill"]>;
-      workspaceId: string;
-    }
-  >();
   let hostId: string | undefined,
     stopped = false;
   let notifyError = (error: unknown) =>
@@ -84,7 +77,7 @@ export function installNativeDeckEntries(client: PluginClientContext) {
     (error) =>
       notifyError(
         new Error(
-          `加入 Deck 失败：${error instanceof Error ? error.message : String(error)}。可在会话下方重试。`,
+          `加入 Deck 失败：${error instanceof Error ? error.message : String(error)}。可通过命令中心重试。`,
         ),
       ),
   );
@@ -98,49 +91,6 @@ export function installNativeDeckEntries(client: PluginClientContext) {
     (error) => console.error("[Paseo Deck workspace title]", error),
   );
   cleanups.push(() => automaticTitles.dispose());
-  const syncPill = (agent: PaseoAgent) => {
-    const previous = pills.get(agent.id);
-    const joined =
-      !!hostId &&
-      readBoardSnapshot(hostId).panes.some(
-        (pane) =>
-          pane.target.kind === "agent" && pane.target.agentId === agent.id,
-      );
-    if (agent.archivedAt || agent.background || !agent.workspaceId || joined) {
-      previous?.registration.remove();
-      pills.delete(agent.id);
-      return;
-    }
-    if (previous?.workspaceId === agent.workspaceId) return;
-    previous?.registration.remove();
-    const registration = client.addComposerPill({
-      id: `join-${agent.id}`,
-      workspaceId: agent.workspaceId,
-      agentId: agent.id,
-      button: {
-        title: "加入 Deck",
-        icon: DeckIcon,
-        behavior: {
-          kind: "menu",
-          items: (["current", "new"] as const).map((destination) => ({
-            kind: "item" as const,
-            id: destination,
-            title: destination === "new" ? "添加到新分屏" : "添加到当前分屏",
-            icon: destination === "new" ? "PanelRightOpen" : "PanelsTopLeft",
-            behavior: {
-              kind: "action" as const,
-              onPress: () =>
-                join(agents.get(agent.id) ?? agent, destination, true),
-            },
-          })),
-        },
-      },
-    });
-    pills.set(agent.id, {
-      registration,
-      workspaceId: agent.workspaceId,
-    });
-  };
   const ensureHost = (id: string) => {
     if (stopped || hostId) return;
     hostId = id;
@@ -149,7 +99,6 @@ export function installNativeDeckEntries(client: PluginClientContext) {
       const previous = agents.get(agent.id);
       if (previous && previous.updatedAt > agent.updatedAt) return;
       agents.set(agent.id, agent);
-      syncPill(agent);
       automatic.agent(agent);
       automaticTitles.agent(agent);
     };
@@ -166,8 +115,6 @@ export function installNativeDeckEntries(client: PluginClientContext) {
           agents.delete(update.agentId);
           automatic.removeAgent(update.agentId);
           automaticTitles.removeAgent(update.agentId);
-          pills.get(update.agentId)?.registration.remove();
-          pills.delete(update.agentId);
         }
       }),
     );
@@ -183,7 +130,6 @@ export function installNativeDeckEntries(client: PluginClientContext) {
     );
     cleanups.push(
       subscribeBoardSnapshot(() => {
-        for (const agent of agents.values()) syncPill(agent);
         automaticTitles.board();
       }),
     );
@@ -294,10 +240,7 @@ export function installNativeDeckEntries(client: PluginClientContext) {
     ) : null;
   }
   // Render nothing in the toolbar: observing the native host must not take up space.
-  if (
-    typeof client.addComposerItem === "function" &&
-    typeof client.addComposerPill === "function"
-  ) {
+  if (typeof client.addComposerItem === "function") {
     cleanups.push(
       client.addComposerItem({
         id: "deck-native-host",
@@ -349,8 +292,6 @@ export function installNativeDeckEntries(client: PluginClientContext) {
   return () => {
     stopped = true;
     for (const cleanup of cleanups.reverse()) cleanup();
-    for (const { registration } of pills.values()) registration.remove();
-    pills.clear();
     for (const release of releases) void release().catch(console.error);
   };
 }
