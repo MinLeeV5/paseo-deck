@@ -384,7 +384,7 @@ function HostBoard({
       groupId: string,
       anchor: View | null = null,
       mode: PickerMode = "agent",
-      newSplit = false,
+      newSplit = true,
       splitDirection?: Board["direction"],
     ) => {
       const key = id();

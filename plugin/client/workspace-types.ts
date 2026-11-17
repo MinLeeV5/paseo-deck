@@ -70,6 +70,7 @@ export type PluginPanelRequest = {
 };
 export interface WorkspaceBridge {
   useWorkspaceScriptActions(input: {
+    client: unknown;
     serverId: string;
     workspaceId: string;
     scripts: PaseoWorkspace["scripts"];
@@ -119,7 +120,14 @@ export interface WorkspaceBridge {
   pluginIconComponent(
     icon: PluginIcon,
   ): ComponentType<{ size: number; color: string; [key: string]: unknown }>;
-  WorkspaceScriptsButton: UI;
+  WorkspaceScriptsButton: ComponentType<{
+    actions: ReturnType<WorkspaceBridge["useWorkspaceScriptActions"]>;
+    scripts: PaseoWorkspace["scripts"];
+    liveTerminalIds: string[];
+    onViewTerminal(id: string): void;
+    onOpenUrlInBrowserTab?(url: string): void;
+    hideLabels?: boolean;
+  }>;
   WorkspaceOpenInEditorButton: UI;
   MenuRoot: UI;
   MenuTrigger: UI;
