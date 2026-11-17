@@ -70,6 +70,7 @@ export function groupPickerAgents(
   agents: readonly PaseoAgent[],
   statuses: Record<string, NativeStatusBucket | null>,
   filter: AgentFilter = "all",
+  openedAgentDecks: ReadonlyMap<string, number> = new Map(),
 ) {
   const eligible = agents.filter(
     (agent) => !agent.archivedAt && !agent.background && agent.workspaceId,
@@ -84,6 +85,10 @@ export function groupPickerAgents(
             pickerAgentActivity(agent, statuses[agent.id]).group === group.key,
         )
         .sort((a, b) => {
+          const firstDeck = openedAgentDecks.get(a.id);
+          const secondDeck = openedAgentDecks.get(b.id);
+          if (firstDeck !== secondDeck)
+            return (firstDeck ?? Infinity) - (secondDeck ?? Infinity);
           const first =
             a.attentionTimestamp ?? a.lastUserMessageAt ?? a.updatedAt;
           const second =

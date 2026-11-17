@@ -5,7 +5,7 @@
 <p align="center"><strong>在一个 Paseo 窗口中，并排使用不同工作区的 Agent、终端和文件。</strong></p>
 
 <p align="center">
-  <a href="https://github.com/MinLeeV5/paseo-deck/releases/tag/v1.0.1"><img src="https://img.shields.io/badge/version-v1.0.1-1f6feb" alt="版本 v1.0.1" /></a>
+  <a href="https://github.com/MinLeeV5/paseo-deck/releases/tag/v1.0.2"><img src="https://img.shields.io/badge/version-v1.0.2-1f6feb" alt="版本 v1.0.2" /></a>
   <a href="plugin/paseo-plugin.json"><img src="https://img.shields.io/badge/Paseo-0.13.0%2B-0078D4" alt="Paseo 0.13.0 及以上" /></a>
   <a href="#支持范围与兼容性"><img src="https://img.shields.io/badge/platform-desktop%20%2F%20Web-2DA44E" alt="桌面与 Web" /></a>
 </p>
@@ -54,10 +54,10 @@ paseo plugin install git:MinLeeV5/paseo-deck:plugin
 
 末尾的 `:plugin` 指定仓库中的插件目录。Paseo 会自行下载源码，无需手动克隆仓库或安装依赖。
 
-发布版本采用语义化版本号和对应的 Git 标签。首次安装时，可明确选择 **v1.0.1**：
+发布版本采用语义化版本号和对应的 Git 标签。首次安装时，可明确选择 **v1.0.2**：
 
 ```bash
-paseo plugin install git:MinLeeV5/paseo-deck:plugin --ref v1.0.1
+paseo plugin install git:MinLeeV5/paseo-deck:plugin --ref v1.0.2
 ```
 
 点击侧栏 **Paseo Deck**，或在 Command Center（`⌘K` / `Ctrl+K`）中搜索 **Paseo Deck**。插件 ID 为 `paseo-deck`，当前插件菜单使用简体中文。
@@ -82,7 +82,7 @@ Agent Tab 在工作区图标上叠加 Paseo 原生状态：运行时转圈、新
 
 侧栏的 Paseo Deck 入口汇总已加入工作台的 Tab：等待输入 / 审批、失败、正在运行和未读各显示图标与数量，为 0 的状态自动隐藏。离开 Deck 或恢复布局后也会继续更新；悬停可查看完整状态说明。
 
-选择加入当前分屏或新分屏。已加入工作台的 Agent 会在添加面板中显示 Deck 图标及所在位置，例如 `Deck 1`；拖动 Tab 后编号会随之更新，并与运行等状态同时展示。重复添加已在工作台中的 Agent 或终端时，会切换到已有 Tab。
+选择加入当前分屏或新分屏。已加入工作台的 Agent 会在添加面板中显示 Deck 图标及所在位置，例如 `Deck 1`。同一状态分组内按 Deck 编号升序排列，尚未加入的排在后面；同一 Deck 内保留活动时间顺序。拖动 Tab 后编号与排序会随之更新，运行等状态继续同时展示。重复添加已在工作台中的 Agent 或终端时，会切换到已有 Tab。
 
 在 Deck 会话中点击 subagent，会在该会话所在分屏中打开子 Agent Tab，并保留父会话；支持 provider subagent 和同一主机下其它工作区的子 Agent。子 Agent 已在其它分屏打开时，会将原 Tab 移入当前分屏。
 

@@ -242,8 +242,9 @@ export function ResourcePicker({
     [directory, effectiveProjectId, query],
   );
   const agentSections = useMemo(
-    () => groupPickerAgents(matchingAgents, agentStatuses),
-    [matchingAgents, agentStatuses],
+    () =>
+      groupPickerAgents(matchingAgents, agentStatuses, "all", openedAgentDecks),
+    [matchingAgents, agentStatuses, openedAgentDecks],
   );
   const agentCounts = Object.fromEntries(
     agentSections.map((section) => [section.key, section.agents.length]),

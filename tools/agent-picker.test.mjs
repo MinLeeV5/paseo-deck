@@ -100,6 +100,75 @@ test("activity groups sort by their latest relevant activity with a stable tie-b
   );
 });
 
+test("Deck numbers order Agents within each activity group and leave unplaced Agents last", () => {
+  const entries = [
+    agent("unplaced-new", { updatedAt: "2026-11-16T12:00:00Z" }),
+    agent("deck-three", { updatedAt: "2026-11-16T11:00:00Z" }),
+    agent("deck-one-old"),
+    agent("waiting", { attentionReason: "permission" }),
+    agent("deck-two", { updatedAt: "2026-11-16T10:00:00Z" }),
+    agent("running", { status: "running" }),
+    agent("deck-one-new", { updatedAt: "2026-11-16T09:00:00Z" }),
+    agent("unplaced-old", { updatedAt: "2026-11-16T07:00:00Z" }),
+  ];
+  const decks = new Map([
+    ["waiting", 3],
+    ["running", 1],
+    ["deck-three", 3],
+    ["deck-two", 2],
+    ["deck-one-old", 1],
+    ["deck-one-new", 1],
+  ]);
+  assert.deepEqual(
+    groupPickerAgents(entries, {}, "all", decks)
+      .filter((g) => g.agents.length)
+      .map((g) => [g.key, g.agents.map((a) => a.id)]),
+    [
+      ["needs_input", ["waiting"]],
+      ["running", ["running"]],
+      [
+        "recent",
+        [
+          "deck-one-new",
+          "deck-one-old",
+          "deck-two",
+          "deck-three",
+          "unplaced-new",
+          "unplaced-old",
+        ],
+      ],
+    ],
+  );
+});
+
+test("Deck moves and removals update ordering while status filters retain their scope", () => {
+  const entries = [
+    agent("left", { status: "running" }),
+    agent("right", { status: "running" }),
+    agent("waiting", { attentionReason: "permission" }),
+  ];
+  const order = (decks) =>
+    groupPickerAgents(entries, {}, "running", new Map(decks)).flatMap((g) =>
+      g.agents.map((a) => a.id),
+    );
+  assert.deepEqual(
+    order([
+      ["left", 3],
+      ["right", 1],
+      ["waiting", 1],
+    ]),
+    ["right", "left"],
+  );
+  assert.deepEqual(
+    order([
+      ["left", 1],
+      ["right", 2],
+    ]),
+    ["left", "right"],
+  );
+  assert.deepEqual(order([["right", 2]]), ["right", "left"]);
+});
+
 test("archived and hidden background agents do not leak into the picker", () => {
   const entries = [
     agent("archived", { archivedAt: "2026-11-16" }),
