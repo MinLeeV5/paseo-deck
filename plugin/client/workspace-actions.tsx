@@ -31,6 +31,7 @@ import {
 } from "./web";
 import { pinnedButtonCapacity, pluginButtonIdentity } from "../shared/toolbar";
 import {
+  ScriptButton,
   ScriptMenu,
   ExternalOpenMenu,
   type ScriptMenuProps,
@@ -200,7 +201,7 @@ function Actions({
     >
       {wide && scriptProps && (
         <ActionBoundary theme={theme}>
-          <bridge.WorkspaceScriptsButton {...scriptProps} />
+          <ScriptButton {...scriptProps} bridge={bridge} />
         </ActionBoundary>
       )}
       {wide && editorProps && (

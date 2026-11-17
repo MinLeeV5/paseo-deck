@@ -11,6 +11,7 @@ export type ScriptMenuProps = {
   workspaceId: string;
   scripts: PaseoWorkspace["scripts"];
   liveTerminalIds: string[];
+  hideLabels?: boolean;
   onScriptTerminalStarted(id: string): void;
   onViewTerminal(id: string): void;
   onOpenUrlInBrowserTab?(url: string): void;
@@ -23,6 +24,19 @@ export type EditorMenuProps = {
 };
 type MenuProps = { bridge: NativeBridge; theme: PluginScreenProps["theme"] };
 
+function useScriptActions(bridge: NativeBridge, props: ScriptMenuProps) {
+  const client = bridge.useHostRuntimeClient(props.serverId);
+  return bridge.useWorkspaceScriptActions({ ...props, client });
+}
+
+export function ScriptButton({
+  bridge,
+  ...props
+}: ScriptMenuProps & { bridge: NativeBridge }) {
+  const actions = useScriptActions(bridge, props);
+  return <bridge.WorkspaceScriptsButton {...props} actions={actions} />;
+}
+
 // The actions and target planning come from the same hooks as the official
 // header controls. Only the menu rows differ, to share one flyout hierarchy.
 export function ScriptMenu({
@@ -30,7 +44,7 @@ export function ScriptMenu({
   theme,
   ...props
 }: ScriptMenuProps & MenuProps) {
-  const actions = bridge.useWorkspaceScriptActions(props);
+  const actions = useScriptActions(bridge, props);
   const openUrl = (url: string) => {
     if (props.onOpenUrlInBrowserTab) props.onOpenUrlInBrowserTab(url);
     else if (/^https?:\/\//i.test(url)) void Linking.openURL(url);
