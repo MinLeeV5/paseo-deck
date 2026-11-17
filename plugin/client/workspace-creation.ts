@@ -9,6 +9,7 @@ export type WorkspaceCreation = {
   project: PaseoProject;
   title: string;
   isolation: "directory" | "worktree";
+  baseBranch?: string;
   idempotencyKey: string;
 };
 
@@ -16,6 +17,7 @@ export function workspaceCreationOptions({
   project,
   title,
   isolation,
+  baseBranch,
   idempotencyKey,
 }: WorkspaceCreation): Parameters<
   PluginClientContext["paseo"]["workspaces"]["create"]
@@ -33,6 +35,7 @@ export function workspaceCreationOptions({
             kind: "worktree",
             projectId: project.projectId,
             cwd: project.projectRootPath,
+            ...(baseBranch?.trim() ? { baseBranch: baseBranch.trim() } : {}),
           }
         : {
             kind: "directory",

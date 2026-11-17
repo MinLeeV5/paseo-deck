@@ -22,9 +22,15 @@ import type { NativeBridge, NativeStatusBucket } from "./native-types";
 import { ProjectIcon, WorkspaceIcon } from "./workspace-icon";
 import { DeckIcon } from "./deck-icon";
 import { workspaceLabel, type Directory } from "./directory";
-import { keyboardFocusVisible, onPickerKeys } from "./web";
+import {
+  keyboardFocusVisible,
+  onPickerKeys,
+  readWorkspaceBaseBranch,
+  writeWorkspaceBaseBranch,
+} from "./web";
 import { IconButton } from "./compact-ui";
 import { WorkspaceFields } from "./workspace-creator";
+import { useWorkspaceBranchPicker } from "./workspace-branch-picker";
 import { DialogButton, DialogChoice, DialogInput } from "./add-dialog-ui";
 import type { WorkspaceCreation } from "./workspace-creation";
 import { sortPickerProjects } from "./project-picker";
@@ -143,6 +149,11 @@ export function ResourcePicker({
     initialMode === "new-workspace" ? "create" : null,
   );
   const [title, setTitle] = useState("");
+  const [baseBranchChoice, setBaseBranchChoice] = useState<{
+    serverId: string;
+    projectId: string;
+    branch: string;
+  } | null>(null);
   const [isolationChoice, setIsolationChoice] = useState<
     WorkspaceCreation["isolation"] | null
   >(null);
@@ -155,6 +166,7 @@ export function ResourcePicker({
   const projectSearch = useRef<NativeTextInput>(null),
     search = useRef<NativeTextInput>(null),
     list = useRef<NativeFlatList<Row>>(null);
+  const pickerRoot = useRef<View>(null);
   const attempt = useRef({ input: "", key: "" });
   const defaultProjectId = directory?.workspaces.find(
     (w) => w.id === defaultWorkspaceId,
@@ -194,6 +206,16 @@ export function ResourcePicker({
   const isolation =
     isolationChoice ??
     (project?.projectKind === "git" ? "worktree" : "directory");
+  const rememberedBaseBranch = project
+    ? readWorkspaceBaseBranch(serverId, project.projectId)
+    : "";
+  const baseBranch =
+    isolation === "worktree"
+      ? baseBranchChoice?.serverId === serverId &&
+        baseBranchChoice.projectId === project?.projectId
+        ? baseBranchChoice.branch
+        : rememberedBaseBranch
+      : undefined;
   const creation = useMutation({
     retry: false,
     mutationFn: async () => {
@@ -202,6 +224,7 @@ export function ResourcePicker({
         project.projectId,
         title.trim(),
         isolation,
+        baseBranch ?? "",
       ]);
       if (attempt.current.input !== input)
         attempt.current = {
@@ -212,11 +235,29 @@ export function ResourcePicker({
         project,
         title,
         isolation,
+        baseBranch,
         idempotencyKey: attempt.current.key,
       });
     },
   });
   const pending = busy || creation.isPending;
+  const branchPicker = useWorkspaceBranchPicker({
+    bridge,
+    serverId,
+    rootRef: pickerRoot,
+    theme,
+    cwd: project?.projectRootPath ?? "",
+    enabled:
+      creating && project?.projectKind === "git" && isolation === "worktree",
+    value: baseBranch ?? "",
+    disabled: pending,
+    onChange: (branch) => {
+      if (!project) return;
+      writeWorkspaceBaseBranch(serverId, project.projectId, branch);
+      setBaseBranchChoice({ serverId, projectId: project.projectId, branch });
+      creation.reset();
+    },
+  });
   const matches = (text: string) =>
     text.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase());
   const reportAgentStatus = useCallback(
@@ -465,6 +506,7 @@ export function ResourcePicker({
     setProjectId(id);
     setWorkspaceChoice(null);
     setTitle("");
+    setBaseBranchChoice(null);
     setIsolationChoice(null);
     setQuery("");
     setSelectedKey(null);
@@ -622,8 +664,12 @@ export function ResourcePicker({
   return (
     <View
       testID="split-resource-picker"
+      ref={pickerRoot}
       style={{ flex: 1, minHeight: 0 }}
-      onLayout={(event) => setCompact(event.nativeEvent.layout.width < 620)}
+      onLayout={(event) => {
+        setCompact(event.nativeEvent.layout.width < 620);
+        branchPicker.close();
+      }}
     >
       {mode === "agent" && directory && (
         <QueryClientProvider client={bridge.queryClient}>
@@ -874,21 +920,44 @@ export function ResourcePicker({
           }}
         >
           {mode !== "agent" && (
-            <View style={{ gap: 5 }}>
+            <View
+              testID="split-project-summary"
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "flex-start",
+                gap: 10,
+                minWidth: 0,
+              }}
+            >
               <Text
+                testID="split-project-heading"
                 numberOfLines={1}
-                style={{ color: c.foreground, fontSize: 14, fontWeight: "500" }}
+                style={{
+                  color: c.foreground,
+                  fontSize: 13,
+                  fontWeight: "500",
+                  maxWidth: "45%",
+                  flexShrink: 0,
+                  lineHeight: 20,
+                  textAlign: "left",
+                }}
               >
                 {project
                   ? (project.projectCustomName ?? project.projectDisplayName)
                   : "所有 project"}
               </Text>
               <Text
+                testID="split-project-path"
                 numberOfLines={1}
+                ellipsizeMode="middle"
                 style={{
+                  flexShrink: 1,
+                  minWidth: 0,
                   color: c.foregroundMuted,
-                  fontSize: 11,
-                  fontFamily: "monospace",
+                  fontSize: 13,
+                  lineHeight: 20,
+                  textAlign: "left",
                 }}
               >
                 {project?.projectRootPath ?? "跨 project 选择已有资源"}
@@ -944,11 +1013,13 @@ export function ResourcePicker({
                   keyboardShouldPersistTaps="handled"
                 >
                   <WorkspaceFields
+                    key={project.projectId}
                     theme={theme}
                     project={project}
                     title={title}
                     isolation={isolation}
                     busy={pending}
+                    branchPicker={branchPicker.field}
                     onTitle={(value) => {
                       setTitle(value);
                       creation.reset();
@@ -1208,6 +1279,7 @@ export function ResourcePicker({
           />
         </View>
       </View>
+      {branchPicker.popup}
     </View>
   );
 }

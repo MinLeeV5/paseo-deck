@@ -5,7 +5,7 @@
 <p align="center"><strong>Agents, terminals, and files across workspaces, in one Paseo window.</strong></p>
 
 <p align="center">
-  <a href="https://github.com/MinLeeV5/paseo-deck/releases/tag/v1.0.2"><img src="https://img.shields.io/badge/version-v1.0.2-1f6feb" alt="Version v1.0.2" /></a>
+  <a href="https://github.com/MinLeeV5/paseo-deck/releases/tag/v1.1.0"><img src="https://img.shields.io/badge/version-v1.1.0-1f6feb" alt="Version v1.1.0" /></a>
   <a href="plugin/paseo-plugin.json"><img src="https://img.shields.io/badge/Paseo-0.13.0%2B-0078D4" alt="Paseo 0.13.0 or later" /></a>
   <a href="#scope-and-compatibility"><img src="https://img.shields.io/badge/platform-desktop%20%2F%20Web-2DA44E" alt="Desktop and Web" /></a>
 </p>
@@ -54,10 +54,10 @@ paseo plugin install git:MinLeeV5/paseo-deck:plugin
 
 The `:plugin` suffix selects the plugin directory inside the repository. Paseo downloads the source; no manual clone or dependency installation is needed.
 
-Releases use Semantic Versioning and matching Git tags. To select **v1.0.2** for the initial installation:
+Releases use Semantic Versioning and matching Git tags. To select **v1.1.0** for the initial installation:
 
 ```bash
-paseo plugin install git:MinLeeV5/paseo-deck:plugin --ref v1.0.2
+paseo plugin install git:MinLeeV5/paseo-deck:plugin --ref v1.1.0
 ```
 
 Open **Paseo Deck** in the sidebar, or search for **Paseo Deck** in the Command Center (`⌘K` / `Ctrl+K`). Plugin ID: `paseo-deck`. Current plugin menu labels are in Simplified Chinese.
@@ -74,7 +74,9 @@ Paseo shows the latest revision from the repository's default branch and asks fo
 
 Click a split's **`＋`** to find **已有 Agent** (Existing Agents) across all projects by default. Search and click an Agent to add it directly. Agents needing attention, unread conversations, and running Agents come first, with status filters for quick access. On Paseo 0.16, background task counts appear in a separate group.
 
-For a fresh conversation, select **新建 Agent** (New Agent) on the right. Choose a project, then an existing workspace, or select **新建 workspace** (New workspace) and optionally name it. Git projects default to an isolated worktree and also support the original directory. Choose the current split or a new split in the footer. The new Agent Tab is added to Deck automatically; send the first message to start the conversation.
+For a fresh conversation, select **新建 Agent** (New Agent) on the right. Choose a project, then an existing workspace, or select **新建 workspace** (New workspace) and optionally name it. Git projects default to an isolated worktree and also support the original directory. For a worktree, use **基础分支** (Base branch) to search and select a local or remote branch, or keep **自动选择** (Automatic) to use the project's settings. The picker opens above or below to fit the available space, and this client remembers your last choice separately for each host and project. Choose the current split or a new split in the footer. The new Agent Tab is added to Deck automatically; send the first message to start the conversation.
+
+![Choose the base branch for a new worktree](plugin/assets/workspace-creation.png)
 
 Switch to **已有 Agent** (Existing Agents), **终端** (Terminals), or **文件** (Files) at the top of the same dialog to find and add those resources. Running and initializing Agents have a separate section; Agent Tabs use their source workspace's icon.
 

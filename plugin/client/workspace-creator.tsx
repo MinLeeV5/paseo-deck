@@ -2,6 +2,7 @@ import type { PluginScreenProps } from "@getpaseo/plugin/client";
 import { Text, View } from "react-native";
 import type { PaseoProject } from "./paseo-types";
 import type { WorkspaceCreation } from "./workspace-creation";
+import { useState, type ReactNode } from "react";
 import { DialogChoice, DialogInput } from "./add-dialog-ui";
 
 export function WorkspaceFields({
@@ -10,6 +11,7 @@ export function WorkspaceFields({
   title,
   isolation,
   busy,
+  branchPicker,
   onTitle,
   onIsolation,
 }: {
@@ -18,63 +20,99 @@ export function WorkspaceFields({
   title: string;
   isolation: WorkspaceCreation["isolation"];
   busy: boolean;
+  branchPicker: ReactNode;
   onTitle(value: string): void;
   onIsolation(value: WorkspaceCreation["isolation"]): void;
 }) {
   const c = theme.colors;
+  const [stacked, setStacked] = useState(false);
   return (
-    <View testID="split-workspace-fields" style={{ gap: 20 }}>
-      <View style={{ gap: 8 }}>
-        <Text style={{ color: c.foreground, fontSize: 12, fontWeight: "500" }}>
+    <View
+      testID="split-workspace-fields"
+      onLayout={(event) => setStacked(event.nativeEvent.layout.width < 420)}
+      style={{ gap: 16 }}
+    >
+      <View
+        testID="split-workspace-title-row"
+        style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
+      >
+        <Text
+          testID="split-workspace-title-label"
+          style={{
+            color: c.foreground,
+            fontSize: 12,
+            fontWeight: "500",
+            flexShrink: 0,
+          }}
+        >
           Workspace 名称{" "}
           <Text style={{ color: c.foregroundMuted, fontWeight: "400" }}>
             · 可选
           </Text>
         </Text>
-        <DialogInput
-          theme={theme}
-          label="Workspace 名称（可选）"
-          placeholder="留空自动命名"
-          testID="split-workspace-title"
-          value={title}
-          onChangeText={onTitle}
-          disabled={busy}
-        />
+        <View style={{ flex: 1, minWidth: 100, maxWidth: 280 }}>
+          <DialogInput
+            theme={theme}
+            label="Workspace 名称（可选）"
+            placeholder="留空自动命名"
+            testID="split-workspace-title"
+            value={title}
+            onChangeText={onTitle}
+            disabled={busy}
+          />
+        </View>
       </View>
       {project.projectKind === "git" ? (
         <View
-          accessibilityRole="radiogroup"
-          accessibilityLabel="工作目录"
-          style={{ gap: 6 }}
+          testID="split-workspace-source-row"
+          style={{
+            flexDirection: stacked ? "column" : "row",
+            gap: 16,
+            alignItems: "stretch",
+          }}
         >
-          <Text
-            style={{
-              color: c.foreground,
-              fontSize: 12,
-              fontWeight: "500",
-              marginBottom: 2,
-            }}
+          <View
+            testID="split-workspace-isolation"
+            accessibilityRole="radiogroup"
+            accessibilityLabel="工作目录"
+            style={{ gap: 6, flex: stacked ? undefined : 1, minWidth: 0 }}
           >
-            工作目录
-          </Text>
-          <DialogChoice
-            theme={theme}
-            title="新建 worktree"
-            subtitle="使用独立分支和目录"
-            icon="GitBranch"
-            selected={isolation === "worktree"}
-            onPress={() => onIsolation("worktree")}
-            disabled={busy}
-          />
-          <DialogChoice
-            theme={theme}
-            title="使用原目录"
-            subtitle="共享当前文件和分支"
-            icon="Folder"
-            selected={isolation === "directory"}
-            onPress={() => onIsolation("directory")}
-            disabled={busy}
-          />
+            <Text
+              style={{
+                color: c.foreground,
+                fontSize: 12,
+                fontWeight: "500",
+                marginBottom: 2,
+              }}
+            >
+              工作目录
+            </Text>
+            <DialogChoice
+              compact
+              theme={theme}
+              title="新建 worktree"
+              subtitle="使用独立分支和目录"
+              icon="GitBranch"
+              selected={isolation === "worktree"}
+              onPress={() => onIsolation("worktree")}
+              disabled={busy}
+            />
+            <DialogChoice
+              compact
+              theme={theme}
+              title="使用原目录"
+              subtitle="共享当前文件和分支"
+              icon="Folder"
+              selected={isolation === "directory"}
+              onPress={() => onIsolation("directory")}
+              disabled={busy}
+            />
+          </View>
+          {isolation === "worktree" && (
+            <View style={{ flex: stacked ? undefined : 1, minWidth: 0 }}>
+              {branchPicker}
+            </View>
+          )}
         </View>
       ) : (
         <Text

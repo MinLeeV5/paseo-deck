@@ -12,12 +12,15 @@ Open Paseo Deck from the sidebar or Command Center, select a host, and use a spl
 
 - **Native conversations**: Use Paseo's conversation UI, composer, and file panels inside each split.
 - **Shared drafts**: Unsent text stays in sync between Deck and the Agent's original workspace on the same client.
+- **Choose a base branch**: When creating a worktree, search local and remote branches or use the project's automatic choice. The last selection is remembered separately for each host and project on this client. The branch menu adapts to available space, and the compact form keeps the workspace name and project path close to their labels.
 - **Deck locations**: Agents already on the board show the Deck icon and split number in the add panel, alongside their activity status. Within each activity group, Agents sort by Deck number before Agents not yet added; activity order is preserved within each Deck. Locations and ordering follow Tab moves.
 - **Native entry points (0.16+)**: Add the current Agent through Command Center, or choose a Deck destination on New workspace to add its first Agent automatically. Workspace sidebar badges show which Deck splits contain its Tabs and update when you move them. An unnamed workspace follows its first Agent's generated title until you rename the workspace yourself.
 - **Subagents in the current split**: Open managed and provider subagents as Tabs beside their parent, including children in another workspace on the same host. A child already open in another split moves into the current split.
 - **Agent status at a glance**: Tabs show running, unread, input or approval requests, and failures using Paseo's native indicators and read behavior. The sidebar entry keeps live counts for each state and hides zero counts.
 
 Closing a Tab removes its view without terminating its Agent or terminal. Unsaved content is checked before a batch closes.
+
+![Creating a worktree from a selected base branch](assets/workspace-creation.png)
 
 ## ↔️ Drag Tabs to arrange your view
 

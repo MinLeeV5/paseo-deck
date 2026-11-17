@@ -54,12 +54,12 @@ declare const window: {
   addEventListener(event: string, callback: () => void): void;
   removeEventListener(event: string, callback: () => void): void;
   addEventListener(
-    event: "keydown",
+    event: "keydown" | "keyup",
     callback: (event: ShortcutInput) => void,
     capture: boolean,
   ): void;
   removeEventListener(
-    event: "keydown",
+    event: "keydown" | "keyup",
     callback: (event: ShortcutInput) => void,
     capture: boolean,
   ): void;
@@ -323,6 +323,44 @@ export function writeToolbarPreferences(
     );
   toolbarPreferences.set(serverId, preferences);
   for (const listener of toolbarListeners) listener();
+}
+
+const workspaceBaseBranches = new Map<string, string>();
+function workspaceBaseBranchKey(serverId: string, projectId: string): string {
+  return `paseo-deck:workspace-base-branch:${JSON.stringify([serverId, projectId])}`;
+}
+export function readWorkspaceBaseBranch(
+  serverId: string,
+  projectId: string,
+): string {
+  const key = workspaceBaseBranchKey(serverId, projectId);
+  const cached = workspaceBaseBranches.get(key);
+  if (cached !== undefined) return cached;
+  let branch = "";
+  if (Platform.OS === "web") {
+    try {
+      branch = window.localStorage.getItem(key)?.trim() ?? "";
+    } catch {
+      // Storage may be unavailable; selections still survive closing the dialog.
+    }
+  }
+  workspaceBaseBranches.set(key, branch);
+  return branch;
+}
+export function writeWorkspaceBaseBranch(
+  serverId: string,
+  projectId: string,
+  branch: string,
+): void {
+  const key = workspaceBaseBranchKey(serverId, projectId);
+  workspaceBaseBranches.set(key, branch);
+  if (Platform.OS === "web") {
+    try {
+      window.localStorage.setItem(key, branch);
+    } catch {
+      // Keep the in-memory choice even when browser storage is unavailable.
+    }
+  }
 }
 
 // Paseo's current menu clamps a right flyout against the viewport. Scope the
@@ -1043,6 +1081,13 @@ export function onPickerKeys(
   if (Platform.OS !== "web") return () => {};
   const handle = (event: ShortcutInput) => {
     if (event.isComposing) return;
+    // The branch popup owns Escape and its own keyboard focus loop.
+    if (
+      document.querySelector(
+        '[data-testid="split-workspace-base-branch-options"]',
+      )
+    )
+      return;
     if (event.key === "Escape") {
       event.preventDefault();
       event.stopPropagation();
@@ -1085,6 +1130,56 @@ export function onPickerKeys(
   };
   window.addEventListener("keydown", handle, true);
   return () => window.removeEventListener("keydown", handle, true);
+}
+
+export function onWorkspaceBranchMenu(close: () => void): () => void {
+  if (Platform.OS !== "web") return () => {};
+  const keydown = (event: ShortcutInput) => {
+    if (event.isComposing) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      // React Native Web's outer Modal dismisses on keyup. Consume the matching
+      // release even after closing this popup removes its keydown listener.
+      const release = (up: ShortcutInput) => {
+        if (up.key !== "Escape") return;
+        up.preventDefault();
+        up.stopPropagation();
+        window.removeEventListener("keyup", release, true);
+        clearTimeout(timeout);
+      };
+      const timeout = setTimeout(
+        () => window.removeEventListener("keyup", release, true),
+        1000,
+      );
+      window.addEventListener("keyup", release, true);
+      close();
+    } else if (event.key === "Tab") {
+      const root = document.querySelector(
+        '[data-testid="split-workspace-base-branch-options"]',
+      );
+      const controls = Array.from(
+        root?.querySelectorAll('input,[role="radio"],[role="button"]') ?? [],
+      ).filter(
+        (e) =>
+          e.getAttribute("aria-disabled") !== "true" &&
+          e.getBoundingClientRect().height > 0,
+      );
+      const first = controls[0],
+        last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    }
+  };
+  window.addEventListener("keydown", keydown, true);
+  return () => {
+    window.removeEventListener("keydown", keydown, true);
+  };
 }
 
 export function revealControl(testId: string): void {

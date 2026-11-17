@@ -20,6 +20,7 @@ export const DialogInput = forwardRef<
     onChangeText(value: string): void;
     onSubmit?(): void;
     disabled?: boolean;
+    autoFocus?: boolean;
     icon?: string;
     testID?: string;
   }
@@ -32,6 +33,7 @@ export const DialogInput = forwardRef<
     onChangeText,
     onSubmit,
     disabled,
+    autoFocus,
     icon,
     testID,
   },
@@ -62,6 +64,7 @@ export const DialogInput = forwardRef<
         placeholderTextColor={c.foregroundMuted}
         value={value}
         editable={!disabled}
+        autoFocus={autoFocus}
         autoCapitalize="none"
         autoCorrect={false}
         spellCheck={false}

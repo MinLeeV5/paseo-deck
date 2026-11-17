@@ -132,6 +132,12 @@ export interface NativeBridge
     acquireDirectoryDemand(serverId: string): () => void;
     getClient(serverId: string): {
       listTerminals(): Promise<{ terminals: Directory["terminals"] }>;
+      getBranchSuggestions(options: {
+        cwd: string;
+        query?: string;
+        limit?: number;
+        refMode?: "exact";
+      }): Promise<{ branches: string[]; error: string | null }>;
     } | null;
     prepareAgentTimeline(serverId: string, agentId: string): Promise<unknown>;
   };
