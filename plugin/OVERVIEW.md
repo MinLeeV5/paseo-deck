@@ -12,7 +12,8 @@ Open Paseo Deck from the sidebar or Command Center, select a host, and use a spl
 
 - **Native conversations**: Use Paseo's conversation UI, composer, and file panels inside each split.
 - **Shared drafts**: Unsent text stays in sync between Deck and the Agent's original workspace on the same client.
-- **Native entry points (0.16+)**: Add an Agent to the current or a new split from its native page, or choose a Deck destination on New workspace to add its first Agent automatically. Workspace sidebar badges show which Deck splits contain its Tabs and update when you move them. An unnamed workspace follows its first Agent's generated title until you rename the workspace yourself.
+- **Deck locations**: Agents already on the board show the Deck icon and split number in the add panel, alongside their activity status. The location follows Tab moves.
+- **Native entry points (0.16+)**: Add the current Agent through Command Center, or choose a Deck destination on New workspace to add its first Agent automatically. Workspace sidebar badges show which Deck splits contain its Tabs and update when you move them. An unnamed workspace follows its first Agent's generated title until you rename the workspace yourself.
 - **Subagents in the current split**: Open managed and provider subagents as Tabs beside their parent, including children in another workspace on the same host. A child already open in another split moves into the current split.
 - **Agent status at a glance**: Tabs show running, unread, input or approval requests, and failures using Paseo's native indicators and read behavior. The sidebar entry keeps live counts for each state and hides zero counts.
 

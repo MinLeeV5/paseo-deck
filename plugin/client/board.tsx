@@ -1411,14 +1411,19 @@ function HostBoard({
       ),
     [board.panes, board.groups, board.direction, geometry, barHeight],
   );
-  const openedAgentIds = useMemo(
+  const openedAgentDecks = useMemo(
     () =>
-      new Set(
-        board.panes.flatMap((pane) =>
-          pane.target.kind === "agent" ? [pane.target.agentId] : [],
-        ),
+      new Map<string, number>(
+        board.panes.flatMap((pane) => {
+          if (pane.serverId !== host.id || pane.target.kind !== "agent")
+            return [];
+          const groupIndex = board.groups.findIndex((group) =>
+            group.tabIds.includes(pane.id),
+          );
+          return groupIndex < 0 ? [] : [[pane.target.agentId, groupIndex + 1]];
+        }),
       ),
-    [board.panes],
+    [board.panes, board.groups, host.id],
   );
   const menuActionsFor = useCallback(
     (groupId: string): PaneMenuAction[] => {
@@ -1999,7 +2004,7 @@ function HostBoard({
         directory={directory.data}
         initialMode={picker!.mode}
         defaultWorkspaceId={active?.workspaceId}
-        openedAgentIds={openedAgentIds}
+        openedAgentDecks={openedAgentDecks}
         newSplit={picker!.newSplit}
         onDestination={updateDestination}
         onOpen={chooseTarget}

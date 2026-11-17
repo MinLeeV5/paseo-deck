@@ -242,7 +242,6 @@ export function DialogChoice({
           </Text>
         )}
       </View>
-      {selected && <Icon name="Check" size={14} color={c.accent} />}
     </Pressable>
   );
 }

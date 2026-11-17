@@ -20,6 +20,7 @@ import type { PluginScreenProps } from "@getpaseo/plugin/client";
 import type { Target } from "../shared/model";
 import type { NativeBridge, NativeStatusBucket } from "./native-types";
 import { ProjectIcon, WorkspaceIcon } from "./workspace-icon";
+import { DeckIcon } from "./deck-icon";
 import { workspaceLabel, type Directory } from "./directory";
 import { keyboardFocusVisible, onPickerKeys } from "./web";
 import { IconButton } from "./compact-ui";
@@ -72,6 +73,7 @@ type Row =
       agentId?: string;
       badge?: string;
       badgeIcon?: string;
+      deckNumber?: number;
       running?: boolean;
       status?: NativeStatusBucket | null;
       backgroundCount?: number;
@@ -92,7 +94,7 @@ export function ResourcePicker({
   directory,
   initialMode,
   defaultWorkspaceId,
-  openedAgentIds,
+  openedAgentDecks,
   newSplit,
   onDestination,
   onOpen,
@@ -112,7 +114,7 @@ export function ResourcePicker({
   directory?: Directory;
   initialMode: PickerMode;
   defaultWorkspaceId?: string;
-  openedAgentIds: Set<string>;
+  openedAgentDecks: ReadonlyMap<string, number>;
   newSplit: boolean;
   onDestination(next: boolean): void;
   onOpen(target: Target, workspaceId: string): void;
@@ -319,12 +321,7 @@ export function ResourcePicker({
         const w = workspaces.find((w) => w.id === a.workspaceId);
         const activity = pickerAgentActivity(a, agentStatuses[a.id]);
         const badge =
-          activity.badge ??
-          (openedAgentIds.has(a.id)
-            ? "已打开"
-            : a.status === "closed"
-              ? "已关闭"
-              : undefined);
+          activity.badge ?? (a.status === "closed" ? "已关闭" : undefined);
         result.push({
           key: a.id,
           kind: "option",
@@ -334,12 +331,8 @@ export function ResourcePicker({
           agentId: a.id,
           action: "添加",
           badge,
-          badgeIcon:
-            badge === "已打开"
-              ? "Check"
-              : badge === "已关闭"
-                ? "CircleStop"
-                : undefined,
+          badgeIcon: badge === "已关闭" ? "CircleStop" : undefined,
+          deckNumber: openedAgentDecks.get(a.id),
           running: activity.running,
           status: activity.status,
           backgroundCount:
@@ -357,7 +350,7 @@ export function ResourcePicker({
     query,
     defaultWorkspaceId,
     agentStatuses,
-    openedAgentIds,
+    openedAgentDecks,
     agentFilter,
     agentSections,
     onOpen,
@@ -1314,7 +1307,7 @@ function ResultRow({
     >
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${row.action ?? "选择"} ${row.title} · ${row.subtitle}${row.badge ? " · " + row.badge : ""}`}
+        accessibilityLabel={`${row.action ?? "选择"} ${row.title} · ${row.subtitle}${row.deckNumber ? " · 已在 Deck " + row.deckNumber : ""}${row.badge ? " · " + row.badge : ""}`}
         disabled={busy}
         accessibilityState={{ disabled: busy, selected }}
         aria-pressed={selected}
@@ -1368,86 +1361,117 @@ function ResultRow({
             {row.subtitle}
           </Text>
         </View>
-        {selected && <Icon name="Check" size={14} color={colors.accent} />}
-        {row.badge && (
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 5,
-              flexShrink: 0,
-            }}
-          >
-            {row.status ? (
-              <View
-                testID={`split-agent-status-indicator-${row.agentId}`}
-                pointerEvents="none"
-                aria-hidden
-                style={{
-                  width: 14,
-                  height: 16,
-                  flexShrink: 0,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                {row.status === "running" ? (
-                  <View testID={`split-agent-running-indicator-${row.agentId}`}>
-                    <bridge.StatusRing />
-                  </View>
-                ) : row.status === "needs_input" ? (
-                  <Icon name="CircleAlert" size={12} color={statusColor} />
-                ) : (
-                  // StatusIcon places its dot at an icon's bottom-right corner.
-                  // A text badge needs a centered inline dot instead.
-                  <View
-                    style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: 3,
-                      backgroundColor: statusColor,
-                    }}
-                  />
-                )}
-              </View>
-            ) : row.badgeIcon ? (
-              <Icon
-                name={row.badgeIcon}
-                size={13}
-                color={colors.foregroundMuted}
-              />
-            ) : null}
-            <Text
-              numberOfLines={1}
+        <View style={{ alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
+          {row.deckNumber !== undefined && (
+            <View
+              testID={`split-agent-deck-${row.agentId}`}
               style={{
-                fontSize: 11,
-                lineHeight: 16,
-                fontWeight: row.status ? "500" : "400",
-                color: statusColor,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 4,
+                backgroundColor: colors.surface1,
+                borderRadius: 4,
+                paddingHorizontal: 6,
+                paddingVertical: 2,
               }}
             >
-              {row.badge}
-            </Text>
+              <DeckIcon size={12} color={colors.foregroundMuted} />
+              <Text
+                numberOfLines={1}
+                style={{
+                  color: colors.foregroundMuted,
+                  fontSize: 11,
+                  lineHeight: 14,
+                }}
+              >
+                Deck {row.deckNumber}
+              </Text>
+            </View>
+          )}
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            {row.badge && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 5,
+                  flexShrink: 0,
+                }}
+              >
+                {row.status ? (
+                  <View
+                    testID={`split-agent-status-indicator-${row.agentId}`}
+                    pointerEvents="none"
+                    aria-hidden
+                    style={{
+                      width: 14,
+                      height: 16,
+                      flexShrink: 0,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {row.status === "running" ? (
+                      <View
+                        testID={`split-agent-running-indicator-${row.agentId}`}
+                      >
+                        <bridge.StatusRing />
+                      </View>
+                    ) : row.status === "needs_input" ? (
+                      <Icon name="CircleAlert" size={12} color={statusColor} />
+                    ) : (
+                      // StatusIcon places its dot at an icon's bottom-right corner.
+                      // A text badge needs a centered inline dot instead.
+                      <View
+                        style={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: 3,
+                          backgroundColor: statusColor,
+                        }}
+                      />
+                    )}
+                  </View>
+                ) : row.badgeIcon ? (
+                  <Icon
+                    name={row.badgeIcon}
+                    size={13}
+                    color={colors.foregroundMuted}
+                  />
+                ) : null}
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    fontSize: 11,
+                    lineHeight: 16,
+                    fontWeight: row.status ? "500" : "400",
+                    color: statusColor,
+                  }}
+                >
+                  {row.badge}
+                </Text>
+              </View>
+            )}
+            {Boolean(row.backgroundCount) && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  gap: 4,
+                  alignItems: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <Icon name="Layers" size={12} color={colors.foregroundMuted} />
+                <Text
+                  numberOfLines={1}
+                  style={{ color: colors.foregroundMuted, fontSize: 11 }}
+                >
+                  后台 {row.backgroundCount}
+                </Text>
+              </View>
+            )}
           </View>
-        )}
-        {Boolean(row.backgroundCount) && (
-          <View
-            style={{
-              flexDirection: "row",
-              gap: 4,
-              alignItems: "center",
-              flexShrink: 0,
-            }}
-          >
-            <Icon name="Layers" size={12} color={colors.foregroundMuted} />
-            <Text
-              numberOfLines={1}
-              style={{ color: colors.foregroundMuted, fontSize: 11 }}
-            >
-              后台 {row.backgroundCount}
-            </Text>
-          </View>
-        )}
+        </View>
       </Pressable>
       {row.agentId && (
         <IconButton
