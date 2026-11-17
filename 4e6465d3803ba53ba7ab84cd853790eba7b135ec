@@ -1,0 +1,65 @@
+plugin/paseo-plugin.json
+  97f92442d4d31762 14
+plugin/client/native-types.ts
+  97f92442d4d31762 135-140
+plugin/client/resource-picker.tsx
+  97f92442d4d31762 25-30,33,152-156,169,209-218,227,238,244-260,509,667,669-672,923-932,934,936-944,951,953,955-956,958-960,1016,1022,1282
+WORKSPACE-CREATION-RESULTS.md
+  97f92442d4d31762 1-22
+plugin/OVERVIEW.md
+  97f92442d4d31762 15,23
+plugin/OVERVIEW.zh-CN.md
+  97f92442d4d31762 15,23
+README.zh-CN.md
+  97f92442d4d31762 8,57,60,77-79
+plugin/client/workspace-branch-picker.tsx
+  97f92442d4d31762 1-331
+tools/workspace-creation.test.mjs
+  97f92442d4d31762 1-69
+plugin/client/workspace-creator.tsx
+  97f92442d4d31762 5,14,23,28,30-47,53-63,67-72,74-78,80-115
+README.md
+  97f92442d4d31762 8,57,60,77-79
+plugin/client/web.ts
+  97f92442d4d31762 57,62,328-365,1084-1090,1135-1182
+plugin/client/add-dialog-ui.tsx
+  97f92442d4d31762 23,36,67
+plugin/client/workspace-creation.ts
+  97f92442d4d31762 12,20,38
+tools/menu-placement.test.mjs
+  97f92442d4d31762 1-46
+package.json
+  97f92442d4d31762 3
+plugin/package.json
+  97f92442d4d31762 4
+plugin/shared/menu-placement.ts
+  97f92442d4d31762 1-39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.8.3",
+  "base_commit_sha": "4e6465d3803ba53ba7ab84cd853790eba7b135ec",
+  "prompts": {
+    "97f92442d4d31762": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e863-40a0-75d1-869f-2c91068b691f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 1865,
+      "total_deletions": 756,
+      "accepted_lines": 1199,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/316c3cdfbd2532dc3a4eb39965172cb110dd78fe1d102024d905b2ed4f887f05",
+      "token_usage": {
+        "input_tokens": 693890,
+        "output_tokens": 115474,
+        "cache_read_tokens": 31659392,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    }
+  }
+}
