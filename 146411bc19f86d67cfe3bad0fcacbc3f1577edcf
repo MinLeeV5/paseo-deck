@@ -1,0 +1,62 @@
+plugin/client/sidebar-item.tsx
+  a2caf15a5f8d40f4 13,34-38,57
+README.md
+  a2caf15a5f8d40f4 184
+  9a3d852160f1f365 93
+COMPATIBILITY-0.16.md
+  9a3d852160f1f365 41
+plugin/client/native-entry.tsx
+  9a3d852160f1f365 80,243
+README.zh-CN.md
+  9a3d852160f1f365 93
+  a2caf15a5f8d40f4 184
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.8.3",
+  "base_commit_sha": "146411bc19f86d67cfe3bad0fcacbc3f1577edcf",
+  "prompts": {
+    "9a3d852160f1f365": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e78d-1d8b-74a1-a979-5c9bf3e86763",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 5,
+      "total_deletions": 64,
+      "accepted_lines": 5,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/5d4164e862777494fadf631edeb8b6da5711ec0a724bd3e10606f998fe016ad6",
+      "token_usage": {
+        "input_tokens": 78354,
+        "output_tokens": 7980,
+        "cache_read_tokens": 510720,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    },
+    "a2caf15a5f8d40f4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e4e2-bd68-7950-9525-e261c3fe6468",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 9,
+      "total_deletions": 4,
+      "accepted_lines": 9,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/75821caf7eea4972686d8a61ffdf693adbd70aae03c6f75cd086d101438ce70d",
+      "token_usage": {
+        "input_tokens": 93790,
+        "output_tokens": 7579,
+        "cache_read_tokens": 694400,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    }
+  }
+}
