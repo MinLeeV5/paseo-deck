@@ -31,6 +31,7 @@ export function TabContextMenu({
   theme,
   onClose,
   onArchive,
+  onArchiveWorkspace,
   onCloseRelated,
   onResourceChanged,
   children,
@@ -45,6 +46,7 @@ export function TabContextMenu({
   theme: PluginScreenProps["theme"];
   onClose(tabId: string): void;
   onArchive(agentId: string): Promise<void>;
+  onArchiveWorkspace(tabId: string): Promise<void>;
   onCloseRelated(tabId: string, scope: RelatedTabs): void;
   onResourceChanged(): Promise<unknown>;
   children: ReactNode;
@@ -126,22 +128,29 @@ export function TabContextMenu({
     onCloseTabsAfter: (id) => onCloseRelated(id, "after"),
     onCloseOtherTabs: (id) => onCloseRelated(id, "others"),
   });
+  entries.push({ kind: "separator", key: "archive-separator" });
   if (pane.target.kind === "agent") {
     const agentId = pane.target.agentId;
-    entries.push(
-      { kind: "separator", key: "archive-separator" },
-      {
-        kind: "item",
-        key: "archive-agent",
-        label: "归档 Agent",
-        icon: "archive",
-        destructive: true,
-        disabled: !directory?.agents.some((agent) => agent.id === agentId),
-        testID: `${testID}-archive-agent`,
-        onSelect: () => run(() => onArchive(agentId)),
-      },
-    );
+    entries.push({
+      kind: "item",
+      key: "archive-agent",
+      label: "归档 Agent",
+      icon: "archive",
+      destructive: true,
+      disabled: !directory?.agents.some((agent) => agent.id === agentId),
+      testID: `${testID}-archive-agent`,
+      onSelect: () => run(() => onArchive(agentId)),
+    });
   }
+  entries.push({
+    kind: "item",
+    key: "archive-workspace",
+    label: "归档 workspace",
+    icon: "archive",
+    destructive: true,
+    testID: `${testID}-archive-workspace`,
+    onSelect: () => run(() => onArchiveWorkspace(pane.id)),
+  });
   const renameTarget =
     pane.target.kind === "agent"
       ? { kind: "agent", id: pane.target.agentId, currentTitle: title }

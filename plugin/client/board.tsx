@@ -153,7 +153,7 @@ function HostBoard({
   const [routeActive, setRouteActive] = useState(true);
   const [picker, setPicker] = useState<Picker | null>(null);
   const [busy, setBusy] = useState(false);
-  const archivingAgent = useRef(false);
+  const archiving = useRef(false);
   const workspaceCreation = useRef(false);
   const [viewport, setViewport] = useState({ width: 1000, height: 700 });
   const root = useRef<View>(null),
@@ -630,8 +630,8 @@ function HostBoard({
       const agent = directoryRef.current?.agents.find(
         (item) => item.id === agentId,
       );
-      if (!agent || !bridge.data || archivingAgent.current) return;
-      archivingAgent.current = true;
+      if (!agent || !bridge.data || archiving.current) return;
+      archiving.current = true;
       setBusy(true);
       try {
         const confirmed = await bridge.data.confirmDialog({
@@ -657,11 +657,115 @@ function HostBoard({
       } catch (error) {
         toast.error(`归档失败：${errorMessage(error)}`);
       } finally {
-        archivingAgent.current = false;
+        archiving.current = false;
         setBusy(false);
       }
     },
     [bridge.data, paseo, host.id, setBoard, directory.refetch, toast],
+  );
+  const archiveWorkspace = useCallback(
+    async (tabId: string) => {
+      const native = bridge.data;
+      const source = boardRef.current.panes.find((pane) => pane.id === tabId);
+      if (
+        !source ||
+        source.serverId !== host.id ||
+        !native ||
+        archiving.current ||
+        closingAll.current
+      )
+        return;
+
+      const { serverId, workspaceId } = source;
+      const belongsToWorkspace = (pane: Pane) =>
+        pane.serverId === serverId && pane.workspaceId === workspaceId;
+      const affected = boardRef.current.panes.filter(belongsToWorkspace);
+      if (affected.some((pane) => pendingCloses.current.has(pane.id))) return;
+      archiving.current = true;
+      affected.forEach((pane) => pendingCloses.current.add(pane.id));
+      const resumes: (() => void)[] = [];
+      let committed = false;
+      try {
+        const workspace =
+          directoryRef.current?.workspaces.find(
+            (item) => item.id === workspaceId,
+          ) ?? (await paseo.workspaces.ref(workspaceId).refresh());
+        if (!workspace) throw new Error("找不到此 workspace");
+        if (workspace.archivingAt) return;
+
+        let modified = false;
+        for (const pane of affected) {
+          const attributes = native.getPanelInstanceAttributes({
+            serverId,
+            workspaceId,
+            tabId: `${instanceId}:${pane.id}`,
+          });
+          if (!attributes.modified) continue;
+          modified = true;
+          const resume = attributes.suspendPendingSave?.();
+          if (resume) resumes.push(resume);
+        }
+        const message = [
+          `确定归档「${workspaceLabel(workspace)}」吗？`,
+          "归档会停止该 workspace 中运行的 Agent 和终端，并关闭工作台中的相关 Tab。",
+        ];
+        if (workspace.workspaceKind === "worktree")
+          message.push("Paseo 会移除该 worktree 的工作目录。");
+        if (modified) message.push("Tab 中未保存的更改将被放弃。");
+        const confirmed = await native.confirmDialog({
+          title: "归档 workspace",
+          message: message.join("\n\n"),
+          confirmLabel: modified ? "放弃更改并归档" : "归档",
+          cancelLabel: "取消",
+          destructive: true,
+        });
+        if (!confirmed) return;
+
+        const result = await paseo.workspaces.archive(workspaceId);
+        if (result.error || !result.archivedAt)
+          throw new Error(result.error ?? "Paseo 未确认归档");
+        const groupId = groupOf(tabId)?.id;
+        setBoard((current) =>
+          current.panes
+            .filter(belongsToWorkspace)
+            .reduce((next, pane) => removeTab(next, pane.id), current),
+        );
+        committed = true;
+        persist();
+        const group = boardRef.current.groups.find(
+          (item) => item.id === groupId,
+        );
+        if (group && routeActiveRef.current) {
+          setFocusedGroup(group.id);
+          scheduleFrame(() =>
+            focusControl(
+              group.activeTabId
+                ? `split-tab-${group.activeTabId}`
+                : `split-add-${group.id}`,
+            ),
+          );
+        }
+        void directory.refetch();
+        toast.show("workspace 已归档", { variant: "success" });
+      } catch (error) {
+        toast.error(`归档 workspace 失败：${errorMessage(error)}`);
+      } finally {
+        if (!committed) resumes.forEach((resume) => resume());
+        affected.forEach((pane) => pendingCloses.current.delete(pane.id));
+        archiving.current = false;
+      }
+    },
+    [
+      bridge.data,
+      host.id,
+      instanceId,
+      paseo,
+      groupOf,
+      setBoard,
+      persist,
+      directory.refetch,
+      toast,
+    ],
   );
   const openPluginPanel = useCallback(
     (request: PluginPanelRequest): boolean => {
@@ -1808,6 +1912,7 @@ function HostBoard({
                 onRunningChange={onRunningChange}
                 onClose={closeTabAndFocus}
                 onArchive={archiveAgent}
+                onArchiveWorkspace={archiveWorkspace}
                 onCloseGroup={board.groups.length > 1 ? closeGroup : undefined}
                 onCloseRelated={closeRelatedTabs}
                 onResourceChanged={directory.refetch}
