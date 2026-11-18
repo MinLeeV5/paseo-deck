@@ -5,7 +5,7 @@
 <p align="center"><strong>Agents, terminals, and files across workspaces, in one Paseo window.</strong></p>
 
 <p align="center">
-  <a href="https://github.com/MinLeeV5/paseo-deck/releases/tag/v1.1.1"><img src="https://img.shields.io/badge/version-v1.1.1-1f6feb" alt="Version v1.1.1" /></a>
+  <a href="https://github.com/MinLeeV5/paseo-deck/releases/tag/v1.1.2"><img src="https://img.shields.io/badge/version-v1.1.2-1f6feb" alt="Version v1.1.2" /></a>
   <a href="plugin/paseo-plugin.json"><img src="https://img.shields.io/badge/Paseo-0.13.0%2B-0078D4" alt="Paseo 0.13.0 or later" /></a>
   <a href="#scope-and-compatibility"><img src="https://img.shields.io/badge/platform-desktop%20%2F%20Web-2DA44E" alt="Desktop and Web" /></a>
 </p>
@@ -54,10 +54,10 @@ paseo plugin install git:MinLeeV5/paseo-deck:plugin
 
 The `:plugin` suffix selects the plugin directory inside the repository. Paseo downloads the source; no manual clone or dependency installation is needed.
 
-Releases use Semantic Versioning and matching Git tags. To select **v1.1.1** for the initial installation:
+Releases use Semantic Versioning and matching Git tags. To select **v1.1.2** for the initial installation:
 
 ```bash
-paseo plugin install git:MinLeeV5/paseo-deck:plugin --ref v1.1.1
+paseo plugin install git:MinLeeV5/paseo-deck:plugin --ref v1.1.2
 ```
 
 Open **Paseo Deck** in the sidebar, or search for **Paseo Deck** in the Command Center (`⌘K` / `Ctrl+K`). Plugin ID: `paseo-deck`. Current plugin menu labels are in Simplified Chinese.
@@ -74,7 +74,7 @@ Paseo shows the latest revision from the repository's default branch and asks fo
 
 Click a split's **`＋`** to find **已有 Agent** (Existing Agents) across all projects by default. Search and click an Agent to add it directly. Agents needing attention, unread conversations, and running Agents come first, with status filters for quick access. On Paseo 0.16, background task counts appear in a separate group.
 
-For a fresh conversation, select **新建 Agent** (New Agent) on the right. Choose a project, then an existing workspace, or select **新建 workspace** (New workspace) and optionally name it. Git projects default to an isolated worktree and also support the original directory. For a worktree, use **基础分支** (Base branch) to search and select a local or remote branch, or keep **自动选择** (Automatic) to use the project's settings. The picker opens above or below to fit the available space, and this client remembers your last choice separately for each host and project. The footer defaults to a new split; choose the current split when needed. The new Agent Tab is added to Deck automatically; send the first message to start the conversation.
+For a fresh conversation, select **新建 Agent** (New Agent) on the right. Choose a project, then an existing workspace, or select **新建 workspace** (New workspace) and optionally name it. Git projects default to an isolated worktree and also support the original directory. For a worktree, use **基础分支** (Base branch) to search and select a local or remote branch, or keep **自动选择** (Automatic) to use the project's settings. The picker opens above or below to fit the available space, and this client remembers your last choice separately for each host and project. The new Agent Tab is added to Deck automatically; send the first message to start the conversation.
 
 ![Choose the base branch for a new worktree](plugin/assets/workspace-creation.png)
 
@@ -84,7 +84,7 @@ Agent Tabs overlay Paseo's native status on the workspace icon: a running spinne
 
 The Paseo Deck sidebar entry summarizes Tabs added to the board, with an icon and count for input / approval requests, failures, running, and unread. Zero counts disappear. Counts stay current away from Deck and after restoring a layout; hover for the full status summary.
 
-New additions default to a new split; you can switch the destination to the current split. Agents already on the board show their location, such as `Deck 1`, beside the Deck icon in the add panel. Within each activity group, they appear in Deck number order before Agents not yet on the board; Agents in the same Deck keep their activity order. The label and order follow Tab moves, with activity status still visible. Adding an Agent or terminal that is already on the board focuses its existing Tab.
+The add panel starts with the current split selected and remembers your last split choice on this client. Agents already on the board show their location, such as `Deck 1`, beside the Deck icon in the add panel. Within each activity group, they appear in Deck number order before Agents not yet on the board; Agents in the same Deck keep their activity order. The label and order follow Tab moves, with activity status still visible. Adding an Agent or terminal that is already on the board focuses its existing Tab.
 
 Clicking a subagent in a Deck conversation opens it as a Tab in that conversation's split, including provider subagents and children in another workspace on the same host. The parent stays open. If the child is already in another split, its Tab moves into the source split.
 

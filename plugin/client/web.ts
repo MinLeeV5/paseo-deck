@@ -283,6 +283,33 @@ export function saveBoard(serverId: string, board: Board): void {
   );
 }
 
+const pickerDestinationKey = "paseo-deck:picker-destination";
+let unsavedPickerNewSplit: boolean | undefined;
+
+export function readPickerNewSplit(): boolean {
+  if (unsavedPickerNewSplit !== undefined) return unsavedPickerNewSplit;
+  if (Platform.OS !== "web") return false;
+  try {
+    return window.localStorage.getItem(pickerDestinationKey) === "new";
+  } catch {
+    return false;
+  }
+}
+
+export function writePickerNewSplit(newSplit: boolean): void {
+  unsavedPickerNewSplit = newSplit;
+  if (Platform.OS !== "web") return;
+  try {
+    window.localStorage.setItem(
+      pickerDestinationKey,
+      newSplit ? "new" : "current",
+    );
+    unsavedPickerNewSplit = undefined;
+  } catch {
+    // Keep the selection in memory when storage is unavailable.
+  }
+}
+
 const toolbarPreferences = new Map<string, ToolbarPreferences>();
 const toolbarListeners = new Set<() => void>();
 export function readToolbarPreferences(serverId: string): ToolbarPreferences {

@@ -49,6 +49,8 @@ import {
   focusControl,
   readBoardSnapshot,
   readBoardFocus,
+  readPickerNewSplit,
+  writePickerNewSplit,
   rememberBoardFocus,
   subscribeBoardSnapshot,
   publishBoardSnapshot,
@@ -384,7 +386,7 @@ function HostBoard({
       groupId: string,
       anchor: View | null = null,
       mode: PickerMode = "agent",
-      newSplit = true,
+      newSplit = readPickerNewSplit(),
       splitDirection?: Board["direction"],
     ) => {
       const key = id();
@@ -1628,11 +1630,10 @@ function HostBoard({
   const menuActions = picker
     ? (menuActionsByGroup.get(picker.groupId) ?? [])
     : [];
-  const updateDestination = useCallback(
-    (newSplit: boolean) =>
-      setPicker((current) => (current ? { ...current, newSplit } : current)),
-    [],
-  );
+  const updateDestination = useCallback((newSplit: boolean) => {
+    writePickerNewSplit(newSplit);
+    setPicker((current) => (current ? { ...current, newSplit } : current));
+  }, []);
   const iconScope = routeActive
     ? (picker && picker.mode !== "menu"
         ? (directory.data?.workspaces.map((workspace) => workspace.id) ?? [])
