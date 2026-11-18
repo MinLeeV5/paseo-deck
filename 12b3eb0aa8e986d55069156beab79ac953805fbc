@@ -1,0 +1,35 @@
+plugin/client/tab-context-menu.tsx
+  be5119b9a4e5cbc9 34,49,131,134-143,145-153
+plugin/client/pane-frame.tsx
+  be5119b9a4e5cbc9 56,86,195,258,327,367
+plugin/client/board.tsx
+  be5119b9a4e5cbc9 156,633-634,660,666-769,1915
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.8.4",
+  "base_commit_sha": "12b3eb0aa8e986d55069156beab79ac953805fbc",
+  "prompts": {
+    "be5119b9a4e5cbc9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ee1f-cb3e-7e22-b4cf-4778434d870a",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 141,
+      "total_deletions": 21,
+      "accepted_lines": 137,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/0e4330543a3cf9dccd86238c94968a54650822842020c5bf7526d9f75a5bc5a4",
+      "token_usage": {
+        "input_tokens": 211232,
+        "output_tokens": 37307,
+        "cache_read_tokens": 12736000,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    }
+  }
+}
