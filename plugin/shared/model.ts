@@ -267,6 +267,27 @@ export function removeEmptyGroup(board: Board, groupId: string): Board {
     groups: board.groups.filter((group) => group.id !== groupId),
   });
 }
+export function removeWorkspaceTabs(
+  board: Board,
+  serverId: string,
+  workspaceId: string,
+): Board {
+  const tabIds = new Set(
+    board.panes
+      .filter(
+        (pane) =>
+          pane.serverId === serverId && pane.workspaceId === workspaceId,
+      )
+      .map((pane) => pane.id),
+  );
+  let next = board;
+  for (const tabId of tabIds) next = removeTab(next, tabId);
+  for (const group of board.groups) {
+    if (group.tabIds.length && group.tabIds.every((id) => tabIds.has(id)))
+      next = removeEmptyGroup(next, group.id);
+  }
+  return next;
+}
 export function moveTab(
   board: Board,
   tabId: string,

@@ -5,6 +5,7 @@ import {
   boardSchema,
   emptyBoard,
   removeEmptyGroup,
+  removeWorkspaceTabs,
 } from "../plugin/shared/model.ts";
 import { applyLayoutPreset, boardGeometry } from "../plugin/shared/layout.ts";
 
@@ -52,6 +53,55 @@ test("closing a split cannot remove content or the last empty split", () => {
   assert.equal(removeEmptyGroup(split, "missing"), split);
   assert.equal(removeEmptyGroup(emptyBoard, "group-main"), emptyBoard);
   assert.equal(removeEmptyGroup(populated, "group-main"), populated);
+});
+
+test("workspace cleanup closes only splits emptied by that workspace", () => {
+  const shared = { ...pane, id: "shared" };
+  const kept = { ...pane, id: "other-tab", workspaceId: "other" };
+  const otherHost = { ...pane, id: "remote-tab", serverId: "other-host" };
+  let board = addPane(populated, kept, {
+    groupId: "group-main",
+    newGroupId: "mixed",
+  });
+  board = addPane(board, otherHost, {
+    groupId: "group-main",
+    newGroupId: "remote",
+  });
+  board = addPane(board, shared, { groupId: "mixed" });
+  board = {
+    ...board,
+    groups: [...board.groups, { id: "empty", tabIds: [], activeTabId: null }],
+  };
+  const next = removeWorkspaceTabs(board, pane.serverId, pane.workspaceId);
+  assert.equal(boardSchema.safeParse(next).success, true);
+  assert.deepEqual(
+    next.groups.map((group) => group.id),
+    ["mixed", "remote", "empty"],
+  );
+  assert.equal(next.groups[0].activeTabId, kept.id);
+  assert.equal(next.panes[0], kept);
+  assert.equal(next.panes[1], otherHost);
+  assert.equal(
+    removeWorkspaceTabs(next, pane.serverId, pane.workspaceId),
+    next,
+  );
+});
+
+test("archiving the last workspace leaves one split for adding new tabs", () => {
+  const board = addPane(
+    populated,
+    { ...pane, id: "file", target: { kind: "file", path: "README.md" } },
+    {
+      groupId: "group-main",
+      newGroupId: "right",
+    },
+  );
+  const next = removeWorkspaceTabs(board, pane.serverId, pane.workspaceId);
+  assert.equal(boardSchema.safeParse(next).success, true);
+  assert.deepEqual(next.panes, []);
+  assert.equal(next.groups.length, 1);
+  assert.deepEqual(next.groups[0].tabIds, []);
+  assert.equal(next.groups[0].activeTabId, null);
 });
 
 for (const preset of ["two", "three", "four", "grid"]) {

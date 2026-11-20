@@ -1,5 +1,21 @@
 import type { PaseoProject, PaseoWorkspace } from "./paseo-types";
 
+// Match the native priority for a collapsed project.
+const workspaceStatusPriority = [
+  "needs_input",
+  "failed",
+  "running",
+  "attention",
+] as const satisfies readonly PaseoWorkspace["status"][];
+
+export function collapsedProjectStatus(
+  workspaces: readonly Pick<PaseoWorkspace, "status">[],
+) {
+  return workspaceStatusPriority.find((status) =>
+    workspaces.some((workspace) => workspace.status === status),
+  );
+}
+
 export function sortPickerProjects(
   projects: readonly PaseoProject[],
   workspaces: readonly PaseoWorkspace[],

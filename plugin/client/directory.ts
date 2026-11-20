@@ -16,6 +16,7 @@ export type Directory = {
   agents: PaseoAgent[];
   terminals: (PaseoTerminal & { title?: string | null })[];
 };
+export const directoryKey = (hostId: string) => ["split-directory-v2", hostId];
 export const workspaceLabel = (workspace: PaseoWorkspace) =>
   `${workspace.projectCustomName ?? workspace.projectDisplayName} / ${workspace.title ?? workspace.name}`;
 export const isRunning = (agent: Pick<PaseoAgent, "status">) =>
@@ -28,7 +29,7 @@ export function useDirectory(
 ) {
   const paseo = usePaseo();
   const cache = useQueryClient();
-  const key = ["split-directory-v2", hostId];
+  const key = directoryKey(hostId);
   const latest = useRef(new Map<string, PaseoAgent | null>());
   const latestWorkspaces = useRef(new Map<string, PaseoWorkspace>());
   const query = useQuery({
@@ -78,49 +79,47 @@ export function useDirectory(
     let removeSnapshot: (() => void) | undefined;
     const apply = (workspace: PaseoWorkspace) => {
       latestWorkspaces.current.set(workspace.id, workspace);
-      cache.setQueryData<Directory>(
-        ["split-directory-v2", hostId],
-        (current) => {
-          if (!current) return current;
-          const old = current.workspaces.find(
-            (value) => value.id === workspace.id,
-          );
-          if (
-            old &&
-            old.name === workspace.name &&
-            old.title === workspace.title &&
-            old.workspaceDirectory === workspace.workspaceDirectory &&
-            old.projectDisplayName === workspace.projectDisplayName &&
-            old.projectRootPath === workspace.projectRootPath &&
-            old.projectCustomName === workspace.projectCustomName &&
-            old.projectCustomIconRevision ===
-              workspace.projectCustomIconRevision &&
-            old.activityAt === workspace.activityAt &&
-            old.lastUserMessageAt === workspace.lastUserMessageAt &&
-            old.createdAt === workspace.createdAt &&
-            old.internal === workspace.internal &&
-            old.background === workspace.background &&
-            old.archivingAt === workspace.archivingAt &&
-            JSON.stringify(old.scripts) === JSON.stringify(workspace.scripts)
-          )
-            return current;
-          return {
-            ...current,
-            workspaces: old
-              ? current.workspaces.map((value) =>
-                  value.id === workspace.id ? workspace : value,
-                )
-              : [...current.workspaces, workspace].slice(0, 200),
-          };
-        },
-      );
+      cache.setQueryData<Directory>(directoryKey(hostId), (current) => {
+        if (!current) return current;
+        const old = current.workspaces.find(
+          (value) => value.id === workspace.id,
+        );
+        if (
+          old &&
+          old.name === workspace.name &&
+          old.title === workspace.title &&
+          old.workspaceDirectory === workspace.workspaceDirectory &&
+          old.projectDisplayName === workspace.projectDisplayName &&
+          old.projectRootPath === workspace.projectRootPath &&
+          old.projectCustomName === workspace.projectCustomName &&
+          old.projectCustomIconRevision ===
+            workspace.projectCustomIconRevision &&
+          old.activityAt === workspace.activityAt &&
+          old.lastUserMessageAt === workspace.lastUserMessageAt &&
+          old.createdAt === workspace.createdAt &&
+          old.status === workspace.status &&
+          old.internal === workspace.internal &&
+          old.background === workspace.background &&
+          old.archivingAt === workspace.archivingAt &&
+          JSON.stringify(old.scripts) === JSON.stringify(workspace.scripts)
+        )
+          return current;
+        return {
+          ...current,
+          workspaces: old
+            ? current.workspaces.map((value) =>
+                value.id === workspace.id ? workspace : value,
+              )
+            : [...current.workspaces, workspace].slice(0, 200),
+        };
+      });
     };
     const removeListener = paseo.workspaces.subscribe((update) => {
       if (update.kind === "upsert") apply(update.workspace);
       else if (update.kind === "remove") {
         latestWorkspaces.current.delete(update.id);
         cache.setQueryData<Directory>(
-          ["split-directory-v2", hostId],
+          directoryKey(hostId),
           (current) =>
             current && {
               ...current,
@@ -173,7 +172,7 @@ export function useDirectory(
       latest.current.delete(agentId);
       latest.current.set(agentId, null);
       cache.setQueryData<Directory>(
-        ["split-directory-v2", hostId],
+        directoryKey(hostId),
         (current) =>
           current && {
             ...current,

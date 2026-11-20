@@ -121,9 +121,6 @@ export function WorkspaceFields({
           此 project 使用原目录创建 workspace。
         </Text>
       )}
-      <Text style={{ color: c.foregroundMuted, fontSize: 12, lineHeight: 19 }}>
-        创建后自动添加新 Agent，发送首条消息开始对话。
-      </Text>
     </View>
   );
 }

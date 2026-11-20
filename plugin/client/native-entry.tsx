@@ -1,5 +1,6 @@
 import {
   useNewWorkspace,
+  type PluginButtonRegistration,
   type PluginClientContext,
   type PluginComposerItemProps,
   type PluginNewWorkspaceItemProps,
@@ -12,14 +13,16 @@ import {
 } from "@getpaseo/plugin/client/ui";
 import { useEffect, useSyncExternalStore } from "react";
 import { Platform } from "react-native";
-import { MAX_SPLITS } from "../shared/model";
+import { MAX_SPLITS, removeWorkspaceTabs } from "../shared/model";
 import { DeckIcon } from "./deck-icon";
-import { workspaceDeckGroups } from "./deck-entry";
+import { isAgentInDeck, workspaceDeckGroups } from "./deck-entry";
 import { createWorkspaceAutoTitles } from "./workspace-auto-title";
 import type { PaseoAgent, PaseoWorkspace } from "./paseo-types";
 import {
   joinAgentToDeck,
+  publishBoardSnapshot,
   readBoardSnapshot,
+  saveBoard,
   subscribeBoardSnapshot,
 } from "./web";
 import {
@@ -43,6 +46,21 @@ export function installNativeDeckEntries(client: PluginClientContext) {
   const releases: (() => Promise<void>)[] = [];
   const agents = new Map<string, PaseoAgent>();
   const workspaces = new Map<string, PaseoWorkspace>();
+  const agentButtons = new Map<
+    string,
+    {
+      workspaceId: string;
+      visible: boolean;
+      registration: PluginButtonRegistration;
+    }
+  >();
+  const removeAgentButton = (agentId: string) => {
+    agentButtons.get(agentId)?.registration.remove();
+    agentButtons.delete(agentId);
+  };
+  cleanups.push(() => {
+    for (const agentId of agentButtons.keys()) removeAgentButton(agentId);
+  });
   let hostId: string | undefined,
     stopped = false;
   let notifyError = (error: unknown) =>
@@ -70,6 +88,44 @@ export function installNativeDeckEntries(client: PluginClientContext) {
         screenId: "main",
         params: { tabId: paneId, request: requestId() },
       });
+  };
+  const syncAgentButton = (agent: PaseoAgent) => {
+    if (!hostId || typeof client.addComposerPill !== "function") return;
+    if (!agent.workspaceId || agent.archivedAt || agent.background) {
+      removeAgentButton(agent.id);
+      return;
+    }
+    const visible = !isAgentInDeck(readBoardSnapshot(hostId), hostId, agent.id);
+    const existing = agentButtons.get(agent.id);
+    if (existing?.workspaceId === agent.workspaceId) {
+      if (existing.visible !== visible) {
+        existing.visible = visible;
+        existing.registration.update({ visible });
+      }
+      return;
+    }
+    removeAgentButton(agent.id);
+    agentButtons.set(agent.id, {
+      workspaceId: agent.workspaceId,
+      visible,
+      registration: client.addComposerPill({
+        id: "join-deck",
+        workspaceId: agent.workspaceId,
+        agentId: agent.id,
+        button: {
+          title: "加入 Deck",
+          icon: DeckIcon,
+          visible,
+          behavior: {
+            kind: "action",
+            onPress() {
+              const current = agents.get(agent.id);
+              if (current) join(current, "current", true);
+            },
+          },
+        },
+      }),
+    });
   };
   const automatic = createNativeWorkspaceJoins(
     clientId,
@@ -101,6 +157,7 @@ export function installNativeDeckEntries(client: PluginClientContext) {
       agents.set(agent.id, agent);
       automatic.agent(agent);
       automaticTitles.agent(agent);
+      syncAgentButton(agent);
     };
     const applyWorkspace = (workspace: PaseoWorkspace) => {
       if (stopped) return;
@@ -113,6 +170,7 @@ export function installNativeDeckEntries(client: PluginClientContext) {
         if (update.kind === "upsert") applyAgent(update.agent);
         else if (update.kind === "remove") {
           agents.delete(update.agentId);
+          removeAgentButton(update.agentId);
           automatic.removeAgent(update.agentId);
           automaticTitles.removeAgent(update.agentId);
         }
@@ -130,6 +188,7 @@ export function installNativeDeckEntries(client: PluginClientContext) {
     );
     cleanups.push(
       subscribeBoardSnapshot(() => {
+        for (const agent of agents.values()) syncAgentButton(agent);
         automaticTitles.board();
       }),
     );
@@ -157,7 +216,11 @@ export function installNativeDeckEntries(client: PluginClientContext) {
         if (!stopped) notifyError(error);
       });
     void client.paseo.workspaces
-      .list({ page: { limit: 200 }, subscribe: {} })
+      .list({
+        filter: { includeBackground: true },
+        page: { limit: 200 },
+        subscribe: {},
+      })
       .then((result) => {
         if (stopped) {
           void result.subscription.release().catch(console.error);
@@ -170,7 +233,21 @@ export function installNativeDeckEntries(client: PluginClientContext) {
               for (const workspace of entries) applyWorkspace(workspace);
               automaticTitles.retry();
             },
-            update: () => {},
+            update: (message) => {
+              if (
+                message.type !== "workspace_update" ||
+                message.payload.kind !== "remove"
+              )
+                return;
+              const current = readBoardSnapshot(id);
+              const next = removeWorkspaceTabs(current, id, message.payload.id);
+              if (next === current) return;
+              try {
+                saveBoard(id, publishBoardSnapshot(id, next));
+              } catch (error) {
+                notifyError(error);
+              }
+            },
           }),
         );
         for (const workspace of result.entries) applyWorkspace(workspace);
