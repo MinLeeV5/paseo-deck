@@ -1,0 +1,41 @@
+README.md
+  c412502840656f2f 8,57,60
+plugin/client/resource-picker.tsx
+  c412502840656f2f 275-283
+README.zh-CN.md
+  c412502840656f2f 8,57,60
+plugin/package.json
+  c412502840656f2f 4
+package.json
+  c412502840656f2f 3
+plugin/paseo-plugin.json
+  c412502840656f2f 17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.8.4",
+  "base_commit_sha": "5544751681094390264906c9eca513b4783ef675",
+  "prompts": {
+    "c412502840656f2f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6e3-7ba0-78f3-b22d-b0877e011ecc",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 18,
+      "total_deletions": 9,
+      "accepted_lines": 18,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/4052e435540095da2a532e53a951f35b8a8f93ff8bbac079f14986515b7391a4",
+      "token_usage": {
+        "input_tokens": 973298,
+        "output_tokens": 344634,
+        "cache_read_tokens": 102899968,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    }
+  }
+}
