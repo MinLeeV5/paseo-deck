@@ -5,7 +5,7 @@
 <p align="center"><strong>Agents, terminals, and files across workspaces, in one Paseo window.</strong></p>
 
 <p align="center">
-  <a href="https://github.com/MinLeeV5/paseo-deck/releases/tag/v1.2.0"><img src="https://img.shields.io/badge/version-v1.2.0-1f6feb" alt="Version v1.2.0" /></a>
+  <a href="https://github.com/MinLeeV5/paseo-deck/releases/tag/v1.2.1"><img src="https://img.shields.io/badge/version-v1.2.1-1f6feb" alt="Version v1.2.1" /></a>
   <a href="plugin/paseo-plugin.json"><img src="https://img.shields.io/badge/Paseo-0.13.0%2B-0078D4" alt="Paseo 0.13.0 or later" /></a>
   <a href="#scope-and-compatibility"><img src="https://img.shields.io/badge/platform-desktop%20%2F%20Web-2DA44E" alt="Desktop and Web" /></a>
 </p>
@@ -54,10 +54,10 @@ paseo plugin install git:MinLeeV5/paseo-deck:plugin
 
 The `:plugin` suffix selects the plugin directory inside the repository. Paseo downloads the source; no manual clone or dependency installation is needed.
 
-Releases use Semantic Versioning and matching Git tags. To select **v1.2.0** for the initial installation:
+Releases use Semantic Versioning and matching Git tags. To select **v1.2.1** for the initial installation:
 
 ```bash
-paseo plugin install git:MinLeeV5/paseo-deck:plugin --ref v1.2.0
+paseo plugin install git:MinLeeV5/paseo-deck:plugin --ref v1.2.1
 ```
 
 Open **Paseo Deck** in the sidebar, or search for **Paseo Deck** in the Command Center (`⌘K` / `Ctrl+K`). Plugin ID: `paseo-deck`. Current plugin menu labels are in Simplified Chinese.

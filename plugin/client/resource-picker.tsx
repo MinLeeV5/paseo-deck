@@ -272,6 +272,15 @@ function WorkspaceResourcePicker({
     workspaces.find((entry) => entry.id === workspaceId) ??
     workspaces.find((entry) => entry.projectId === projects[0]?.projectId) ??
     workspaces[0];
+  const selectedProjectId = workspace?.projectId;
+  useLayoutEffect(() => {
+    if (!selectedProjectId) return;
+    setExpansion((current) =>
+      current.has(selectedProjectId)
+        ? current
+        : new Map(current).set(selectedProjectId, true),
+    );
+  }, [selectedProjectId]);
   const project =
     form?.kind === "workspace"
       ? projects.find((entry) => entry.projectId === form.projectId)
