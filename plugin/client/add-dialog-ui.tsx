@@ -93,6 +93,7 @@ export function DialogButton({
   label,
   onPress,
   primary,
+  destructive,
   disabled,
   busy,
   icon,
@@ -102,6 +103,7 @@ export function DialogButton({
   label: string;
   onPress(): void;
   primary?: boolean;
+  destructive?: boolean;
   disabled?: boolean;
   busy?: boolean;
   icon?: string;
@@ -152,7 +154,11 @@ export function DialogButton({
       <Text
         numberOfLines={1}
         style={{
-          color: primary ? c.surface0 : c.foreground,
+          color: primary
+            ? c.surface0
+            : destructive
+              ? c.statusDanger
+              : c.foreground,
           fontSize: 12,
           fontWeight: "500",
         }}

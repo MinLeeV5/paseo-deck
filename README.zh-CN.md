@@ -5,7 +5,7 @@
 <p align="center"><strong>在一个 Paseo 窗口中，并排使用不同工作区的 Agent、终端和文件。</strong></p>
 
 <p align="center">
-  <a href="https://github.com/MinLeeV5/paseo-deck/releases/tag/v1.1.2"><img src="https://img.shields.io/badge/version-v1.1.2-1f6feb" alt="版本 v1.1.2" /></a>
+  <a href="https://github.com/MinLeeV5/paseo-deck/releases/tag/v1.2.0"><img src="https://img.shields.io/badge/version-v1.2.0-1f6feb" alt="版本 v1.2.0" /></a>
   <a href="plugin/paseo-plugin.json"><img src="https://img.shields.io/badge/Paseo-0.13.0%2B-0078D4" alt="Paseo 0.13.0 及以上" /></a>
   <a href="#支持范围与兼容性"><img src="https://img.shields.io/badge/platform-desktop%20%2F%20Web-2DA44E" alt="桌面与 Web" /></a>
 </p>
@@ -54,10 +54,10 @@ paseo plugin install git:MinLeeV5/paseo-deck:plugin
 
 末尾的 `:plugin` 指定仓库中的插件目录。Paseo 会自行下载源码，无需手动克隆仓库或安装依赖。
 
-发布版本采用语义化版本号和对应的 Git 标签。首次安装时，可明确选择 **v1.1.2**：
+发布版本采用语义化版本号和对应的 Git 标签。首次安装时，可明确选择 **v1.2.0**：
 
 ```bash
-paseo plugin install git:MinLeeV5/paseo-deck:plugin --ref v1.1.2
+paseo plugin install git:MinLeeV5/paseo-deck:plugin --ref v1.2.0
 ```
 
 点击侧栏 **Paseo Deck**，或在 Command Center（`⌘K` / `Ctrl+K`）中搜索 **Paseo Deck**。插件 ID 为 `paseo-deck`，当前插件菜单使用简体中文。
@@ -72,13 +72,17 @@ Paseo 会显示仓库默认分支的最新版本，确认后才会更新。
 
 ## 添加 Agent 与资源
 
-点击分屏 Tab 栏中的 **`＋`**，默认打开所有 project 的 **已有 Agent**，可直接搜索并点击添加。需要处理、未读和正在运行的 Agent 优先展示，并提供未读、运行中等快捷筛选。Paseo 0.16 还会显示 Agent 的后台任务数量，独立分组展示。
+点击分屏 Tab 栏中的 **`＋`**，在左侧 **Project → Workspace** 树中选择工作区。右侧显示该工作区的 Agent、终端和文件。选中会话后点击 **添加已有 Agent**；需要处理、未读及正在运行的会话有独立分组和快捷筛选，Paseo 0.16 也会显示后台任务。
 
-需要新会话时，点击弹窗右侧的 **新建 Agent**。左侧选择 project，右侧选择已有 workspace，或点击 **新建 workspace** 填写可选名称；Git project 默认创建独立 worktree，也可选择使用原目录。新建 worktree 时，可在 **基础分支** 中搜索并选择本地或远程分支，也可保留 **自动选择** 沿用项目设置。分支菜单根据可用空间自动向上或向下展开，当前客户端会按主机和 project 分别记住上次选择。创建成功后，新 Agent 标签会自动加入 Deck，发送首条消息开始对话。
+Project 行尾的 **`＋`** 用于新建 workspace，成功后在弹窗中选中新工作区。Git 项目可创建独立 worktree 或使用原目录。**基础分支** 支持搜索本地和远程分支，**自动选择** 沿用项目设置，客户端会按主机和项目记住上次选择。
 
 ![为新 worktree 选择基础分支](plugin/assets/workspace-creation.png)
 
-在同一弹窗顶部切换 **已有 Agent**、**终端** 或 **文件**，可以搜索并添加相应资源。运行中与启动中的 Agent 单独分栏，Agent Tab 使用来源工作区的图标。
+在选定的 Workspace 中，**新建 Agent** 打开草稿，发送首条消息开始对话。**终端** 和 **文件** 页也可以新建或添加已有资源。文件可逐层浏览，也可用相对路径添加。新建文件会在现有目录下创建并打开文件。
+
+双击已有资源可直接添加到所选分屏。已在 Deck 中的资源会打开原有 Tab。Workspace 行沿用 Paseo 的动画圆环显示运行中状态，未读、待处理和失败用圆点表示。折叠的 Project 会汇总优先级最高的状态。
+
+悬停到 Project 或 Workspace 的行上可显示操作按钮。**`···`**、右键和 **Shift+F10** 打开同一套菜单。归档 Workspace 后会关闭该工作区的 Tab，并自动收起因此变空的 Deck 分屏。
 
 Agent Tab 在工作区图标上叠加 Paseo 原生状态：运行时转圈、新回复显示绿色未读点、等待回答或审批显示黄色提示、失败显示红点。状态实时更新，即使尚未打开该 Tab；悬停提示也包含状态说明。已读处理沿用原生会话行为，等待回答或审批不会因切换或聚焦而消失。
 
@@ -88,7 +92,7 @@ Agent Tab 在工作区图标上叠加 Paseo 原生状态：运行时转圈、新
 
 在 Deck 会话中点击 subagent，会在该会话所在分屏中打开子 Agent Tab，并保留父会话；支持 provider subagent 和同一主机下其它工作区的子 Agent。子 Agent 已在其它分屏打开时，会将原 Tab 移入当前分屏。
 
-![统一添加面板、来源工作区与已有 Agent](assets/add-tab.png)
+![Project 和 Workspace 树及所选工作区的 Agent](assets/add-tab.png)
 
 ## 从原生页面加入 Deck
 

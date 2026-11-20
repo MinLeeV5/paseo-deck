@@ -8,7 +8,7 @@
 
 ## 🧩 Native tools across workspaces
 
-Open Paseo Deck from the sidebar or Command Center, select a host, and use a split's `＋` to find and add existing Agents by default. Agents needing attention, unread conversations, and running Agents come first, with quick status filters. Paseo 0.16 also shows background task counts separately. For a fresh Agent, choose an existing workspace or create one for a project; its new Agent Tab is added to the selected split automatically. Git projects support an isolated worktree or the original directory. You can also add terminals and files. Agent Tabs show their source workspace's icon.
+Open Paseo Deck from the sidebar or Command Center and use a split's `＋` to select a workspace. Create Agents, terminals, and files from that workspace or double-click an existing resource to open it. Status dots show workspace activity and the highest-priority status in a collapsed project. Hover over a project to create a workspace or over a workspace to archive it. Archiving closes its Tabs and collapses any splits that become empty.
 
 - **Native conversations**: Use Paseo's conversation UI, composer, and file panels inside each split.
 - **Shared drafts**: Unsent text stays in sync between Deck and the Agent's original workspace on the same client.

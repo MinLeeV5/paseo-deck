@@ -27,6 +27,7 @@ export const IconButton = memo(function IconButton({
   anchorRef,
   tooltip = true,
   testID,
+  expanded,
 }: {
   label: string;
   icon: string;
@@ -36,8 +37,9 @@ export const IconButton = memo(function IconButton({
   size?: number;
   accent?: boolean;
   anchorRef?: Ref<View>;
-  tooltip?: boolean;
+  tooltip?: boolean | string;
   testID?: string;
+  expanded?: boolean;
 }) {
   const id = useId();
   const controlId = testID ?? `split-icon-${id}`;
@@ -47,7 +49,8 @@ export const IconButton = memo(function IconButton({
 
   // Native hover hints escape the pane's clipping and stacking contexts.
   useEffect(() => {
-    describeControl(controlId, tooltip && !disabled ? label : "");
+    const hint = typeof tooltip === "string" ? tooltip : label;
+    describeControl(controlId, tooltip && !disabled ? hint : "");
   }, [controlId, disabled, label, tooltip]);
 
   return (
@@ -56,7 +59,8 @@ export const IconButton = memo(function IconButton({
         testID={controlId}
         accessibilityRole="button"
         accessibilityLabel={label}
-        accessibilityState={{ disabled }}
+        accessibilityState={{ disabled, expanded }}
+        aria-expanded={expanded}
         disabled={disabled}
         onPress={onPress}
         onHoverIn={() => setHovered(true)}

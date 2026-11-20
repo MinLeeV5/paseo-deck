@@ -65,10 +65,12 @@ declare const window: {
   ): void;
 };
 declare const navigator: { platform: string };
+declare const CSS: { escape(text: string): string };
 interface WebElement {
   parentElement?: WebElement | null;
   getAttribute(name: string): string | null;
   setAttribute(name: string, value: string): void;
+  removeAttribute(name: string): void;
   matches(selector: string): boolean;
   closest(selector: string): WebElement | null;
   focus(options?: { preventScroll?: boolean }): void;
@@ -699,6 +701,7 @@ interface TabPointerEvent {
   button: number;
   buttons: number;
   pointerId: number;
+  pointerType?: string;
   isPrimary: boolean;
   clientX: number;
   clientY: number;
@@ -1077,21 +1080,26 @@ export function onTabContextMenuKeys(
   open: (rect: { x: number; y: number; width: number; height: number }) => void,
   dismiss?: () => void,
 ): () => void {
+  return onContextMenuKeys(`split-tab-item-${tabId}`, open, dismiss);
+}
+
+export function onContextMenuKeys(
+  testID: string,
+  open: (rect: { x: number; y: number; width: number; height: number }) => void,
+  dismiss?: () => void,
+): () => void {
   if (Platform.OS !== "web") return () => {};
   const handle = (event: ShortcutInput) => {
     if (event.isComposing || event.altKey || event.ctrlKey || event.metaKey)
       return;
     if (event.key === "Escape" && dismiss) {
-      event.preventDefault();
-      event.stopPropagation();
+      consumePopupEscape(event);
       dismiss();
       return;
     }
     if (event.key !== "ContextMenu" && !(event.key === "F10" && event.shiftKey))
       return;
-    const tab = event.target?.closest(
-      `[data-testid="split-tab-item-${tabId}"]`,
-    );
+    const tab = event.target?.closest(`[data-testid="${CSS.escape(testID)}"]`);
     if (!tab) return;
     const rect = tab.getBoundingClientRect();
     event.preventDefault();
@@ -1101,17 +1109,137 @@ export function onTabContextMenuKeys(
   window.addEventListener("keydown", handle, true);
   return () => window.removeEventListener("keydown", handle, true);
 }
+
+export function onPickerRowContextMenu(
+  testID: string,
+  open: (rect: { x: number; y: number; width: number; height: number }) => void,
+) {
+  if (Platform.OS !== "web") return () => {};
+  const selector = `[data-testid="${CSS.escape(testID)}"]`;
+  const pointer = (event: TabPointerEvent) => {
+    if (!event.target?.closest(selector)) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    open({ x: event.clientX, y: event.clientY, width: 0, height: 0 });
+  };
+  const removeKeys = onContextMenuKeys(testID, open);
+  document.addEventListener("contextmenu", pointer, true);
+  return () => {
+    removeKeys();
+    document.removeEventListener("contextmenu", pointer, true);
+  };
+}
+
+export function installPickerTreeRowStyles(
+  surface: string,
+  selectedSurface: string,
+  actionSize: number,
+) {
+  if (Platform.OS !== "web") return () => {};
+  const row =
+    '[data-testid="split-picker-project-tree"] [data-testid^="split-picker-item-"]';
+  const actions = '[data-testid="split-picker-row-actions"]';
+  const label = '[data-testid="split-picker-row-name"]';
+  const openMenu = '[data-testid^="split-picker-more-"][aria-expanded="true"]';
+  const touchAttribute = "data-split-picker-touched";
+  const hoverColor = `color-mix(in srgb, ${selectedSurface} 70%, ${surface})`;
+  const reveal = (selector: string) => `
+    ${selector} > ${actions} { opacity: 1; pointer-events: auto; }
+    ${selector} ${label} { margin-inline-end: ${actionSize * 2 + 4}px; }
+    ${selector} > [role="button"]:not([aria-pressed="true"]) {
+      background-color: ${hoverColor};
+    }
+  `;
+  const sheet = document.createElement("style");
+  // Keep the full label width until the actions appear, then truncate before them.
+  sheet.textContent = `
+    ${row} > ${actions} {
+      position: absolute;
+      inset: 2px 3px 2px auto;
+      z-index: 1;
+      align-items: center;
+      opacity: 0;
+      pointer-events: none;
+    }
+    ${reveal(`${row}:is([${touchAttribute}], :has(:focus-visible, ${openMenu}))`)}
+    @media (hover: hover) {
+      ${reveal(`${row}:hover`)}
+    }
+  `;
+  document.head.appendChild(sheet);
+  let touchedRow: WebElement | null = null;
+  const revealTouchedRow = (event: TabPointerEvent) => {
+    const next =
+      event.pointerType === "touch"
+        ? (event.target?.closest(row) ?? null)
+        : null;
+    if (touchedRow === next) return;
+    touchedRow?.removeAttribute(touchAttribute);
+    touchedRow = next;
+    touchedRow?.setAttribute(touchAttribute, "");
+  };
+  document.addEventListener("pointerup", revealTouchedRow, true);
+  return () => {
+    document.removeEventListener("pointerup", revealTouchedRow, true);
+    touchedRow?.removeAttribute(touchAttribute);
+    sheet.remove();
+  };
+}
+
+export function onPickerMenuKeys(testID: string, close: () => void) {
+  if (Platform.OS !== "web") return () => {};
+  const keydown = (event: ShortcutInput) => {
+    if (event.isComposing) return;
+    if (event.key === "Escape") {
+      consumePopupEscape(event);
+      close();
+      return;
+    }
+    if (event.key === "Tab") {
+      close();
+      return;
+    }
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+    const menu = document.querySelector(
+      `[data-testid="${CSS.escape(testID)}"]`,
+    );
+    const items = Array.from(
+      menu?.querySelectorAll('[role="menuitem"]:not([aria-disabled="true"])') ??
+        [],
+    );
+    if (!items.length) return;
+    const index = items.findIndex((entry) => entry === document.activeElement);
+    const next =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? items.length - 1
+          : index < 0
+            ? event.key === "ArrowDown"
+              ? 0
+              : items.length - 1
+            : (index + (event.key === "ArrowDown" ? 1 : -1) + items.length) %
+              items.length;
+    event.preventDefault();
+    event.stopPropagation();
+    items[next].focus();
+  };
+  window.addEventListener("keydown", keydown, true);
+  return () => window.removeEventListener("keydown", keydown, true);
+}
 export function onPickerKeys(
   callback: (key: string) => boolean,
   close: () => void,
+  suspended?: () => boolean,
 ): () => void {
   if (Platform.OS !== "web") return () => {};
   const handle = (event: ShortcutInput) => {
     if (event.isComposing) return;
-    // The branch popup owns Escape and its own keyboard focus loop.
+    // Nested menus and native confirmations own their keyboard handling.
     if (
+      suspended?.() ||
       document.querySelector(
-        '[data-testid="split-workspace-base-branch-options"]',
+        '[data-testid="split-workspace-base-branch-options"],[data-testid^="split-picker-row-menu-"]',
       )
     )
       return;
@@ -1159,31 +1287,37 @@ export function onPickerKeys(
   return () => window.removeEventListener("keydown", handle, true);
 }
 
-export function onWorkspaceBranchMenu(close: () => void): () => void {
+function consumePopupEscape(event: ShortcutInput) {
+  event.preventDefault();
+  event.stopPropagation();
+  // React Native Web's outer Modal dismisses on keyup.
+  const release = (up: ShortcutInput) => {
+    if (up.key !== "Escape") return;
+    up.preventDefault();
+    up.stopPropagation();
+    window.removeEventListener("keyup", release, true);
+    clearTimeout(timeout);
+  };
+  const timeout = setTimeout(
+    () => window.removeEventListener("keyup", release, true),
+    1000,
+  );
+  window.addEventListener("keyup", release, true);
+}
+
+export function onPickerPopupKeys(
+  testID: string,
+  close: () => void,
+): () => void {
   if (Platform.OS !== "web") return () => {};
   const keydown = (event: ShortcutInput) => {
     if (event.isComposing) return;
     if (event.key === "Escape") {
-      event.preventDefault();
-      event.stopPropagation();
-      // React Native Web's outer Modal dismisses on keyup. Consume the matching
-      // release even after closing this popup removes its keydown listener.
-      const release = (up: ShortcutInput) => {
-        if (up.key !== "Escape") return;
-        up.preventDefault();
-        up.stopPropagation();
-        window.removeEventListener("keyup", release, true);
-        clearTimeout(timeout);
-      };
-      const timeout = setTimeout(
-        () => window.removeEventListener("keyup", release, true),
-        1000,
-      );
-      window.addEventListener("keyup", release, true);
+      consumePopupEscape(event);
       close();
     } else if (event.key === "Tab") {
       const root = document.querySelector(
-        '[data-testid="split-workspace-base-branch-options"]',
+        `[data-testid="${CSS.escape(testID)}"]`,
       );
       const controls = Array.from(
         root?.querySelectorAll('input,[role="radio"],[role="button"]') ?? [],
@@ -1221,7 +1355,7 @@ function visibleControl(testId: string): WebElement | undefined {
   // Paseo retains wide/compact route trees. Focus the visible copy, rather
   // than an older hidden control with the same persistent resource identity.
   return Array.from(
-    document.querySelectorAll(`[data-testid="${testId}"]`),
+    document.querySelectorAll(`[data-testid="${CSS.escape(testId)}"]`),
   ).find((element) => {
     const rect = element.getBoundingClientRect();
     return rect.width > 0 && rect.height > 0;

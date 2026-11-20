@@ -4,7 +4,7 @@ import {
   type PluginScreenProps,
 } from "@getpaseo/plugin/client";
 import { Icon, useToast } from "@getpaseo/plugin/client/ui";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   memo,
   useCallback,
@@ -30,6 +30,7 @@ import {
   moveTab,
   removeEmptyGroup,
   removeTab,
+  removeWorkspaceTabs,
   relatedTabIds,
   resourceKey,
   targetSchema,
@@ -89,13 +90,20 @@ import {
   type PickerMode,
 } from "./resource-picker";
 import { WorkspaceIcons } from "./workspace-icon";
-import { isRunning, useDirectory, workspaceLabel } from "./directory";
+import {
+  directoryKey,
+  isRunning,
+  useDirectory,
+  workspaceLabel,
+  type Directory,
+} from "./directory";
 import type { NativeBridge } from "./native-types";
 import type { PluginPanelRequest } from "./workspace-types";
 import {
   workspaceCreationOptions,
   type WorkspaceCreation,
 } from "./workspace-creation";
+import { workspaceFilePath } from "./workspace-file";
 
 const id = () =>
   `split-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
@@ -134,6 +142,7 @@ function HostBoard({
 }: PluginScreenProps) {
   const instanceId = useId(),
     paseo = usePaseo(),
+    cache = useQueryClient(),
     toast = useToast(),
     bridgeInfo = useRpc(bridgeInfoRpc);
   const board = useSyncExternalStore(
@@ -155,6 +164,7 @@ function HostBoard({
   const [busy, setBusy] = useState(false);
   const archiving = useRef(false);
   const workspaceCreation = useRef(false);
+  const fileCreation = useRef(false);
   const [viewport, setViewport] = useState({ width: 1000, height: 700 });
   const root = useRef<View>(null),
     workarea = useRef<View>(null),
@@ -222,17 +232,40 @@ function HostBoard({
     const requested = readBoardFocus(host.id);
     if (requested && board.groups.some((group) => group.id === requested)) {
       setFocusedGroup(requested);
-      setMaximized((current) => (current ? requested : null));
+      setMaximized((current) =>
+        board.groups.some((group) => group.id === current) ? requested : null,
+      );
     }
   }, [host.id, board]);
+  useLayoutEffect(() => {
+    const selected = pickerRef.current;
+    if (
+      !selected ||
+      board.groups.some((group) => group.id === selected.groupId)
+    )
+      return;
+    const tabId = board.groups.find(
+      (group) => group.id === groupFocus,
+    )?.activeTabId;
+    restorePickerFocus.current = tabId
+      ? `split-tab-${tabId}`
+      : `split-add-${groupFocus}`;
+    setPicker(null);
+    if (selected.mode === "menu") afterPickerDismiss();
+  }, [board.groups, groupFocus, afterPickerDismiss]);
   routeActiveRef.current = routeActive;
-  const visibleGroup = maximized ?? (layout.compact ? groupFocus : null);
+  const visibleGroup = board.groups.some((group) => group.id === maximized)
+    ? maximized
+    : layout.compact
+      ? groupFocus
+      : null;
   const barHeight = layout.compact ? 36 : 32;
   const persist = useCallback(() => {
-    if (savedBoard.current === boardRef.current) return;
+    const current = readBoardSnapshot(host.id);
+    if (savedBoard.current === current) return;
     try {
-      saveBoard(host.id, boardRef.current);
-      savedBoard.current = boardRef.current;
+      saveBoard(host.id, current);
+      savedBoard.current = current;
     } catch (error) {
       toast.error(`布局保存失败：${errorMessage(error)}`);
     }
@@ -331,7 +364,13 @@ function HostBoard({
     else anchors.current.delete(groupId);
   }, []);
   const dismiss = useCallback(() => {
-    if (workspaceCreation.current) return;
+    if (
+      workspaceCreation.current ||
+      fileCreation.current ||
+      terminalCreation.current ||
+      archiving.current
+    )
+      return;
     restorePickerFocus.current = pickerRef.current?.trigger ?? null;
     const menu = pickerRef.current?.mode === "menu";
     setPicker(null);
@@ -557,14 +596,14 @@ function HostBoard({
     [bridge.data, host.id, titleFor, setBoard, groupOf, toast],
   );
   const chooseTarget = useCallback(
-    (target: Target, workspaceId: string) => {
+    (target: Target, workspaceId: string, destination?: boolean) => {
       const current = pickerRef.current;
       if (current)
         openTarget(
           target,
           workspaceId,
           current.groupId,
-          current.newSplit,
+          destination ?? current.newSplit,
           undefined,
           current.splitDirection,
         );
@@ -590,43 +629,93 @@ function HostBoard({
 
   const createWorkspace = useCallback(
     async (input: WorkspaceCreation) => {
-      const selected = pickerRef.current;
-      if (!selected || workspaceCreation.current) return;
-      if (selected.newSplit && boardRef.current.groups.length >= MAX_SPLITS)
-        throw new Error(SPLIT_LIMIT_MESSAGE);
+      if (!pickerRef.current || workspaceCreation.current)
+        throw new Error("请等待当前操作完成。");
       workspaceCreation.current = true;
       setBusy(true);
       try {
         const workspace = await paseo.workspaces.create(
           workspaceCreationOptions(input),
         );
-        const snapshot = workspace.current();
-        const groupId = boardRef.current.groups.some(
-          (group) => group.id === selected.groupId,
-        )
-          ? selected.groupId
-          : boardRef.current.groups[0].id;
-        openTarget(
-          { kind: "draft", draftId: `draft-${id()}` },
-          workspace.id,
-          groupId,
-          selected.newSplit && boardRef.current.groups.length < MAX_SPLITS,
-          snapshot
-            ? workspaceLabel(snapshot)
-            : `${input.project.projectCustomName ?? input.project.projectDisplayName} / ${input.title.trim() || workspace.name || "新 workspace"}`,
-          selected.splitDirection,
-        );
-        void directory.refetch();
+        const refreshed = await directory.refetch();
+        if (
+          !refreshed.data?.workspaces.some((entry) => entry.id === workspace.id)
+        ) {
+          const snapshot = workspace.current() ?? (await workspace.refresh());
+          if (snapshot)
+            cache.setQueryData<Directory>(
+              directoryKey(host.id),
+              (current) =>
+                current && {
+                  ...current,
+                  workspaces: [
+                    snapshot,
+                    ...current.workspaces.filter(
+                      (entry) => entry.id !== snapshot.id,
+                    ),
+                  ].slice(0, 200),
+                },
+            );
+        }
+        toast.show("workspace 已创建", { variant: "success" });
+        return workspace.id;
       } finally {
         workspaceCreation.current = false;
         setBusy(false);
       }
     },
-    [paseo, openTarget, directory.refetch],
+    [paseo, cache, host.id, directory.refetch, toast],
+  );
+
+  const createFile = useCallback(
+    async (workspaceId: string, input: string) => {
+      const selected = pickerRef.current;
+      if (!selected || fileCreation.current)
+        throw new Error("请等待当前操作完成。");
+      if (selected.newSplit && boardRef.current.groups.length >= MAX_SPLITS)
+        throw new Error(SPLIT_LIMIT_MESSAGE);
+      const native = bridge.data;
+      const client = native?.getHostRuntimeStore().getClient(host.id);
+      if (!client?.createFileEntry || !native?.hasPanel("file"))
+        throw new Error("当前 Paseo 不支持新建文件。");
+      const workspace = directoryRef.current?.workspaces.find(
+        (entry) => entry.id === workspaceId,
+      );
+      if (!workspace?.workspaceDirectory)
+        throw new Error("找不到此 workspace 的目录。");
+      const { path, parentPath, name } = workspaceFilePath(input);
+      fileCreation.current = true;
+      setBusy(true);
+      try {
+        const result = await client.createFileEntry({
+          cwd: workspace.workspaceDirectory,
+          parentPath,
+          name,
+          kind: "file",
+        });
+        if (!result.success)
+          throw new Error(result.error ?? "Paseo 未确认文件创建。");
+        openTarget(
+          { kind: "file", path: result.path ?? path },
+          workspaceId,
+          selected.groupId,
+          selected.newSplit,
+          undefined,
+          selected.splitDirection,
+        );
+        void cache.invalidateQueries({
+          queryKey: ["deck-picker-files", host.id, workspaceId],
+        });
+      } finally {
+        fileCreation.current = false;
+        setBusy(false);
+      }
+    },
+    [bridge.data, host.id, openTarget, cache],
   );
 
   const archiveAgent = useCallback(
-    async (agentId: string) => {
+    async (agentId: string, confirm?: NativeBridge["confirmDialog"]) => {
       const agent = directoryRef.current?.agents.find(
         (item) => item.id === agentId,
       );
@@ -634,7 +723,7 @@ function HostBoard({
       archiving.current = true;
       setBusy(true);
       try {
-        const confirmed = await bridge.data.confirmDialog({
+        const confirmed = await (confirm ?? bridge.data.confirmDialog)({
           title: "归档 Agent",
           message: `确定归档「${agent.title ?? "未命名 Agent"}」吗？${isRunning(agent) ? "\n\n该 Agent 正在运行，归档会停止当前任务。" : ""}\n\n归档后将从资源列表移除，并关闭它在工作台中的标签页。`,
           confirmLabel: "归档",
@@ -663,25 +752,21 @@ function HostBoard({
     },
     [bridge.data, paseo, host.id, setBoard, directory.refetch, toast],
   );
-  const archiveWorkspace = useCallback(
-    async (tabId: string) => {
+  const archiveWorkspaceAt = useCallback(
+    async (
+      workspaceId: string,
+      options?: { groupId?: string; confirm?: NativeBridge["confirmDialog"] },
+    ): Promise<boolean> => {
       const native = bridge.data;
-      const source = boardRef.current.panes.find((pane) => pane.id === tabId);
-      if (
-        !source ||
-        source.serverId !== host.id ||
-        !native ||
-        archiving.current ||
-        closingAll.current
-      )
-        return;
-
-      const { serverId, workspaceId } = source;
+      if (!native || archiving.current || closingAll.current) return false;
+      const serverId = host.id;
       const belongsToWorkspace = (pane: Pane) =>
         pane.serverId === serverId && pane.workspaceId === workspaceId;
       const affected = boardRef.current.panes.filter(belongsToWorkspace);
-      if (affected.some((pane) => pendingCloses.current.has(pane.id))) return;
+      if (affected.some((pane) => pendingCloses.current.has(pane.id)))
+        return false;
       archiving.current = true;
+      setBusy(true);
       affected.forEach((pane) => pendingCloses.current.add(pane.id));
       const resumes: (() => void)[] = [];
       let committed = false;
@@ -691,7 +776,7 @@ function HostBoard({
             (item) => item.id === workspaceId,
           ) ?? (await paseo.workspaces.ref(workspaceId).refresh());
         if (!workspace) throw new Error("找不到此 workspace");
-        if (workspace.archivingAt) return;
+        if (workspace.archivingAt) return false;
 
         let modified = false;
         for (const pane of affected) {
@@ -707,36 +792,34 @@ function HostBoard({
         }
         const message = [
           `确定归档「${workspaceLabel(workspace)}」吗？`,
-          "归档会停止该 workspace 中运行的 Agent 和终端，并关闭工作台中的相关 Tab。",
+          "归档会停止该 workspace 中运行的 Agent 和终端，关闭相关 Tab，并收起因此变空的 Deck 分屏。",
         ];
         if (workspace.workspaceKind === "worktree")
           message.push("Paseo 会移除该 worktree 的工作目录。");
         if (modified) message.push("Tab 中未保存的更改将被放弃。");
-        const confirmed = await native.confirmDialog({
+        const confirmed = await (options?.confirm ?? native.confirmDialog)({
           title: "归档 workspace",
           message: message.join("\n\n"),
           confirmLabel: modified ? "放弃更改并归档" : "归档",
           cancelLabel: "取消",
           destructive: true,
         });
-        if (!confirmed) return;
+        if (!confirmed) return false;
 
         const result = await paseo.workspaces.archive(workspaceId);
         if (result.error || !result.archivedAt)
           throw new Error(result.error ?? "Paseo 未确认归档");
-        const groupId = groupOf(tabId)?.id;
         setBoard((current) =>
-          current.panes
-            .filter(belongsToWorkspace)
-            .reduce((next, pane) => removeTab(next, pane.id), current),
+          removeWorkspaceTabs(current, serverId, workspaceId),
         );
         committed = true;
         persist();
-        const group = boardRef.current.groups.find(
-          (item) => item.id === groupId,
-        );
-        if (group && routeActiveRef.current) {
+        if (options?.groupId && routeActiveRef.current) {
+          const { groups } = readBoardSnapshot(serverId);
+          const group =
+            groups.find((item) => item.id === options.groupId) ?? groups[0];
           setFocusedGroup(group.id);
+          actionOwner.current = group.activeTabId;
           scheduleFrame(() =>
             focusControl(
               group.activeTabId
@@ -745,14 +828,27 @@ function HostBoard({
             ),
           );
         }
-        void directory.refetch();
+        cache.setQueryData<Directory>(
+          directoryKey(serverId),
+          (current) =>
+            current && {
+              ...current,
+              workspaces: current.workspaces.filter(
+                (entry) => entry.id !== workspaceId,
+              ),
+            },
+        );
+        await directory.refetch();
         toast.show("workspace 已归档", { variant: "success" });
+        return true;
       } catch (error) {
         toast.error(`归档 workspace 失败：${errorMessage(error)}`);
+        return false;
       } finally {
         if (!committed) resumes.forEach((resume) => resume());
         affected.forEach((pane) => pendingCloses.current.delete(pane.id));
         archiving.current = false;
+        setBusy(false);
       }
     },
     [
@@ -760,12 +856,22 @@ function HostBoard({
       host.id,
       instanceId,
       paseo,
-      groupOf,
+      cache,
       setBoard,
       persist,
       directory.refetch,
       toast,
     ],
+  );
+  const archiveWorkspace = useCallback(
+    async (tabId: string) => {
+      const source = boardRef.current.panes.find((pane) => pane.id === tabId);
+      if (source?.serverId === host.id)
+        await archiveWorkspaceAt(source.workspaceId, {
+          groupId: groupOf(tabId)?.id,
+        });
+    },
+    [archiveWorkspaceAt, groupOf, host.id],
   );
   const openPluginPanel = useCallback(
     (request: PluginPanelRequest): boolean => {
@@ -1517,20 +1623,21 @@ function HostBoard({
       ),
     [board.panes, board.groups, board.direction, geometry, barHeight],
   );
-  const openedAgentDecks = useMemo(
-    () =>
-      new Map<string, number>(
-        board.panes.flatMap((pane) => {
-          if (pane.serverId !== host.id || pane.target.kind !== "agent")
-            return [];
-          const groupIndex = board.groups.findIndex((group) =>
-            group.tabIds.includes(pane.id),
-          );
-          return groupIndex < 0 ? [] : [[pane.target.agentId, groupIndex + 1]];
-        }),
-      ),
-    [board.panes, board.groups, host.id],
-  );
+  const { openedAgentDecks, openedResources } = useMemo(() => {
+    const openedAgentDecks = new Map<string, number>();
+    const openedResources = new Map<string, number>();
+    for (const pane of board.panes) {
+      if (pane.serverId !== host.id) continue;
+      const groupIndex = board.groups.findIndex((group) =>
+        group.tabIds.includes(pane.id),
+      );
+      if (groupIndex < 0) continue;
+      openedResources.set(resourceKey(pane), groupIndex + 1);
+      if (pane.target.kind === "agent")
+        openedAgentDecks.set(pane.target.agentId, groupIndex + 1);
+    }
+    return { openedAgentDecks, openedResources };
+  }, [board.panes, board.groups, host.id]);
   const menuActionsFor = useCallback(
     (groupId: string): PaneMenuAction[] => {
       const group = board.groups.find((group) => group.id === groupId);
@@ -2111,12 +2218,17 @@ function HostBoard({
         initialMode={picker!.mode}
         defaultWorkspaceId={active?.workspaceId}
         openedAgentDecks={openedAgentDecks}
+        openedResources={openedResources}
         newSplit={picker!.newSplit}
         onDestination={updateDestination}
         onOpen={chooseTarget}
         onTerminal={createTerminal}
         onCreateWorkspace={createWorkspace}
+        onCreateFile={createFile}
         onArchive={archiveAgent}
+        onArchiveWorkspace={(id, confirm) =>
+          archiveWorkspaceAt(id, { confirm })
+        }
         onClose={dismiss}
         onRefresh={() => void directory.refetch()}
         busy={busy}

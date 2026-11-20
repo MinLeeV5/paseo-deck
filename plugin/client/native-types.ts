@@ -19,6 +19,12 @@ export interface NativeTabPresentation {
   statusBucket: NativeStatusBucket | null;
 }
 
+export interface NativeFileEntry {
+  name: string;
+  path: string;
+  kind: "file" | "directory";
+}
+
 export interface NativePaneInput {
   tab: {
     tabId: string;
@@ -132,6 +138,20 @@ export interface NativeBridge
     acquireDirectoryDemand(serverId: string): () => void;
     getClient(serverId: string): {
       listTerminals(): Promise<{ terminals: Directory["terminals"] }>;
+      listDirectory?(
+        cwd: string,
+        path: string,
+      ): Promise<{ entries: NativeFileEntry[] }>;
+      createFileEntry?(input: {
+        cwd: string;
+        parentPath: string;
+        name: string;
+        kind: "file";
+      }): Promise<{
+        path: string | null;
+        success: boolean;
+        error: string | null;
+      }>;
       getBranchSuggestions(options: {
         cwd: string;
         query?: string;

@@ -5,7 +5,7 @@
 <p align="center"><strong>Agents, terminals, and files across workspaces, in one Paseo window.</strong></p>
 
 <p align="center">
-  <a href="https://github.com/MinLeeV5/paseo-deck/releases/tag/v1.1.2"><img src="https://img.shields.io/badge/version-v1.1.2-1f6feb" alt="Version v1.1.2" /></a>
+  <a href="https://github.com/MinLeeV5/paseo-deck/releases/tag/v1.2.0"><img src="https://img.shields.io/badge/version-v1.2.0-1f6feb" alt="Version v1.2.0" /></a>
   <a href="plugin/paseo-plugin.json"><img src="https://img.shields.io/badge/Paseo-0.13.0%2B-0078D4" alt="Paseo 0.13.0 or later" /></a>
   <a href="#scope-and-compatibility"><img src="https://img.shields.io/badge/platform-desktop%20%2F%20Web-2DA44E" alt="Desktop and Web" /></a>
 </p>
@@ -54,10 +54,10 @@ paseo plugin install git:MinLeeV5/paseo-deck:plugin
 
 The `:plugin` suffix selects the plugin directory inside the repository. Paseo downloads the source; no manual clone or dependency installation is needed.
 
-Releases use Semantic Versioning and matching Git tags. To select **v1.1.2** for the initial installation:
+Releases use Semantic Versioning and matching Git tags. To select **v1.2.0** for the initial installation:
 
 ```bash
-paseo plugin install git:MinLeeV5/paseo-deck:plugin --ref v1.1.2
+paseo plugin install git:MinLeeV5/paseo-deck:plugin --ref v1.2.0
 ```
 
 Open **Paseo Deck** in the sidebar, or search for **Paseo Deck** in the Command Center (`⌘K` / `Ctrl+K`). Plugin ID: `paseo-deck`. Current plugin menu labels are in Simplified Chinese.
@@ -72,13 +72,17 @@ Paseo shows the latest revision from the repository's default branch and asks fo
 
 ## Add Agents and resources
 
-Click a split's **`＋`** to find **已有 Agent** (Existing Agents) across all projects by default. Search and click an Agent to add it directly. Agents needing attention, unread conversations, and running Agents come first, with status filters for quick access. On Paseo 0.16, background task counts appear in a separate group.
+Click a split's **`＋`** and select a workspace in the **Project → Workspace** tree. The resource list shows that workspace's Agents, terminals, or files. Select a conversation and click **添加已有 Agent** (Add existing Agent). Use the status groups and filters to find Agents that need attention, are unread, or are running. Paseo 0.16 also shows background task counts.
 
-For a fresh conversation, select **新建 Agent** (New Agent) on the right. Choose a project, then an existing workspace, or select **新建 workspace** (New workspace) and optionally name it. Git projects default to an isolated worktree and also support the original directory. For a worktree, use **基础分支** (Base branch) to search and select a local or remote branch, or keep **自动选择** (Automatic) to use the project's settings. The picker opens above or below to fit the available space, and this client remembers your last choice separately for each host and project. The new Agent Tab is added to Deck automatically; send the first message to start the conversation.
+A project's **`＋`** creates a workspace and selects it in the dialog. Git projects support isolated worktrees and the original directory. Use **基础分支** (Base branch) to search local or remote branches, or choose **自动选择** (Automatic) to use the project's settings. The client remembers the last choice for each host and project.
 
 ![Choose the base branch for a new worktree](plugin/assets/workspace-creation.png)
 
-Switch to **已有 Agent** (Existing Agents), **终端** (Terminals), or **文件** (Files) at the top of the same dialog to find and add those resources. Running and initializing Agents have a separate section; Agent Tabs use their source workspace's icon.
+In the selected workspace, **新建 Agent** (New Agent) opens a draft. Send the first message to start the conversation. The **终端** (Terminal) and **文件** (File) tabs can also create or add resources. Browse files by directory or add them by relative path. New files are created inside existing directories and opened in Deck.
+
+Double-click an existing resource to open it in the selected split. A resource already in Deck opens its existing Tab. Workspace rows use Paseo's animated ring for running and dots for unread, waiting for input, and failed states. A collapsed project shows the highest-priority status among its workspaces.
+
+Hover over a project or workspace row to reveal its actions. The **`···`** button, right-click, and **Shift+F10** open the same menu. Archiving a workspace closes its Deck Tabs and automatically collapses any splits that become empty.
 
 Agent Tabs overlay Paseo's native status on the workspace icon: a running spinner, a green unread dot, a yellow input / approval alert, or a red failure dot. Background Tabs update before their conversation is opened, and tooltips include the status. Read behavior comes from the native conversation; focusing a pending question or approval does not dismiss its alert.
 
@@ -88,7 +92,7 @@ The add panel starts with the current split selected and remembers your last spl
 
 Clicking a subagent in a Deck conversation opens it as a Tab in that conversation's split, including provider subagents and children in another workspace on the same host. The parent stays open. If the child is already in another split, its Tab moves into the source split.
 
-![Unified add panel with workspace selection and existing Agents](assets/add-tab.png)
+![Project and workspace tree alongside the selected workspace's Agents](assets/add-tab.png)
 
 ## Add from native Paseo pages
 

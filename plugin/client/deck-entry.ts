@@ -15,6 +15,15 @@ export type DeckAgentEntry = {
   destination: "current" | "new";
 };
 
+export function isAgentInDeck(board: Board, serverId: string, agentId: string) {
+  return board.panes.some(
+    (pane) =>
+      pane.serverId === serverId &&
+      pane.target.kind === "agent" &&
+      pane.target.agentId === agentId,
+  );
+}
+
 export function workspaceDeckGroups(
   board: Board,
   serverId: string,

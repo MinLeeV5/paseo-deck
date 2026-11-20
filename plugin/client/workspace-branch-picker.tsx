@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import type { NativeBridge } from "./native-types";
 import { DialogButton, DialogChoice, DialogInput } from "./add-dialog-ui";
-import { keyboardFocusVisible, onWorkspaceBranchMenu } from "./web";
+import { keyboardFocusVisible, onPickerPopupKeys } from "./web";
 import { placeVerticalMenu } from "../shared/menu-placement";
 
 const branchLabel = (ref: string) =>
@@ -71,7 +71,7 @@ export function useWorkspaceBranchPicker({
   }, [expanded]);
   useEffect(() => {
     if (!expanded) return;
-    return onWorkspaceBranchMenu(() => {
+    return onPickerPopupKeys("split-workspace-base-branch-options", () => {
       setExpanded(false);
       trigger.current?.focus();
     });

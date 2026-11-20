@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { sortPickerProjects } from "../plugin/client/project-picker.ts";
+import {
+  collapsedProjectStatus,
+  sortPickerProjects,
+} from "../plugin/client/project-picker.ts";
 
 const projects = ["first", "second", "third", "empty"].map((projectId) => ({
   projectId,
@@ -12,6 +15,28 @@ const workspace = (projectId, activityAt, extra = {}) => ({
 });
 const ids = (workspaces) =>
   sortPickerProjects(projects, workspaces).map((p) => p.projectId);
+
+test("collapsed projects show the highest priority workspace status", () => {
+  const states = (...values) => values.map((status) => ({ status }));
+  assert.equal(collapsedProjectStatus(states()), undefined);
+  assert.equal(collapsedProjectStatus(states("done")), undefined);
+  assert.equal(
+    collapsedProjectStatus(states("done", "attention")),
+    "attention",
+  );
+  assert.equal(
+    collapsedProjectStatus(states("running", "attention")),
+    "running",
+  );
+  assert.equal(
+    collapsedProjectStatus(states("attention", "failed", "running")),
+    "failed",
+  );
+  assert.equal(
+    collapsedProjectStatus(states("failed", "needs_input")),
+    "needs_input",
+  );
+});
 
 test("projects use their most recent workspace activity across all workspaces", () => {
   const entries = [
