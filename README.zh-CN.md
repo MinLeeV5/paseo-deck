@@ -5,7 +5,7 @@
 <p align="center"><strong>在一个 Paseo 窗口中，并排使用不同工作区的 Agent、终端和文件。</strong></p>
 
 <p align="center">
-  <a href="https://github.com/MinLeeV5/paseo-deck/releases/tag/v1.2.1"><img src="https://img.shields.io/badge/version-v1.2.1-1f6feb" alt="版本 v1.2.1" /></a>
+  <a href="https://github.com/MinLeeV5/paseo-deck/releases/tag/v1.2.2"><img src="https://img.shields.io/badge/version-v1.2.2-1f6feb" alt="版本 v1.2.2" /></a>
   <a href="plugin/paseo-plugin.json"><img src="https://img.shields.io/badge/Paseo-0.13.0%2B-0078D4" alt="Paseo 0.13.0 及以上" /></a>
   <a href="#支持范围与兼容性"><img src="https://img.shields.io/badge/platform-desktop%20%2F%20Web-2DA44E" alt="桌面与 Web" /></a>
 </p>
@@ -54,10 +54,10 @@ paseo plugin install git:MinLeeV5/paseo-deck:plugin
 
 末尾的 `:plugin` 指定仓库中的插件目录。Paseo 会自行下载源码，无需手动克隆仓库或安装依赖。
 
-发布版本采用语义化版本号和对应的 Git 标签。首次安装时，可明确选择 **v1.2.1**：
+发布版本采用语义化版本号和对应的 Git 标签。首次安装时，可明确选择 **v1.2.2**：
 
 ```bash
-paseo plugin install git:MinLeeV5/paseo-deck:plugin --ref v1.2.1
+paseo plugin install git:MinLeeV5/paseo-deck:plugin --ref v1.2.2
 ```
 
 点击侧栏 **Paseo Deck**，或在 Command Center（`⌘K` / `Ctrl+K`）中搜索 **Paseo Deck**。插件 ID 为 `paseo-deck`，当前插件菜单使用简体中文。
@@ -74,7 +74,7 @@ Paseo 会显示仓库默认分支的最新版本，确认后才会更新。
 
 点击分屏 Tab 栏中的 **`＋`**，在左侧 **Project → Workspace** 树中选择工作区。右侧显示该工作区的 Agent、终端和文件。选中会话后点击 **添加已有 Agent**；需要处理、未读及正在运行的会话有独立分组和快捷筛选，Paseo 0.16 也会显示后台任务。
 
-Project 行尾的 **`＋`** 用于新建 workspace，成功后在弹窗中选中新工作区。Git 项目可创建独立 worktree 或使用原目录。**基础分支** 支持搜索本地和远程分支，**自动选择** 沿用项目设置，客户端会按主机和项目记住上次选择。
+Project 行尾的 **`＋`** 用于新建 Workspace，成功后在所选分屏直接打开新 Agent 草稿。Git 项目可创建独立 worktree 或使用原目录。**基础分支** 支持搜索本地和远程分支，**自动选择** 沿用项目设置，客户端会按主机和项目记住上次选择。
 
 ![为新 worktree 选择基础分支](plugin/assets/workspace-creation.png)
 

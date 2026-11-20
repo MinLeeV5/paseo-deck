@@ -629,8 +629,13 @@ function HostBoard({
 
   const createWorkspace = useCallback(
     async (input: WorkspaceCreation) => {
-      if (!pickerRef.current || workspaceCreation.current)
+      const selected = pickerRef.current;
+      if (!selected || workspaceCreation.current)
         throw new Error("请等待当前操作完成。");
+      if (selected.newSplit && boardRef.current.groups.length >= MAX_SPLITS)
+        throw new Error(SPLIT_LIMIT_MESSAGE);
+      if (!bridge.data?.hasPanel("draft"))
+        throw new Error("当前 Paseo 尚未注册 draft 面板。");
       workspaceCreation.current = true;
       setBusy(true);
       try {
@@ -638,33 +643,44 @@ function HostBoard({
           workspaceCreationOptions(input),
         );
         const refreshed = await directory.refetch();
-        if (
-          !refreshed.data?.workspaces.some((entry) => entry.id === workspace.id)
-        ) {
-          const snapshot = workspace.current() ?? (await workspace.refresh());
-          if (snapshot)
-            cache.setQueryData<Directory>(
-              directoryKey(host.id),
-              (current) =>
-                current && {
-                  ...current,
-                  workspaces: [
-                    snapshot,
-                    ...current.workspaces.filter(
-                      (entry) => entry.id !== snapshot.id,
-                    ),
-                  ].slice(0, 200),
-                },
-            );
+        const observed = refreshed.data?.workspaces.find(
+          (entry) => entry.id === workspace.id,
+        );
+        const snapshot =
+          observed ?? workspace.current() ?? (await workspace.refresh());
+        if (snapshot && !observed) {
+          cache.setQueryData<Directory>(
+            directoryKey(host.id),
+            (current) =>
+              current && {
+                ...current,
+                workspaces: [
+                  snapshot,
+                  ...current.workspaces.filter(
+                    (entry) => entry.id !== snapshot.id,
+                  ),
+                ].slice(0, 200),
+              },
+          );
         }
+        const { groups } = readBoardSnapshot(host.id);
+        const destination =
+          groups.find((group) => group.id === selected.groupId) ?? groups[0];
+        openTarget(
+          { kind: "draft", draftId: `draft-${input.idempotencyKey}` },
+          workspace.id,
+          destination.id,
+          selected.newSplit && groups.length < MAX_SPLITS,
+          snapshot ? workspaceLabel(snapshot) : undefined,
+          selected.splitDirection,
+        );
         toast.show("workspace 已创建", { variant: "success" });
-        return workspace.id;
       } finally {
         workspaceCreation.current = false;
         setBusy(false);
       }
     },
-    [paseo, cache, host.id, directory.refetch, toast],
+    [bridge.data, paseo, cache, host.id, directory.refetch, openTarget, toast],
   );
 
   const createFile = useCallback(

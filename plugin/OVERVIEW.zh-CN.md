@@ -8,7 +8,7 @@
 
 ## 🧩 跨工作区，使用原生工具
 
-从侧栏或 Command Center 打开 Paseo Deck，点击分屏中的 `＋` 选择 Workspace。在该工作区内新建 Agent、终端或文件，也可以双击添加已有资源。状态圆点显示 Workspace 的活动，折叠的 Project 会汇总优先级最高的状态。悬停在 Project 行可新建 Workspace，悬停在 Workspace 行可发起归档。归档后会关闭相关 Tab，并收起因此变空的分屏。
+从侧栏或 Command Center 打开 Paseo Deck，点击分屏中的 `＋` 选择 Workspace。在该工作区内新建 Agent、终端或文件，也可以双击添加已有资源。状态标识显示 Workspace 的活动，折叠的 Project 会汇总优先级最高的状态。Project 行的 `＋` 创建 Workspace 后，会在所选分屏打开一个新 Agent 草稿。归档 Workspace 会关闭相关 Tab，并收起因此变空的分屏。
 
 - **原生对话**：在各分屏中使用 Paseo 的原生会话、输入框与文件面板。
 - **共享草稿**：同一客户端内，Deck 与 Agent 原工作区的未发送文字双向同步。

@@ -8,7 +8,7 @@
 
 ## 🧩 Native tools across workspaces
 
-Open Paseo Deck from the sidebar or Command Center and use a split's `＋` to select a workspace. Create Agents, terminals, and files from that workspace or double-click an existing resource to open it. Status dots show workspace activity and the highest-priority status in a collapsed project. Hover over a project to create a workspace or over a workspace to archive it. Archiving closes its Tabs and collapses any splits that become empty.
+Open Paseo Deck from the sidebar or Command Center and use a split's `＋` to select a workspace. Create Agents, terminals, and files from that workspace or double-click an existing resource to open it. Status indicators show workspace activity and the highest-priority status in a collapsed project. A project's `＋` creates a workspace and opens a new Agent draft in your selected split. Archiving a workspace closes its Tabs and collapses any splits that become empty.
 
 - **Native conversations**: Use Paseo's conversation UI, composer, and file panels inside each split.
 - **Shared drafts**: Unsent text stays in sync between Deck and the Agent's original workspace on the same client.
