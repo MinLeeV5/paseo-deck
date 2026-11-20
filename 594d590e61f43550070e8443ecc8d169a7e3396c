@@ -1,0 +1,103 @@
+plugin/client/resource-picker.tsx
+  c412502840656f2f 8,11-15,25,27,29,31,40,48-56,58-85,95-97,107-146,149-192,194,202,208,210,215,217-222,225-227,230-233,235,242-248,250,259,261-269,272-273,275-279,284-286,288-304,308,320,328-338,340,347,353,357-405,408-452,464,466-469,471-472,475-485,487,499-502,507,512-642,645-657,659-662,664-667,669-677,680-704,706,708-710,716,718-723,726-736,738-764,768,770-771,776-789,791-792,794,799-828,831-832,835-843,845-848,850-859,861-862,864,866,868,871-898,900-971,973-979,982-984,986-988,991-1039,1041-1042,1044-1048,1050-1051,1053-1057,1060-1062,1064-1067,1071-1076,1078-1136,1138-1140,1142-1146,1148-1176,1178-1274,1278-1304,1308-1312,1314-1315,1317,1320-1346,1348-1350,1353-1355,1358-1388,1391-1392,1395,1398-1430,1492-1495,1498,1502-1505,1519-1524,1527,1535-1551,1562-1587,1589-1595,1598-1612,1617-1618,1621-1661,1666-1668,1671,1675-1687,1689-1692,1694-1695
+plugin/client/compact-ui.tsx
+  c412502840656f2f 30,40,42,52-53,62-63
+plugin/shared/model.ts
+  c412502840656f2f 270-290
+plugin/client/directory.ts
+  c412502840656f2f 19,32,82-115,122,175
+plugin/client/project-picker.ts
+  c412502840656f2f 3-18
+plugin/paseo-plugin.json
+  c412502840656f2f 17
+tools/empty-group.test.mjs
+  c412502840656f2f 8,58-104
+README.zh-CN.md
+  c412502840656f2f 8,57,60,75,77,81-85,95
+plugin/client/picker-row-menu.tsx
+  c412502840656f2f 1-262,264-319
+plugin/client/workspace-file.ts
+  c412502840656f2f 1-12
+plugin/OVERVIEW.zh-CN.md
+  c412502840656f2f 11
+plugin/client/add-dialog-ui.tsx
+  c412502840656f2f 96,106,157-161
+README.md
+  c412502840656f2f 8,57,60,75,77,81-85,95
+plugin/client/picker-confirmation.tsx
+  c412502840656f2f 1-32,34-37,39-56,58-67,69-108,110-130
+plugin/package.json
+  c412502840656f2f 4
+plugin/client/board.tsx
+  c412502840656f2f 7,33,93-99,106,145,167,235-237,240-255,257-261,264-265,267-268,367-373,599,606,632-633,640-652,656-697,699-703,706-708,710,714,718,726,755-757,759,761-762,766-767,769,779,795,800,807,813,817-820,822,831-841,843,846,851,859,866-869,873-875,1626-1640,2221,2227,2231
+plugin/client/native-types.ts
+  c412502840656f2f 22-27,141-154
+plugin/client/resource-picker-tree.tsx
+  c412502840656f2f 1-22,26,28-30,45-48,51-106,109-123,128-349,356-489,493,495-498,526-527
+package.json
+  c412502840656f2f 3
+tools/project-picker.test.mjs
+  c412502840656f2f 3-6,19-39
+plugin/client/native-entry.tsx
+  c95741f6d5a58355 3,16,18,23,25,49-63,92-129,160,173,191
+  c412502840656f2f 237-240
+tools/workspace-file.test.mjs
+  c412502840656f2f 1-32
+plugin/OVERVIEW.md
+  c412502840656f2f 11
+plugin/client/web.ts
+  c412502840656f2f 73,704,1082-1089,1096,1102,1112-1216,1222-1229,1233,1238,1240,1242,1290-1311,1316
+plugin/client/deck-entry.ts
+  c95741f6d5a58355 18-26
+plugin/client/workspace-branch-picker.tsx
+  c412502840656f2f 14,74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.8.4",
+  "base_commit_sha": "594d590e61f43550070e8443ecc8d169a7e3396c",
+  "prompts": {
+    "c412502840656f2f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f6e3-7ba0-78f3-b22d-b0877e011ecc",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 9132,
+      "total_deletions": 3132,
+      "accepted_lines": 8130,
+      "overriden_lines": 40,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/3a693dbc0a9d2450544ba93fc3e557e3acf0bd3ce38dc5e4c4142e0cf961d51b",
+      "token_usage": {
+        "input_tokens": 950941,
+        "output_tokens": 332908,
+        "cache_read_tokens": 97512704,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    },
+    "c95741f6d5a58355": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f761-a891-7d32-8b3e-f310203bb7e9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "李伟民 <liweimin@cvte.com>",
+      "messages": [],
+      "total_additions": 73,
+      "total_deletions": 7,
+      "accepted_lines": 67,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/4a7546fe766616d021642118f54d744265fc1d1fbfa36166c32bc704bbf018bc",
+      "token_usage": {
+        "input_tokens": 118120,
+        "output_tokens": 27348,
+        "cache_read_tokens": 5780736,
+        "cache_creation_tokens": null,
+        "total_cost": null
+      }
+    }
+  }
+}
