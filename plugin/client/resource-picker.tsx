@@ -137,7 +137,7 @@ type ResourcePickerProps = {
   onDestination(next: boolean): void;
   onOpen(target: Target, workspaceId: string, destination?: boolean): void;
   onTerminal(workspaceId: string): void;
-  onCreateWorkspace(input: WorkspaceCreation): Promise<string>;
+  onCreateWorkspace(input: WorkspaceCreation): Promise<void>;
   onCreateFile(workspaceId: string, path: string): Promise<void>;
   onArchive(
     agentId: string,
@@ -333,10 +333,6 @@ function WorkspaceResourcePicker({
         baseBranch,
         idempotencyKey: attempt.current.key,
       });
-    },
-    onSuccess: (id) => {
-      if (project) setExpanded(project.projectId, true);
-      selectWorkspace(id, "agent");
     },
   });
   const fileCreation = useMutation({
@@ -761,7 +757,7 @@ function WorkspaceResourcePicker({
       : error);
   const actionLabel =
     form?.kind === "workspace"
-      ? "创建 workspace"
+      ? "创建并打开"
       : form?.kind === "file"
         ? form.create
           ? "创建并打开"
@@ -1327,7 +1323,7 @@ function WorkspaceResourcePicker({
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            {workspace && form?.kind !== "workspace" && (
+            {(workspace || form?.kind === "workspace") && (
               <>
                 <Text style={{ color: c.foregroundMuted, fontSize: 12 }}>
                   打开到
